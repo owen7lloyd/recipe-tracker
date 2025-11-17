@@ -2,6 +2,12 @@
 
 This guide explains the authentication system implementation for the Recipe & Pantry Tracker application.
 
+## Prerequisites
+
+- **PostgreSQL** installed and running locally (not Docker)
+- **Node.js** and **pnpm** installed
+- **Database setup** completed (see DATABASE_SETUP.md)
+
 ## Overview
 
 The application uses **NextAuth.js v5** (Auth.js) with the following features:
@@ -295,8 +301,15 @@ CREATE TABLE households (
 ### 1. Start the Development Server
 
 ```bash
-# Make sure your database is running
-docker ps  # Check if recipe-tracker-db is running
+# Make sure your PostgreSQL database is running
+# For Homebrew (macOS):
+brew services list | grep postgresql
+
+# For systemd (Ubuntu/Debian):
+sudo systemctl status postgresql
+
+# Verify database exists:
+psql -l | grep recipe_tracker
 
 # Start Next.js dev server
 pnpm dev
