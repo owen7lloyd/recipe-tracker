@@ -1,5 +1,5 @@
 {
-  "id": "57b28945-fadb-45c6-ba72-36413ec18f2a",
+  "id": "62fb817d-0746-40db-b3b7-00c9beb05d3d",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -72,14 +72,49 @@
           "notNull": false
         }
       },
-      "indexes": {},
+      "indexes": {
+        "idx_grocery_list_items_list": {
+          "name": "idx_grocery_list_items_list",
+          "columns": [
+            {
+              "expression": "grocery_list_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_grocery_list_items_category": {
+          "name": "idx_grocery_list_items_category",
+          "columns": [
+            {
+              "expression": "category",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
       "foreignKeys": {
         "grocery_list_items_grocery_list_id_grocery_lists_id_fk": {
           "name": "grocery_list_items_grocery_list_id_grocery_lists_id_fk",
           "tableFrom": "grocery_list_items",
           "tableTo": "grocery_lists",
-          "columnsFrom": ["grocery_list_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "grocery_list_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -87,8 +122,12 @@
           "name": "grocery_list_items_ingredient_id_ingredients_id_fk",
           "tableFrom": "grocery_list_items",
           "tableTo": "ingredients",
-          "columnsFrom": ["ingredient_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "ingredient_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -96,8 +135,12 @@
           "name": "grocery_list_items_checked_by_users_id_fk",
           "tableFrom": "grocery_list_items",
           "tableTo": "users",
-          "columnsFrom": ["checked_by"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "checked_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -164,14 +207,49 @@
           "default": "now()"
         }
       },
-      "indexes": {},
+      "indexes": {
+        "idx_grocery_lists_household": {
+          "name": "idx_grocery_lists_household",
+          "columns": [
+            {
+              "expression": "household_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_grocery_lists_share_token": {
+          "name": "idx_grocery_lists_share_token",
+          "columns": [
+            {
+              "expression": "share_token",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
       "foreignKeys": {
         "grocery_lists_household_id_households_id_fk": {
           "name": "grocery_lists_household_id_households_id_fk",
           "tableFrom": "grocery_lists",
           "tableTo": "households",
-          "columnsFrom": ["household_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "household_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -179,8 +257,12 @@
           "name": "grocery_lists_created_by_users_id_fk",
           "tableFrom": "grocery_lists",
           "tableTo": "users",
-          "columnsFrom": ["created_by"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "created_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -190,7 +272,9 @@
         "grocery_lists_share_token_unique": {
           "name": "grocery_lists_share_token_unique",
           "nullsNotDistinct": false,
-          "columns": ["share_token"]
+          "columns": [
+            "share_token"
+          ]
         }
       },
       "policies": {},
@@ -248,7 +332,9 @@
         "households_invite_code_unique": {
           "name": "households_invite_code_unique",
           "nullsNotDistinct": false,
-          "columns": ["invite_code"]
+          "columns": [
+            "invite_code"
+          ]
         }
       },
       "policies": {},
@@ -292,14 +378,49 @@
           "notNull": false
         }
       },
-      "indexes": {},
+      "indexes": {
+        "idx_substitutions_ingredient": {
+          "name": "idx_substitutions_ingredient",
+          "columns": [
+            {
+              "expression": "ingredient_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_substitutions_substitute": {
+          "name": "idx_substitutions_substitute",
+          "columns": [
+            {
+              "expression": "substitute_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
       "foreignKeys": {
         "ingredient_substitutions_ingredient_id_ingredients_id_fk": {
           "name": "ingredient_substitutions_ingredient_id_ingredients_id_fk",
           "tableFrom": "ingredient_substitutions",
           "tableTo": "ingredients",
-          "columnsFrom": ["ingredient_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "ingredient_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -307,8 +428,12 @@
           "name": "ingredient_substitutions_substitute_id_ingredients_id_fk",
           "tableFrom": "ingredient_substitutions",
           "tableTo": "ingredients",
-          "columnsFrom": ["substitute_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "substitute_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -357,14 +482,47 @@
           "default": "now()"
         }
       },
-      "indexes": {},
+      "indexes": {
+        "idx_ingredients_name": {
+          "name": "idx_ingredients_name",
+          "columns": [
+            {
+              "expression": "name",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_ingredients_category": {
+          "name": "idx_ingredients_category",
+          "columns": [
+            {
+              "expression": "category",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
         "ingredients_name_unique": {
           "name": "ingredients_name_unique",
           "nullsNotDistinct": false,
-          "columns": ["name"]
+          "columns": [
+            "name"
+          ]
         }
       },
       "policies": {},
@@ -420,14 +578,70 @@
           "default": "now()"
         }
       },
-      "indexes": {},
+      "indexes": {
+        "idx_pantry_household": {
+          "name": "idx_pantry_household",
+          "columns": [
+            {
+              "expression": "household_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_pantry_ingredient": {
+          "name": "idx_pantry_ingredient",
+          "columns": [
+            {
+              "expression": "ingredient_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_pantry_household_ingredient": {
+          "name": "idx_pantry_household_ingredient",
+          "columns": [
+            {
+              "expression": "household_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "ingredient_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
       "foreignKeys": {
         "pantry_items_household_id_households_id_fk": {
           "name": "pantry_items_household_id_households_id_fk",
           "tableFrom": "pantry_items",
           "tableTo": "households",
-          "columnsFrom": ["household_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "household_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -435,8 +649,12 @@
           "name": "pantry_items_ingredient_id_ingredients_id_fk",
           "tableFrom": "pantry_items",
           "tableTo": "ingredients",
-          "columnsFrom": ["ingredient_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "ingredient_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -444,8 +662,12 @@
           "name": "pantry_items_added_by_users_id_fk",
           "tableFrom": "pantry_items",
           "tableTo": "users",
-          "columnsFrom": ["added_by"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "added_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -511,14 +733,49 @@
           "notNull": false
         }
       },
-      "indexes": {},
+      "indexes": {
+        "idx_recipe_ingredients_recipe": {
+          "name": "idx_recipe_ingredients_recipe",
+          "columns": [
+            {
+              "expression": "recipe_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_recipe_ingredients_ingredient": {
+          "name": "idx_recipe_ingredients_ingredient",
+          "columns": [
+            {
+              "expression": "ingredient_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
       "foreignKeys": {
         "recipe_ingredients_recipe_id_recipes_id_fk": {
           "name": "recipe_ingredients_recipe_id_recipes_id_fk",
           "tableFrom": "recipe_ingredients",
           "tableTo": "recipes",
-          "columnsFrom": ["recipe_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "recipe_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -526,8 +783,12 @@
           "name": "recipe_ingredients_ingredient_id_ingredients_id_fk",
           "tableFrom": "recipe_ingredients",
           "tableTo": "ingredients",
-          "columnsFrom": ["ingredient_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "ingredient_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -644,14 +905,64 @@
           "default": "now()"
         }
       },
-      "indexes": {},
+      "indexes": {
+        "idx_recipes_household": {
+          "name": "idx_recipes_household",
+          "columns": [
+            {
+              "expression": "household_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_recipes_category": {
+          "name": "idx_recipes_category",
+          "columns": [
+            {
+              "expression": "category",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_recipes_created_by": {
+          "name": "idx_recipes_created_by",
+          "columns": [
+            {
+              "expression": "created_by",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
       "foreignKeys": {
         "recipes_household_id_households_id_fk": {
           "name": "recipes_household_id_households_id_fk",
           "tableFrom": "recipes",
           "tableTo": "households",
-          "columnsFrom": ["household_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "household_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -659,8 +970,12 @@
           "name": "recipes_created_by_users_id_fk",
           "tableFrom": "recipes",
           "tableTo": "users",
-          "columnsFrom": ["created_by"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "created_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -728,7 +1043,9 @@
         "users_email_unique": {
           "name": "users_email_unique",
           "nullsNotDistinct": false,
-          "columns": ["email"]
+          "columns": [
+            "email"
+          ]
         }
       },
       "policies": {},
@@ -754,7 +1071,14 @@
     "public.recipe_category": {
       "name": "recipe_category",
       "schema": "public",
-      "values": ["breakfast", "lunch", "dinner", "dessert", "snack", "beverage"]
+      "values": [
+        "breakfast",
+        "lunch",
+        "dinner",
+        "dessert",
+        "snack",
+        "beverage"
+      ]
     }
   },
   "schemas": {},
