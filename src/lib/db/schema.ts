@@ -7,6 +7,7 @@ import {
   decimal,
   boolean,
   pgEnum,
+  index,
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 
@@ -53,117 +54,175 @@ export const households = pgTable('households', {
 });
 
 // Ingredients table
-export const ingredients = pgTable('ingredients', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  name: text('name').notNull().unique(),
-  category: ingredientCategoryEnum('category').notNull(),
-  commonUnits: text('common_units').array(),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-});
+export const ingredients = pgTable(
+  'ingredients',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    name: text('name').notNull().unique(),
+    category: ingredientCategoryEnum('category').notNull(),
+    commonUnits: text('common_units').array(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (table) => ({
+    nameIdx: index('idx_ingredients_name').on(table.name),
+    categoryIdx: index('idx_ingredients_category').on(table.category),
+  })
+);
 
 // Ingredient substitutions table
-export const ingredientSubstitutions = pgTable('ingredient_substitutions', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  ingredientId: uuid('ingredient_id')
-    .notNull()
-    .references(() => ingredients.id, { onDelete: 'cascade' }),
-  substituteId: uuid('substitute_id')
-    .notNull()
-    .references(() => ingredients.id, { onDelete: 'cascade' }),
-  ratio: decimal('ratio', { precision: 5, scale: 2 }).default('1.00'),
-  notes: text('notes'),
-});
+export const ingredientSubstitutions = pgTable(
+  'ingredient_substitutions',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    ingredientId: uuid('ingredient_id')
+      .notNull()
+      .references(() => ingredients.id, { onDelete: 'cascade' }),
+    substituteId: uuid('substitute_id')
+      .notNull()
+      .references(() => ingredients.id, { onDelete: 'cascade' }),
+    ratio: decimal('ratio', { precision: 5, scale: 2 }).default('1.00'),
+    notes: text('notes'),
+  },
+  (table) => ({
+    ingredientIdx: index('idx_substitutions_ingredient').on(table.ingredientId),
+    substituteIdx: index('idx_substitutions_substitute').on(table.substituteId),
+  })
+);
 
 // Recipes table
-export const recipes = pgTable('recipes', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  householdId: uuid('household_id')
-    .notNull()
-    .references(() => households.id, { onDelete: 'cascade' }),
-  title: text('title').notNull(),
-  description: text('description'),
-  imageUrl: text('image_url'),
-  sourceUrl: text('source_url'),
-  category: recipeCategoryEnum('category').notNull(),
-  tags: text('tags').array(),
-  prepTimeMinutes: integer('prep_time_minutes'),
-  cookTimeMinutes: integer('cook_time_minutes'),
-  servings: integer('servings').notNull().default(4),
-  rating: integer('rating'),
-  instructions: text('instructions').array().notNull(),
-  createdBy: uuid('created_by')
-    .notNull()
-    .references(() => users.id),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at').defaultNow().notNull(),
-});
+export const recipes = pgTable(
+  'recipes',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    householdId: uuid('household_id')
+      .notNull()
+      .references(() => households.id, { onDelete: 'cascade' }),
+    title: text('title').notNull(),
+    description: text('description'),
+    imageUrl: text('image_url'),
+    sourceUrl: text('source_url'),
+    category: recipeCategoryEnum('category').notNull(),
+    tags: text('tags').array(),
+    prepTimeMinutes: integer('prep_time_minutes'),
+    cookTimeMinutes: integer('cook_time_minutes'),
+    servings: integer('servings').notNull().default(4),
+    rating: integer('rating'),
+    instructions: text('instructions').array().notNull(),
+    createdBy: uuid('created_by')
+      .notNull()
+      .references(() => users.id),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  },
+  (table) => ({
+    householdIdx: index('idx_recipes_household').on(table.householdId),
+    categoryIdx: index('idx_recipes_category').on(table.category),
+    createdByIdx: index('idx_recipes_created_by').on(table.createdBy),
+  })
+);
 
 // Recipe ingredients junction table
-export const recipeIngredients = pgTable('recipe_ingredients', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  recipeId: uuid('recipe_id')
-    .notNull()
-    .references(() => recipes.id, { onDelete: 'cascade' }),
-  ingredientId: uuid('ingredient_id')
-    .notNull()
-    .references(() => ingredients.id),
-  quantity: decimal('quantity', { precision: 10, scale: 2 }),
-  unit: text('unit'),
-  notes: text('notes'),
-  optional: boolean('optional').default(false),
-  substitutionGroup: text('substitution_group'),
-});
+export const recipeIngredients = pgTable(
+  'recipe_ingredients',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    recipeId: uuid('recipe_id')
+      .notNull()
+      .references(() => recipes.id, { onDelete: 'cascade' }),
+    ingredientId: uuid('ingredient_id')
+      .notNull()
+      .references(() => ingredients.id),
+    quantity: decimal('quantity', { precision: 10, scale: 2 }),
+    unit: text('unit'),
+    notes: text('notes'),
+    optional: boolean('optional').default(false),
+    substitutionGroup: text('substitution_group'),
+  },
+  (table) => ({
+    recipeIdx: index('idx_recipe_ingredients_recipe').on(table.recipeId),
+    ingredientIdx: index('idx_recipe_ingredients_ingredient').on(
+      table.ingredientId
+    ),
+  })
+);
 
 // Pantry items table
-export const pantryItems = pgTable('pantry_items', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  householdId: uuid('household_id')
-    .notNull()
-    .references(() => households.id, { onDelete: 'cascade' }),
-  ingredientId: uuid('ingredient_id')
-    .notNull()
-    .references(() => ingredients.id),
-  quantity: decimal('quantity', { precision: 10, scale: 2 }),
-  unit: text('unit'),
-  addedBy: uuid('added_by')
-    .notNull()
-    .references(() => users.id),
-  updatedAt: timestamp('updated_at').defaultNow().notNull(),
-});
+export const pantryItems = pgTable(
+  'pantry_items',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    householdId: uuid('household_id')
+      .notNull()
+      .references(() => households.id, { onDelete: 'cascade' }),
+    ingredientId: uuid('ingredient_id')
+      .notNull()
+      .references(() => ingredients.id),
+    quantity: decimal('quantity', { precision: 10, scale: 2 }),
+    unit: text('unit'),
+    addedBy: uuid('added_by')
+      .notNull()
+      .references(() => users.id),
+    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  },
+  (table) => ({
+    householdIdx: index('idx_pantry_household').on(table.householdId),
+    ingredientIdx: index('idx_pantry_ingredient').on(table.ingredientId),
+    householdIngredientIdx: index('idx_pantry_household_ingredient').on(
+      table.householdId,
+      table.ingredientId
+    ),
+  })
+);
 
 // Grocery lists table
-export const groceryLists = pgTable('grocery_lists', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  householdId: uuid('household_id')
-    .notNull()
-    .references(() => households.id, { onDelete: 'cascade' }),
-  name: text('name').notNull(),
-  shareToken: text('share_token').unique(),
-  shareExpiresAt: timestamp('share_expires_at'),
-  createdBy: uuid('created_by')
-    .notNull()
-    .references(() => users.id),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at').defaultNow().notNull(),
-});
+export const groceryLists = pgTable(
+  'grocery_lists',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    householdId: uuid('household_id')
+      .notNull()
+      .references(() => households.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    shareToken: text('share_token').unique(),
+    shareExpiresAt: timestamp('share_expires_at'),
+    createdBy: uuid('created_by')
+      .notNull()
+      .references(() => users.id),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  },
+  (table) => ({
+    householdIdx: index('idx_grocery_lists_household').on(table.householdId),
+    shareTokenIdx: index('idx_grocery_lists_share_token').on(table.shareToken),
+  })
+);
 
 // Grocery list items table
-export const groceryListItems = pgTable('grocery_list_items', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  groceryListId: uuid('grocery_list_id')
-    .notNull()
-    .references(() => groceryLists.id, { onDelete: 'cascade' }),
-  ingredientId: uuid('ingredient_id')
-    .notNull()
-    .references(() => ingredients.id),
-  quantity: decimal('quantity', { precision: 10, scale: 2 }).notNull(),
-  unit: text('unit'),
-  category: ingredientCategoryEnum('category').notNull(),
-  checked: boolean('checked').default(false),
-  checkedBy: uuid('checked_by').references(() => users.id),
-  checkedAt: timestamp('checked_at'),
-  recipeIds: uuid('recipe_ids').array(),
-});
+export const groceryListItems = pgTable(
+  'grocery_list_items',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    groceryListId: uuid('grocery_list_id')
+      .notNull()
+      .references(() => groceryLists.id, { onDelete: 'cascade' }),
+    ingredientId: uuid('ingredient_id')
+      .notNull()
+      .references(() => ingredients.id),
+    quantity: decimal('quantity', { precision: 10, scale: 2 }).notNull(),
+    unit: text('unit'),
+    category: ingredientCategoryEnum('category').notNull(),
+    checked: boolean('checked').default(false),
+    checkedBy: uuid('checked_by').references(() => users.id),
+    checkedAt: timestamp('checked_at'),
+    recipeIds: uuid('recipe_ids').array(),
+  },
+  (table) => ({
+    groceryListIdx: index('idx_grocery_list_items_list').on(
+      table.groceryListId
+    ),
+    categoryIdx: index('idx_grocery_list_items_category').on(table.category),
+  })
+);
 
 // Relations
 export const usersRelations = relations(users, ({ one, many }) => ({
