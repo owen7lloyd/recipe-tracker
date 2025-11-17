@@ -1,5 +1,4 @@
-import { getServerSession } from 'next-auth';
-import { authConfig } from '@/lib/auth/config';
+import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { JoinHouseholdForm } from '@/components/household/join-household-form';
 
@@ -8,7 +7,7 @@ interface JoinPageProps {
 }
 
 export default async function JoinPage({ params }: JoinPageProps) {
-  const session = await getServerSession(authConfig);
+  const session = await auth();
   const { code } = await params;
 
   if (!session?.user) {

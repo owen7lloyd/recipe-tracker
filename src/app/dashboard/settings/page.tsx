@@ -1,11 +1,10 @@
-import { getServerSession } from 'next-auth';
-import { authConfig } from '@/lib/auth/config';
+import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { getHouseholdWithMembers } from '@/lib/household/helpers';
 import { HouseholdSettingsForm } from '@/components/household/household-settings-form';
 
 export default async function SettingsPage() {
-  const session = await getServerSession(authConfig);
+  const session = await auth();
 
   if (!session?.user?.householdId) {
     redirect('/login');

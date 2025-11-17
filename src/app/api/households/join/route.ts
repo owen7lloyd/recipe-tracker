@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authConfig } from '@/lib/auth/config';
+import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { users, householdInvites } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
@@ -10,7 +9,7 @@ import { joinHouseholdSchema } from '@/lib/validations/household';
 // POST /api/households/join - Join household with invite code
 export async function POST(request: Request) {
   try {
-    const session = await getServerSession(authConfig);
+    const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

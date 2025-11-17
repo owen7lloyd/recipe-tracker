@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authConfig } from '@/lib/auth/config';
+import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { householdInvites } from '@/lib/db/schema';
 import { eq, and, gt } from 'drizzle-orm';
@@ -12,7 +11,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(authConfig);
+    const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
