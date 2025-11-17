@@ -116,4 +116,20 @@ ALTER TABLE "pantry_items" ADD CONSTRAINT "pantry_items_added_by_users_id_fk" FO
 ALTER TABLE "recipe_ingredients" ADD CONSTRAINT "recipe_ingredients_recipe_id_recipes_id_fk" FOREIGN KEY ("recipe_id") REFERENCES "public"."recipes"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "recipe_ingredients" ADD CONSTRAINT "recipe_ingredients_ingredient_id_ingredients_id_fk" FOREIGN KEY ("ingredient_id") REFERENCES "public"."ingredients"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "recipes" ADD CONSTRAINT "recipes_household_id_households_id_fk" FOREIGN KEY ("household_id") REFERENCES "public"."households"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "recipes" ADD CONSTRAINT "recipes_created_by_users_id_fk" FOREIGN KEY ("created_by") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;
+ALTER TABLE "recipes" ADD CONSTRAINT "recipes_created_by_users_id_fk" FOREIGN KEY ("created_by") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+CREATE INDEX "idx_grocery_list_items_list" ON "grocery_list_items" USING btree ("grocery_list_id");--> statement-breakpoint
+CREATE INDEX "idx_grocery_list_items_category" ON "grocery_list_items" USING btree ("category");--> statement-breakpoint
+CREATE INDEX "idx_grocery_lists_household" ON "grocery_lists" USING btree ("household_id");--> statement-breakpoint
+CREATE INDEX "idx_grocery_lists_share_token" ON "grocery_lists" USING btree ("share_token");--> statement-breakpoint
+CREATE INDEX "idx_substitutions_ingredient" ON "ingredient_substitutions" USING btree ("ingredient_id");--> statement-breakpoint
+CREATE INDEX "idx_substitutions_substitute" ON "ingredient_substitutions" USING btree ("substitute_id");--> statement-breakpoint
+CREATE INDEX "idx_ingredients_name" ON "ingredients" USING btree ("name");--> statement-breakpoint
+CREATE INDEX "idx_ingredients_category" ON "ingredients" USING btree ("category");--> statement-breakpoint
+CREATE INDEX "idx_pantry_household" ON "pantry_items" USING btree ("household_id");--> statement-breakpoint
+CREATE INDEX "idx_pantry_ingredient" ON "pantry_items" USING btree ("ingredient_id");--> statement-breakpoint
+CREATE INDEX "idx_pantry_household_ingredient" ON "pantry_items" USING btree ("household_id","ingredient_id");--> statement-breakpoint
+CREATE INDEX "idx_recipe_ingredients_recipe" ON "recipe_ingredients" USING btree ("recipe_id");--> statement-breakpoint
+CREATE INDEX "idx_recipe_ingredients_ingredient" ON "recipe_ingredients" USING btree ("ingredient_id");--> statement-breakpoint
+CREATE INDEX "idx_recipes_household" ON "recipes" USING btree ("household_id");--> statement-breakpoint
+CREATE INDEX "idx_recipes_category" ON "recipes" USING btree ("category");--> statement-breakpoint
+CREATE INDEX "idx_recipes_created_by" ON "recipes" USING btree ("created_by");
