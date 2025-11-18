@@ -26,7 +26,6 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { ServingScaler } from './serving-scaler';
-import { CookRecipeModal } from './cook-recipe-modal';
 import type { ScaledRecipe } from '@/lib/recipe-scaling';
 
 interface Ingredient {
@@ -62,7 +61,6 @@ export function RecipeDetail(recipe: RecipeDetailProps) {
   const router = useRouter();
   const { toast } = useToast();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [showCookModal, setShowCookModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [currentServings, setCurrentServings] = useState(recipe.servings);
   const [scaledRecipe, setScaledRecipe] = useState<
@@ -173,13 +171,11 @@ export function RecipeDetail(recipe: RecipeDetailProps) {
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button
-            variant="default"
-            size="sm"
-            onClick={() => setShowCookModal(true)}
-          >
-            <ChefHat className="mr-2 h-4 w-4" />
-            Cook This Recipe
+          <Button variant="default" size="sm" asChild>
+            <Link href={`/dashboard/recipes/${recipe.id}/cook`}>
+              <ChefHat className="mr-2 h-4 w-4" />
+              Cook This Recipe
+            </Link>
           </Button>
           <Button variant="outline" size="sm" asChild>
             <Link href={`/dashboard/recipes/${recipe.id}/edit`}>
@@ -374,25 +370,6 @@ export function RecipeDetail(recipe: RecipeDetailProps) {
           </CardContent>
         </Card>
       </div>
-
-      {/* Cook Recipe Modal */}
-      <CookRecipeModal
-        recipe={{
-          id: recipe.id,
-          title: recipe.title,
-          servings: recipe.servings,
-          ingredients: recipe.ingredients,
-        }}
-        open={showCookModal}
-        onClose={() => setShowCookModal(false)}
-        onSuccess={() => {
-          // Optionally refresh the page or pantry data
-          toast({
-            title: 'Success',
-            description: 'Pantry has been updated',
-          });
-        }}
-      />
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
