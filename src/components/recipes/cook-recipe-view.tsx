@@ -446,14 +446,14 @@ export function CookRecipeView(recipe: CookRecipeViewProps) {
                           <p className="font-medium text-sm truncate">
                             {ing.ingredientName || 'Unknown ingredient'}
                           </p>
-                          <p className="text-xs text-slate-600 dark:text-slate-400">
+                          <div className="text-xs text-slate-600 dark:text-slate-400">
                             {finalQty} {ing.unit}
                             {adjustment !== undefined && (
                               <Badge variant="secondary" className="ml-2 text-xs">
                                 Adjusted
                               </Badge>
                             )}
-                          </p>
+                          </div>
                           {ing.notes && (
                             <p className="text-xs text-slate-500 mt-1">
                               {ing.notes}
