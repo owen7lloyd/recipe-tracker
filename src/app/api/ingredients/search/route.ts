@@ -2,11 +2,12 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { ingredients } from '@/lib/db/schema';
-import { ilike, sql } from 'drizzle-orm';
+import { ilike, and, eq } from 'drizzle-orm';
 
 /**
- * GET /api/ingredients/search?q=query&category=produce
+ * GET /api/ingredients/search?q=query&category=produce&limit=20
  * Search ingredients with fuzzy matching
+ * Supports optional category filtering and configurable limit
  */
 export async function GET(request: Request) {
   try {
@@ -18,28 +19,37 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const query = searchParams.get('q') || '';
     const category = searchParams.get('category');
+    const limit = parseInt(searchParams.get('limit') || '20', 10);
 
-    // Minimum query length
-    if (query.length < 2) {
-      return NextResponse.json([]);
-    }
+    // Build the base query
+    let dbQuery = db
+      .select({
+        id: ingredients.id,
+        name: ingredients.name,
+        category: ingredients.category,
+        commonUnits: ingredients.commonUnits,
+      })
+      .from(ingredients);
 
-    // Build query
-    let dbQuery = db.select().from(ingredients);
+    // Apply filters
+    const conditions = [];
 
-    // Apply search filter
     if (query) {
       // Use ILIKE for case-insensitive search (PostgreSQL)
-      dbQuery = dbQuery.where(ilike(ingredients.name, `%${query}%`));
+      conditions.push(ilike(ingredients.name, `%${query}%`));
     }
 
-    // Apply category filter if provided
     if (category) {
-      dbQuery = dbQuery.where(sql`${ingredients.category} = ${category}`);
+      conditions.push(eq(ingredients.category, category));
+    }
+
+    // Apply conditions if any
+    if (conditions.length > 0) {
+      dbQuery = dbQuery.where(and(...conditions));
     }
 
     // Execute query with limit
-    const results = await dbQuery.limit(10);
+    const results = await dbQuery.limit(limit);
 
     return NextResponse.json(results);
   } catch (error) {
