@@ -2,15 +2,10 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Clock,
   Users,
@@ -19,7 +14,6 @@ import {
   Trash2,
   ExternalLink,
   Loader2,
-  ImageIcon,
 } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import {
@@ -30,6 +24,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { ServingScaler } from './serving-scaler';
+import type { ScaledRecipe } from '@/lib/recipe-scaling';
 
 interface Ingredient {
   id: string;
@@ -65,9 +61,57 @@ export function RecipeDetail(recipe: RecipeDetailProps) {
   const { toast } = useToast();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [currentServings, setCurrentServings] = useState(recipe.servings);
+  const [scaledRecipe, setScaledRecipe] = useState<
+    RecipeDetailProps | ScaledRecipe
+  >(recipe);
+  const [isScaling, setIsScaling] = useState(false);
 
   const totalTime =
     (recipe.prepTimeMinutes || 0) + (recipe.cookTimeMinutes || 0) || null;
+
+  // Fetch scaled recipe when servings change
+  useEffect(() => {
+    const fetchScaledRecipe = async () => {
+      if (currentServings === recipe.servings) {
+        // Reset to original recipe
+        setScaledRecipe(recipe);
+        return;
+      }
+
+      setIsScaling(true);
+      try {
+        const response = await fetch(
+          `/api/recipes/${recipe.id}/scale?servings=${currentServings}`
+        );
+
+        if (!response.ok) {
+          throw new Error('Failed to scale recipe');
+        }
+
+        const data = await response.json();
+        setScaledRecipe(data);
+      } catch (error) {
+        console.error('Error scaling recipe:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to scale recipe. Please try again.',
+          variant: 'destructive',
+        });
+        // Reset to original servings on error
+        setCurrentServings(recipe.servings);
+        setScaledRecipe(recipe);
+      } finally {
+        setIsScaling(false);
+      }
+    };
+
+    fetchScaledRecipe();
+  }, [currentServings, recipe]);
+
+  const handleScaleChange = (newServings: number) => {
+    setCurrentServings(newServings);
+  };
 
   const handleDelete = async () => {
     try {
@@ -107,18 +151,18 @@ export function RecipeDetail(recipe: RecipeDetailProps) {
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1">
           <h1 className="mb-2 text-3xl font-bold text-slate-900 dark:text-slate-50">
-            {recipe.title}
+            {scaledRecipe.title}
           </h1>
-          {recipe.description && (
+          {scaledRecipe.description && (
             <p className="text-slate-600 dark:text-slate-400">
-              {recipe.description}
+              {scaledRecipe.description}
             </p>
           )}
           <div className="mt-3 flex flex-wrap gap-2">
             <Badge variant="secondary" className="capitalize">
-              {recipe.category}
+              {scaledRecipe.category}
             </Badge>
-            {recipe.tags?.map((tag, index) => (
+            {scaledRecipe.tags?.map((tag, index) => (
               <Badge key={index} variant="outline">
                 {tag}
               </Badge>
@@ -126,11 +170,7 @@ export function RecipeDetail(recipe: RecipeDetailProps) {
           </div>
         </div>
         <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            asChild
-          >
+          <Button variant="outline" size="sm" asChild>
             <Link href={`/dashboard/recipes/${recipe.id}/edit`}>
               <Edit className="mr-2 h-4 w-4" />
               Edit
@@ -148,15 +188,27 @@ export function RecipeDetail(recipe: RecipeDetailProps) {
       </div>
 
       {/* Image */}
-      {recipe.imageUrl && (
+      {scaledRecipe.imageUrl && (
         <div className="aspect-video w-full overflow-hidden rounded-lg">
           <img
-            src={recipe.imageUrl}
-            alt={recipe.title}
+            src={scaledRecipe.imageUrl}
+            alt={scaledRecipe.title}
             className="h-full w-full object-cover"
           />
         </div>
       )}
+
+      {/* Serving Scaler */}
+      <Card>
+        <CardContent className="p-4">
+          <ServingScaler
+            originalServings={recipe.servings}
+            currentServings={currentServings}
+            onScaleChange={handleScaleChange}
+            disabled={isScaling}
+          />
+        </CardContent>
+      </Card>
 
       {/* Quick Info */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -195,14 +247,19 @@ export function RecipeDetail(recipe: RecipeDetailProps) {
               <p className="text-sm text-slate-600 dark:text-slate-400">
                 Servings
               </p>
-              <p className="text-lg font-semibold">{recipe.servings}</p>
+              <p className="text-lg font-semibold">{currentServings}</p>
+              {currentServings !== recipe.servings && (
+                <p className="text-xs text-slate-500 dark:text-slate-500">
+                  (Original: {recipe.servings})
+                </p>
+              )}
             </div>
           </CardContent>
         </Card>
         {recipe.rating && (
           <Card>
             <CardContent className="flex items-center gap-3 p-4">
-              <Star className="h-8 w-8 text-yellow-500 fill-current" />
+              <Star className="h-8 w-8 fill-current text-yellow-500" />
               <div>
                 <p className="text-sm text-slate-600 dark:text-slate-400">
                   Rating
@@ -237,34 +294,51 @@ export function RecipeDetail(recipe: RecipeDetailProps) {
             <CardTitle>Ingredients</CardTitle>
           </CardHeader>
           <CardContent>
-            <ul className="space-y-3">
-              {recipe.ingredients.map((ingredient) => (
-                <li
-                  key={ingredient.id}
-                  className="flex items-start gap-2 text-sm"
-                >
-                  <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-slate-400" />
-                  <div className="flex-1">
-                    <span className="font-medium">
-                      {ingredient.quantity && ingredient.unit
-                        ? `${ingredient.quantity} ${ingredient.unit} `
-                        : ingredient.quantity
-                          ? `${ingredient.quantity} `
-                          : ''}
-                      {ingredient.ingredientName || 'Unknown ingredient'}
-                    </span>
-                    {ingredient.optional && (
-                      <span className="ml-2 text-slate-500">(optional)</span>
-                    )}
-                    {ingredient.notes && (
-                      <p className="text-slate-600 dark:text-slate-400">
-                        {ingredient.notes}
-                      </p>
-                    )}
-                  </div>
-                </li>
-              ))}
-            </ul>
+            {isScaling ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin text-slate-400" />
+              </div>
+            ) : (
+              <ul className="space-y-3">
+                {scaledRecipe.ingredients.map((ingredient) => {
+                  // Use displayQuantity if available (for scaled recipes)
+                  const displayQty =
+                    'displayQuantity' in ingredient &&
+                    ingredient.displayQuantity
+                      ? ingredient.displayQuantity
+                      : ingredient.quantity;
+
+                  return (
+                    <li
+                      key={ingredient.id}
+                      className="flex items-start gap-2 text-sm"
+                    >
+                      <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-slate-400" />
+                      <div className="flex-1">
+                        <span className="font-medium">
+                          {displayQty && ingredient.unit
+                            ? `${displayQty} ${ingredient.unit} `
+                            : displayQty
+                              ? `${displayQty} `
+                              : ''}
+                          {ingredient.ingredientName || 'Unknown ingredient'}
+                        </span>
+                        {ingredient.optional && (
+                          <span className="ml-2 text-slate-500">
+                            (optional)
+                          </span>
+                        )}
+                        {ingredient.notes && (
+                          <p className="text-slate-600 dark:text-slate-400">
+                            {ingredient.notes}
+                          </p>
+                        )}
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
           </CardContent>
         </Card>
 
@@ -275,7 +349,7 @@ export function RecipeDetail(recipe: RecipeDetailProps) {
           </CardHeader>
           <CardContent>
             <ol className="space-y-4">
-              {recipe.instructions.map((instruction, index) => (
+              {scaledRecipe.instructions.map((instruction, index) => (
                 <li key={index} className="flex gap-3">
                   <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-900 font-semibold text-white dark:bg-slate-50 dark:text-slate-900">
                     {index + 1}
