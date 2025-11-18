@@ -112,8 +112,17 @@ export function IngredientInput({
         }))
       : COOKING_UNITS;
 
+  // Check if ingredient is valid (has an ID)
+  const isValid = value.ingredientId && value.ingredientId !== '';
+
   return (
-    <div className="grid grid-cols-12 gap-2 rounded-lg border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-950">
+    <div
+      className={`grid grid-cols-12 gap-2 rounded-lg border p-3 ${
+        isValid
+          ? 'border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950'
+          : 'border-red-300 bg-red-50 dark:border-red-800 dark:bg-red-950/20'
+      }`}
+    >
       <div
         className="col-span-12 flex items-center gap-2 md:col-span-4"
         ref={containerRef}
@@ -130,7 +139,7 @@ export function IngredientInput({
             }}
             onFocus={() => setShowSuggestions(true)}
             disabled={disabled}
-            className="w-full"
+            className={`w-full ${!isValid ? 'border-red-400 focus-visible:ring-red-500' : ''}`}
           />
           {showSuggestions && suggestions.length > 0 && (
             <div className="absolute z-10 mt-1 w-full rounded-md border border-slate-200 bg-white shadow-lg dark:border-slate-800 dark:bg-slate-950">

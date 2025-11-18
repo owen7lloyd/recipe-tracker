@@ -3,6 +3,7 @@ import { z } from 'zod';
 // Recipe ingredient validation schema
 export const recipeIngredientSchema = z.object({
   ingredientId: z.string().uuid('Invalid ingredient ID'),
+  ingredientName: z.string().optional(),
   quantity: z
     .number()
     .positive('Quantity must be positive')

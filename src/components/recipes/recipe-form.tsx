@@ -87,6 +87,23 @@ export function RecipeForm({ initialData, recipeId, onSuccess }: RecipeFormProps
     try {
       setError(null);
 
+      // Validate that all ingredients have valid IDs
+      const invalidIngredients = data.ingredients.filter(
+        (ing: any) => !ing.ingredientId || ing.ingredientId === ''
+      );
+
+      if (invalidIngredients.length > 0) {
+        setError(
+          'Some ingredients are not properly selected. Please choose an ingredient from the dropdown for each item. If an ingredient is not found, you may need to add it to your pantry first.'
+        );
+        // Scroll to the first error
+        const ingredientsSection = document.querySelector(
+          '[class*="Ingredients"]'
+        );
+        ingredientsSection?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return;
+      }
+
       const url = isEditing ? `/api/recipes/${recipeId}` : '/api/recipes';
       const method = isEditing ? 'PUT' : 'POST';
 
