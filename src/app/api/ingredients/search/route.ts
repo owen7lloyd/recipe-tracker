@@ -4,6 +4,20 @@ import { db } from '@/lib/db';
 import { ingredients } from '@/lib/db/schema';
 import { ilike, and, eq } from 'drizzle-orm';
 
+// Valid ingredient categories
+const VALID_CATEGORIES = [
+  'produce',
+  'dairy',
+  'meat',
+  'seafood',
+  'pantry',
+  'frozen',
+  'bakery',
+  'other',
+] as const;
+
+type IngredientCategory = (typeof VALID_CATEGORIES)[number];
+
 /**
  * GET /api/ingredients/search?q=query&category=produce&limit=20
  * Search ingredients with fuzzy matching
@@ -18,20 +32,17 @@ export async function GET(request: Request) {
 
     const { searchParams } = new URL(request.url);
     const query = searchParams.get('q') || '';
-    const category = searchParams.get('category');
+    const categoryParam = searchParams.get('category');
     const limit = parseInt(searchParams.get('limit') || '20', 10);
 
-    // Build the base query
-    let dbQuery = db
-      .select({
-        id: ingredients.id,
-        name: ingredients.name,
-        category: ingredients.category,
-        commonUnits: ingredients.commonUnits,
-      })
-      .from(ingredients);
+    // Validate category if provided
+    const category: IngredientCategory | null =
+      categoryParam &&
+      VALID_CATEGORIES.includes(categoryParam as IngredientCategory)
+        ? (categoryParam as IngredientCategory)
+        : null;
 
-    // Apply filters
+    // Build filters array
     const conditions = [];
 
     if (query) {
@@ -43,13 +54,19 @@ export async function GET(request: Request) {
       conditions.push(eq(ingredients.category, category));
     }
 
-    // Apply conditions if any
-    if (conditions.length > 0) {
-      dbQuery = dbQuery.where(and(...conditions));
-    }
+    // Build and execute query
+    const baseQuery = db
+      .select({
+        id: ingredients.id,
+        name: ingredients.name,
+        category: ingredients.category,
+        commonUnits: ingredients.commonUnits,
+      })
+      .from(ingredients);
 
-    // Execute query with limit
-    const results = await dbQuery.limit(limit);
+    const results = await (conditions.length > 0
+      ? baseQuery.where(and(...conditions)).limit(limit)
+      : baseQuery.limit(limit));
 
     return NextResponse.json(results);
   } catch (error) {

@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { X, GripVertical } from 'lucide-react';
+import { COOKING_UNITS } from '@/lib/constants/units';
 
 interface Ingredient {
   id: string;
@@ -38,7 +39,8 @@ export function IngredientInput({
   const [searchQuery, setSearchQuery] = useState(value.ingredientName || '');
   const [suggestions, setSuggestions] = useState<Ingredient[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const [selectedIngredient, setSelectedIngredient] = useState<Ingredient | null>(null);
+  const [selectedIngredient, setSelectedIngredient] =
+    useState<Ingredient | null>(null);
   const searchTimeout = useRef<NodeJS.Timeout | undefined>(undefined);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -101,24 +103,21 @@ export function IngredientInput({
     });
   };
 
-  const commonUnits = (selectedIngredient?.commonUnits ?? []).length > 0
-    ? (selectedIngredient?.commonUnits ?? [])
-    : [
-        'cup',
-        'tbsp',
-        'tsp',
-        'oz',
-        'lb',
-        'g',
-        'kg',
-        'ml',
-        'l',
-        'whole',
-      ];
+  // Use ingredient's common units if available, otherwise use all cooking units
+  const unitOptions =
+    (selectedIngredient?.commonUnits ?? []).length > 0
+      ? (selectedIngredient?.commonUnits ?? []).map((unit) => ({
+          value: unit,
+          label: COOKING_UNITS.find((u) => u.value === unit)?.label || unit,
+        }))
+      : COOKING_UNITS;
 
   return (
     <div className="grid grid-cols-12 gap-2 rounded-lg border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-950">
-      <div className="col-span-12 flex items-center gap-2 md:col-span-4" ref={containerRef}>
+      <div
+        className="col-span-12 flex items-center gap-2 md:col-span-4"
+        ref={containerRef}
+      >
         <GripVertical className="h-5 w-5 text-slate-400" />
         <div className="relative flex-1">
           <Input
@@ -177,9 +176,9 @@ export function IngredientInput({
           className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-800 dark:bg-slate-950 dark:ring-offset-slate-950 dark:placeholder:text-slate-400 dark:focus-visible:ring-slate-300"
         >
           <option value="">Unit</option>
-          {commonUnits.map((unit) => (
-            <option key={unit} value={unit}>
-              {unit}
+          {unitOptions.map((unit) => (
+            <option key={unit.value} value={unit.value}>
+              {unit.label}
             </option>
           ))}
         </select>
@@ -197,7 +196,7 @@ export function IngredientInput({
         />
       </div>
 
-      <div className="col-span-2 md:col-span-1 flex items-center justify-end">
+      <div className="col-span-2 flex items-center justify-end md:col-span-1">
         <Button
           type="button"
           variant="ghost"

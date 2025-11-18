@@ -36,8 +36,19 @@ export async function GET(request: Request) {
     const search = searchParams.get('search');
     const category = searchParams.get('category');
 
-    // Build query - join with ingredients to get ingredient details
-    let query = db
+    // Build conditions array
+    const conditions = [eq(pantryItems.householdId, householdId)];
+
+    if (search) {
+      conditions.push(ilike(ingredients.name, `%${search}%`));
+    }
+
+    if (category) {
+      conditions.push(sql`${ingredients.category} = ${category}`);
+    }
+
+    // Build and execute query - join with ingredients to get ingredient details
+    const items = await db
       .select({
         id: pantryItems.id,
         quantity: pantryItems.quantity,
@@ -53,29 +64,7 @@ export async function GET(request: Request) {
       })
       .from(pantryItems)
       .innerJoin(ingredients, eq(pantryItems.ingredientId, ingredients.id))
-      .where(eq(pantryItems.householdId, householdId));
-
-    // Apply search filter if provided
-    if (search) {
-      query = query.where(
-        and(
-          eq(pantryItems.householdId, householdId),
-          ilike(ingredients.name, `%${search}%`)
-        )
-      );
-    }
-
-    // Apply category filter if provided
-    if (category) {
-      query = query.where(
-        and(
-          eq(pantryItems.householdId, householdId),
-          sql`${ingredients.category} = ${category}`
-        )
-      );
-    }
-
-    const items = await query;
+      .where(and(...conditions));
 
     return NextResponse.json(items);
   } catch (error) {

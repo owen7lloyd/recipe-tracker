@@ -4,7 +4,7 @@ import { db } from '@/lib/db';
 import { pantryItems, users } from '@/lib/db/schema';
 import { bulkUpdateSchema } from '@/lib/validations/pantry';
 import { eq, inArray, and } from 'drizzle-orm';
-import { ZodError } from 'zod';
+import { z } from 'zod';
 
 /**
  * POST /api/pantry/bulk-update
@@ -63,8 +63,8 @@ export async function POST(request: Request) {
             const [updatedItem] = await tx
               .update(pantryItems)
               .set({
-                quantity: item.quantity,
-                unit: item.unit,
+                quantity: item.quantity ?? null,
+                unit: item.unit ?? null,
                 updatedAt: new Date(),
               })
               .where(eq(pantryItems.id, existing[0].id))
@@ -77,8 +77,8 @@ export async function POST(request: Request) {
               .values({
                 householdId,
                 ingredientId: item.ingredientId,
-                quantity: item.quantity,
-                unit: item.unit,
+                quantity: item.quantity ?? null,
+                unit: item.unit ?? null,
                 addedBy: session.user.id,
               })
               .returning();
@@ -93,8 +93,8 @@ export async function POST(request: Request) {
           const [updatedItem] = await tx
             .update(pantryItems)
             .set({
-              quantity: item.quantity,
-              unit: item.unit,
+              quantity: item.quantity ?? null,
+              unit: item.unit ?? null,
               updatedAt: new Date(),
             })
             .where(
@@ -138,9 +138,9 @@ export async function POST(request: Request) {
       items: results,
     });
   } catch (error) {
-    if (error instanceof ZodError) {
+    if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: 'Invalid input data', details: error.errors },
+        { error: 'Invalid input data', details: error.issues },
         { status: 400 }
       );
     }

@@ -1,10 +1,10 @@
+import { z } from 'zod';
 import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { pantryItems, users } from '@/lib/db/schema';
 import { addPantryItemSchema } from '@/lib/validations/pantry';
 import { eq, and } from 'drizzle-orm';
-import { ZodError } from 'zod';
 
 /**
  * POST /api/pantry/items
@@ -87,9 +87,9 @@ export async function POST(request: Request) {
       { status: 201 }
     );
   } catch (error) {
-    if (error instanceof ZodError) {
+    if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: 'Invalid input data', details: error.errors },
+        { error: 'Invalid input data', details: error.issues },
         { status: 400 }
       );
     }

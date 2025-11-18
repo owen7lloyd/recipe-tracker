@@ -1,10 +1,10 @@
+import { z } from 'zod';
 import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { pantryItems, users } from '@/lib/db/schema';
 import { updatePantryItemSchema } from '@/lib/validations/pantry';
 import { eq, and } from 'drizzle-orm';
-import { ZodError } from 'zod';
 
 /**
  * PUT /api/pantry/items/:id
@@ -50,7 +50,9 @@ export async function PUT(
         unit: validatedData.unit,
         updatedAt: new Date(),
       })
-      .where(and(eq(pantryItems.id, id), eq(pantryItems.householdId, householdId)))
+      .where(
+        and(eq(pantryItems.id, id), eq(pantryItems.householdId, householdId))
+      )
       .returning();
 
     if (!updated) {
@@ -65,9 +67,9 @@ export async function PUT(
       item: updated,
     });
   } catch (error) {
-    if (error instanceof ZodError) {
+    if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: 'Invalid input data', details: error.errors },
+        { error: 'Invalid input data', details: error.issues },
         { status: 400 }
       );
     }
@@ -115,7 +117,9 @@ export async function DELETE(
     // Delete pantry item (only if it belongs to user's household)
     const [deleted] = await db
       .delete(pantryItems)
-      .where(and(eq(pantryItems.id, id), eq(pantryItems.householdId, householdId)))
+      .where(
+        and(eq(pantryItems.id, id), eq(pantryItems.householdId, householdId))
+      )
       .returning();
 
     if (!deleted) {
