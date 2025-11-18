@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { users, householdInvites } from '@/lib/db/schema';
+import { users, householdInvites, households } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { validateInviteCode } from '@/lib/household/helpers';
 import { joinHouseholdSchema } from '@/lib/validations/household';
@@ -40,14 +40,26 @@ export async function POST(request: Request) {
       );
     }
 
+    // If user has a household, check if they're the only member
     if (user[0].householdId) {
-      return NextResponse.json(
-        {
-          error:
-            'You are already a member of another household. Please leave your current household first.',
-        },
-        { status: 400 }
-      );
+      const currentHouseholdMembers = await db
+        .select()
+        .from(users)
+        .where(eq(users.householdId, user[0].householdId));
+
+      // Only allow joining if user is the sole member (auto-created household)
+      if (currentHouseholdMembers.length > 1) {
+        return NextResponse.json(
+          {
+            error:
+              'You are already a member of a household with other members. Please leave your current household first.',
+          },
+          { status: 400 }
+        );
+      }
+
+      // Delete the old household since user is the only member
+      await db.delete(households).where(eq(households.id, user[0].householdId));
     }
 
     // Update user's household

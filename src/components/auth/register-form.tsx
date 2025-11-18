@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { signIn } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,6 +22,8 @@ import { Eye, EyeOff, Loader2 } from 'lucide-react';
 
 export function RegisterForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get('callbackUrl') || '/dashboard';
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -58,16 +60,17 @@ export function RegisterForm() {
         email: data.email,
         password: data.password,
         redirect: false,
+        callbackUrl,
       });
 
       if (signInResult?.ok) {
-        router.push('/dashboard');
+        router.push(callbackUrl);
         router.refresh();
       } else {
-        // Registration succeeded but auto-login failed, redirect to login
-        router.push('/login');
+        // Registration succeeded but auto-login failed, redirect to login with callback
+        router.push(`/login?callbackUrl=${encodeURIComponent(callbackUrl)}`);
       }
-    } catch (err) {
+    } catch {
       setError('An error occurred. Please try again.');
     }
   };
@@ -201,7 +204,7 @@ export function RegisterForm() {
           <p className="text-center text-sm text-slate-600 dark:text-slate-400">
             Already have an account?{' '}
             <Link
-              href="/login"
+              href={`/login${callbackUrl !== '/dashboard' ? `?callbackUrl=${encodeURIComponent(callbackUrl)}` : ''}`}
               className="font-medium text-slate-900 hover:underline dark:text-slate-50"
             >
               Sign in
