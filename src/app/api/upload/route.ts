@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
-import { uploadImage, validateImageFile } from '@/lib/upload';
+import { uploadImage } from '@/lib/upload';
+import { validateImageFile } from '@/lib/upload-validation';
 
 // POST /api/upload - Upload an image
 export async function POST(request: Request) {

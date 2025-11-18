@@ -4,7 +4,7 @@ import { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Upload, X, Loader2, Image as ImageIcon } from 'lucide-react';
-import { validateImageFile } from '@/lib/upload';
+import { validateImageFile } from '@/lib/upload-validation';
 
 interface ImageUploadProps {
   value?: string | null;
