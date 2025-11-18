@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { signOut } from 'next-auth/react';
 import {
   Card,
   CardContent,
@@ -51,11 +50,10 @@ export function JoinHouseholdForm({
         description: 'You have successfully joined the household!',
       });
 
-      // Sign out to refresh session with new household
-      // This ensures the JWT token gets the updated householdId
-      setTimeout(async () => {
-        await signOut({ redirect: false });
-        router.push('/login?message=household-joined&callbackUrl=/dashboard');
+      // Redirect to dashboard - server components will fetch fresh data from DB
+      setTimeout(() => {
+        router.push('/dashboard');
+        router.refresh();
       }, 1000);
     } catch (error) {
       setIsLoading(false);

@@ -68,7 +68,8 @@ export function InviteMemberModal({ householdId }: InviteMemberModalProps) {
       if (!response.ok) throw new Error('Failed to generate invite');
 
       const newInvite = await response.json();
-      setInvites([newInvite, ...invites]);
+      // Only show the most recently generated invite
+      setInvites([newInvite]);
 
       toast({
         title: 'Success',
