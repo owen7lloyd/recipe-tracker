@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { auth } from '@/lib/auth';
 import { substitutionService } from '@/lib/substitution-service';
+import { requireAuth, createErrorResponse } from '@/lib/api/utils';
 import { z } from 'zod';
 
 // Validation schema for creating substitutions
@@ -20,10 +20,8 @@ const createSubstitutionSchema = z.object({
  */
 export async function GET(request: Request) {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const authResult = await requireAuth();
+    if (authResult instanceof NextResponse) return authResult;
 
     // Get all substitutions
     const substitutions = await substitutionService.getAllSubstitutions();
@@ -33,10 +31,11 @@ export async function GET(request: Request) {
       count: substitutions.length,
     });
   } catch (error) {
-    console.error('Error fetching substitutions:', error);
-    return NextResponse.json(
-      { error: 'An error occurred while fetching substitutions' },
-      { status: 500 }
+    return createErrorResponse(
+      'An error occurred while fetching substitutions',
+      500,
+      'Error fetching substitutions:',
+      error
     );
   }
 }
@@ -48,10 +47,8 @@ export async function GET(request: Request) {
  */
 export async function POST(request: Request) {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const authResult = await requireAuth();
+    if (authResult instanceof NextResponse) return authResult;
 
     const body = await request.json();
 
@@ -87,8 +84,6 @@ export async function POST(request: Request) {
 
     return NextResponse.json(newSubstitution, { status: 201 });
   } catch (error) {
-    console.error('Error creating substitution:', error);
-
     // Handle unique constraint violation
     if (
       error &&
@@ -102,9 +97,11 @@ export async function POST(request: Request) {
       );
     }
 
-    return NextResponse.json(
-      { error: 'An error occurred while creating the substitution' },
-      { status: 500 }
+    return createErrorResponse(
+      'An error occurred while creating the substitution',
+      500,
+      'Error creating substitution:',
+      error
     );
   }
 }

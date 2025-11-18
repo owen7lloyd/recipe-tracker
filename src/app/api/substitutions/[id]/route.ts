@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { auth } from '@/lib/auth';
 import { substitutionService } from '@/lib/substitution-service';
+import { requireAuth, createErrorResponse } from '@/lib/api/utils';
 
 /**
  * DELETE /api/substitutions/[id]
@@ -11,10 +11,8 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const authResult = await requireAuth();
+    if (authResult instanceof NextResponse) return authResult;
 
     const { id } = await params;
 
@@ -40,10 +38,11 @@ export async function DELETE(
       deleted,
     });
   } catch (error) {
-    console.error('Error deleting substitution:', error);
-    return NextResponse.json(
-      { error: 'An error occurred while deleting the substitution' },
-      { status: 500 }
+    return createErrorResponse(
+      'An error occurred while deleting the substitution',
+      500,
+      'Error deleting substitution:',
+      error
     );
   }
 }

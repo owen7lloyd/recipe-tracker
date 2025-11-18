@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
-import { auth } from '@/lib/auth';
 import {
   requireRecipeAccess,
   getRecipeWithIngredients,
 } from '@/lib/recipe/helpers';
 import { scaleRecipe } from '@/lib/recipe-scaling';
+import { requireAuth, createErrorResponse } from '@/lib/api/utils';
 
 /**
  * GET /api/recipes/:id/scale?servings=N
@@ -51,10 +51,9 @@ export async function GET(
 ) {
   try {
     // Authenticate user
-    const session = await auth();
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const authResult = await requireAuth();
+    if (authResult instanceof NextResponse) return authResult;
+    const userId = authResult;
 
     const { id } = await params;
 
@@ -79,7 +78,7 @@ export async function GET(
     }
 
     // Verify user has access to this recipe
-    const hasAccess = await requireRecipeAccess(session.user.id, id);
+    const hasAccess = await requireRecipeAccess(userId, id);
     if (!hasAccess) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
@@ -95,10 +94,11 @@ export async function GET(
 
     return NextResponse.json(scaledRecipe);
   } catch (error) {
-    console.error('Error scaling recipe:', error);
-    return NextResponse.json(
-      { error: 'An error occurred while scaling recipe' },
-      { status: 500 }
+    return createErrorResponse(
+      'An error occurred while scaling recipe',
+      500,
+      'Error scaling recipe:',
+      error
     );
   }
 }

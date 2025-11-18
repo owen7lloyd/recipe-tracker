@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { auth } from '@/lib/auth';
 import { substitutionService } from '@/lib/substitution-service';
+import { requireAuth, createErrorResponse } from '@/lib/api/utils';
 
 /**
  * GET /api/ingredients/[id]/substitutes
@@ -12,10 +12,8 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const authResult = await requireAuth();
+    if (authResult instanceof NextResponse) return authResult;
 
     const { id } = await params;
 
@@ -35,10 +33,11 @@ export async function GET(
       count: substitutes.length,
     });
   } catch (error) {
-    console.error('Error fetching ingredient substitutes:', error);
-    return NextResponse.json(
-      { error: 'An error occurred while fetching substitutes' },
-      { status: 500 }
+    return createErrorResponse(
+      'An error occurred while fetching substitutes',
+      500,
+      'Error fetching ingredient substitutes:',
+      error
     );
   }
 }
