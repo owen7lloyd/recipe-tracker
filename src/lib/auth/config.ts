@@ -28,10 +28,7 @@ export const authConfig: NextAuthConfig = {
             return null;
           }
 
-          const isValidPassword = await compare(
-            password,
-            user[0].passwordHash,
-          );
+          const isValidPassword = await compare(password, user[0].passwordHash);
 
           if (!isValidPassword) {
             return null;
@@ -53,11 +50,26 @@ export const authConfig: NextAuthConfig = {
     signIn: '/login',
   },
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger }) {
       if (user) {
         token.id = user.id;
         token.householdId = user.householdId;
       }
+
+      // Always fetch latest householdId from database to keep session in sync
+      // This ensures session updates when user joins/leaves households
+      if (token.id && (trigger === 'update' || !user)) {
+        const latestUser = await db
+          .select({ householdId: users.householdId })
+          .from(users)
+          .where(eq(users.id, token.id as string))
+          .limit(1);
+
+        if (latestUser[0]) {
+          token.householdId = latestUser[0].householdId;
+        }
+      }
+
       return token;
     },
     async session({ session, token }) {
