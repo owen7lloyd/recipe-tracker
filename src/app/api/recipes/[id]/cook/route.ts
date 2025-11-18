@@ -2,12 +2,7 @@ import { z } from 'zod';
 import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import {
-  pantryItems,
-  users,
-  recipeHistory,
-  ingredients,
-} from '@/lib/db/schema';
+import { pantryItems, users, recipeHistory } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
 import {
   requireRecipeAccess,
@@ -82,10 +77,7 @@ export async function POST(
     // Get recipe with ingredients
     const recipe = await getRecipeWithIngredients(id);
     if (!recipe) {
-      return NextResponse.json(
-        { error: 'Recipe not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Recipe not found' }, { status: 404 });
     }
 
     // Scale recipe if servings specified
@@ -93,7 +85,7 @@ export async function POST(
     const scaledRecipe = scaleRecipe(recipe, targetServings);
 
     // Process pantry updates in a transaction
-    const updates = await db.transaction(async (tx: typeof db) => {
+    const updates = await db.transaction(async (tx) => {
       const pantryUpdates: PantryUpdate[] = [];
 
       for (const ingredient of scaledRecipe.ingredients) {
@@ -141,9 +133,7 @@ export async function POST(
 
         if (remainingQuantity <= 0) {
           // Remove item from pantry
-          await tx
-            .delete(pantryItems)
-            .where(eq(pantryItems.id, pantryItem.id));
+          await tx.delete(pantryItems).where(eq(pantryItems.id, pantryItem.id));
 
           pantryUpdates.push({
             ingredientId: ingredient.ingredientId,

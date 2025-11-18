@@ -33,7 +33,17 @@ export default async function CookRecipePage({
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
-      <CookRecipeView {...recipe} createdAt={recipe.createdAt.toISOString()} />
+      <CookRecipeView
+        id={recipe.id}
+        title={recipe.title}
+        description={recipe.description}
+        imageUrl={recipe.imageUrl}
+        servings={recipe.servings}
+        prepTimeMinutes={recipe.prepTimeMinutes}
+        cookTimeMinutes={recipe.cookTimeMinutes}
+        instructions={recipe.instructions}
+        ingredients={recipe.ingredients}
+      />
     </div>
   );
 }

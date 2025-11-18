@@ -25,7 +25,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import type { ScaledRecipe } from '@/lib/recipe-scaling';
+import type { ScaledRecipe, ScaledIngredient } from '@/lib/recipe-scaling';
 
 interface Ingredient {
   id: string;
@@ -38,6 +38,8 @@ interface Ingredient {
   optional: boolean | null;
   substitutionGroup?: string | null;
 }
+
+type IngredientOrScaled = Ingredient | ScaledIngredient;
 
 interface CookRecipeViewProps {
   id: string;
@@ -78,7 +80,9 @@ export function CookRecipeView(recipe: CookRecipeViewProps) {
 
   // Cooking progress state
   const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
-  const [ingredientAdjustments, setIngredientAdjustments] = useState<Map<string, number>>(new Map());
+  const [ingredientAdjustments, setIngredientAdjustments] = useState<
+    Map<string, number>
+  >(new Map());
 
   // Pantry state
   const [pantry, setPantry] = useState<PantryItem[]>([]);
@@ -176,8 +180,9 @@ export function CookRecipeView(recipe: CookRecipeViewProps) {
         let displayQty = ing.quantity;
 
         if (scaledRecipe && 'scaledQuantity' in ing) {
-          quantityNeeded = ing.scaledQuantity;
-          displayQty = ing.displayQuantity || ing.quantity;
+          const scaledIng = ing as ScaledIngredient;
+          quantityNeeded = scaledIng.scaledQuantity;
+          displayQty = scaledIng.displayQuantity || ing.quantity;
         } else if (ing.quantity) {
           const parsed = parseFloat(ing.quantity);
           if (!isNaN(parsed)) {
@@ -279,7 +284,8 @@ export function CookRecipeView(recipe: CookRecipeViewProps) {
   const hasInsufficient = deductions.some((d) => d.insufficient);
   const hasNotInPantry = deductions.some((d) => d.notInPantry);
   const activeRecipe = scaledRecipe || recipe;
-  const totalTime = (recipe.prepTimeMinutes || 0) + (recipe.cookTimeMinutes || 0);
+  const totalTime =
+    (recipe.prepTimeMinutes || 0) + (recipe.cookTimeMinutes || 0);
 
   return (
     <div className="mx-auto max-w-7xl p-4 md:p-8">
@@ -297,14 +303,14 @@ export function CookRecipeView(recipe: CookRecipeViewProps) {
 
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1">
-            <div className="flex items-center gap-3 mb-2">
+            <div className="mb-2 flex items-center gap-3">
               <ChefHat className="h-8 w-8 text-slate-700 dark:text-slate-300" />
               <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-50">
                 Cooking: {recipe.title}
               </h1>
             </div>
             {recipe.description && (
-              <p className="text-slate-600 dark:text-slate-400 mb-3">
+              <p className="mb-3 text-slate-600 dark:text-slate-400">
                 {recipe.description}
               </p>
             )}
@@ -329,7 +335,7 @@ export function CookRecipeView(recipe: CookRecipeViewProps) {
 
         {/* Progress bar */}
         <div className="mt-6">
-          <div className="flex items-center justify-between mb-2">
+          <div className="mb-2 flex items-center justify-between">
             <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
               Progress
             </span>
@@ -337,7 +343,7 @@ export function CookRecipeView(recipe: CookRecipeViewProps) {
               {completedSteps.size} of {recipe.instructions.length} steps
             </span>
           </div>
-          <div className="h-2 bg-slate-200 rounded-full overflow-hidden dark:bg-slate-800">
+          <div className="h-2 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">
             <div
               className="h-full bg-green-600 transition-all duration-300"
               style={{ width: `${progress}%` }}
@@ -348,7 +354,7 @@ export function CookRecipeView(recipe: CookRecipeViewProps) {
 
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Main cooking area */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="space-y-6 lg:col-span-2">
           {/* Serving scaler */}
           <Card>
             <CardHeader>
@@ -376,7 +382,7 @@ export function CookRecipeView(recipe: CookRecipeViewProps) {
                   return (
                     <li
                       key={index}
-                      className={`flex gap-4 p-4 rounded-lg border-2 transition-all cursor-pointer ${
+                      className={`flex cursor-pointer gap-4 rounded-lg border-2 p-4 transition-all ${
                         isCompleted
                           ? 'border-green-500 bg-green-50 dark:bg-green-950/20'
                           : 'border-slate-200 hover:border-slate-300 dark:border-slate-800 dark:hover:border-slate-700'
@@ -399,7 +405,7 @@ export function CookRecipeView(recipe: CookRecipeViewProps) {
                       <p
                         className={`flex-1 pt-2 text-sm leading-relaxed ${
                           isCompleted
-                            ? 'line-through text-slate-500 dark:text-slate-500'
+                            ? 'text-slate-500 line-through dark:text-slate-500'
                             : 'text-slate-900 dark:text-slate-100'
                         }`}
                       >
@@ -428,34 +434,42 @@ export function CookRecipeView(recipe: CookRecipeViewProps) {
                 <div className="space-y-3">
                   {activeRecipe.ingredients.map((ing) => {
                     const displayQty =
-                      'displayQuantity' in ing && ing.displayQuantity
-                        ? ing.displayQuantity
+                      'displayQuantity' in ing &&
+                      (ing as ScaledIngredient).displayQuantity
+                        ? (ing as ScaledIngredient).displayQuantity
                         : ing.quantity;
 
-                    const adjustment = ingredientAdjustments.get(ing.ingredientId);
-                    const finalQty = adjustment !== undefined
-                      ? adjustment.toFixed(2).replace(/\.?0+$/, '')
-                      : displayQty;
+                    const adjustment = ingredientAdjustments.get(
+                      ing.ingredientId
+                    );
+                    const finalQty: string =
+                      adjustment !== undefined
+                        ? adjustment.toFixed(2).replace(/\.?0+$/, '')
+                        : String(displayQty || '');
 
                     return (
                       <div
                         key={ing.id}
-                        className="flex items-start justify-between gap-2 p-3 rounded-lg border border-slate-200 dark:border-slate-800"
+                        className="flex items-start justify-between gap-2 rounded-lg border border-slate-200 p-3 dark:border-slate-800"
                       >
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium text-sm truncate">
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-medium">
                             {ing.ingredientName || 'Unknown ingredient'}
                           </p>
                           <div className="text-xs text-slate-600 dark:text-slate-400">
-                            {finalQty} {ing.unit}
+                            {finalQty}
+                            {ing.unit ? ` ${ing.unit}` : ''}
                             {adjustment !== undefined && (
-                              <Badge variant="secondary" className="ml-2 text-xs">
+                              <Badge
+                                variant="secondary"
+                                className="ml-2 text-xs"
+                              >
                                 Adjusted
                               </Badge>
                             )}
                           </div>
                           {ing.notes && (
-                            <p className="text-xs text-slate-500 mt-1">
+                            <p className="mt-1 text-xs text-slate-500">
                               {ing.notes}
                             </p>
                           )}
@@ -469,9 +483,10 @@ export function CookRecipeView(recipe: CookRecipeViewProps) {
                               size="sm"
                               className="h-7 w-7 p-0"
                               onClick={() => {
-                                const current = adjustment !== undefined
-                                  ? adjustment
-                                  : parseFloat(displayQty || '0');
+                                const current =
+                                  adjustment !== undefined
+                                    ? adjustment
+                                    : parseFloat(displayQty || '0');
                                 adjustIngredientQuantity(
                                   ing.ingredientId,
                                   Math.max(0, current - 0.5)
@@ -485,9 +500,10 @@ export function CookRecipeView(recipe: CookRecipeViewProps) {
                               size="sm"
                               className="h-7 w-7 p-0"
                               onClick={() => {
-                                const current = adjustment !== undefined
-                                  ? adjustment
-                                  : parseFloat(displayQty || '0');
+                                const current =
+                                  adjustment !== undefined
+                                    ? adjustment
+                                    : parseFloat(displayQty || '0');
                                 adjustIngredientQuantity(
                                   ing.ingredientId,
                                   current + 0.5
@@ -513,42 +529,41 @@ export function CookRecipeView(recipe: CookRecipeViewProps) {
             </CardHeader>
             <CardContent>
               {(hasInsufficient || hasNotInPantry) && (
-                <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 mb-3 dark:border-amber-900 dark:bg-amber-950">
+                <div className="mb-3 rounded-lg border border-amber-200 bg-amber-50 p-3 dark:border-amber-900 dark:bg-amber-950">
                   <div className="flex gap-2">
-                    <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-500 shrink-0 mt-0.5" />
+                    <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-500" />
                     <div className="text-sm text-amber-900 dark:text-amber-100">
-                      {hasInsufficient && <p>Some items have insufficient quantities.</p>}
-                      {hasNotInPantry && <p>Some items not in pantry will be skipped.</p>}
+                      {hasInsufficient && (
+                        <p>Some items have insufficient quantities.</p>
+                      )}
+                      {hasNotInPantry && (
+                        <p>Some items not in pantry will be skipped.</p>
+                      )}
                     </div>
                   </div>
                 </div>
               )}
 
-              <div className="space-y-2 max-h-[400px] overflow-y-auto">
+              <div className="max-h-[400px] space-y-2 overflow-y-auto">
                 {deductions.map((ing) => (
                   <div
                     key={ing.id}
-                    className="text-xs p-2 rounded border border-slate-200 dark:border-slate-800"
+                    className="rounded border border-slate-200 p-2 text-xs dark:border-slate-800"
                   >
-                    <p className="font-medium truncate">
-                      {ing.ingredientName}
-                    </p>
+                    <p className="truncate font-medium">{ing.ingredientName}</p>
                     {ing.notInPantry ? (
                       <p className="text-amber-600 dark:text-amber-500">
                         Not in pantry - will skip
                       </p>
                     ) : ing.notTracked ? (
-                      <p className="text-slate-500">
-                        Quantity not tracked
-                      </p>
+                      <p className="text-slate-500">Quantity not tracked</p>
                     ) : ing.quantityNeeded === null ? (
-                      <p className="text-slate-500">
-                        Non-numeric quantity
-                      </p>
+                      <p className="text-slate-500">Non-numeric quantity</p>
                     ) : (
-                      <div className="flex items-center justify-between mt-1">
+                      <div className="mt-1 flex items-center justify-between">
                         <span className="text-slate-600 dark:text-slate-400">
-                          {ing.currentQty?.toFixed(2)} → {ing.remainingQty?.toFixed(2)} {ing.unit}
+                          {ing.currentQty?.toFixed(2)} →{' '}
+                          {ing.remainingQty?.toFixed(2)} {ing.unit}
                         </span>
                         {ing.willBeRemoved && (
                           <Badge variant="destructive" className="text-xs">
@@ -571,19 +586,27 @@ export function CookRecipeView(recipe: CookRecipeViewProps) {
           <DialogHeader>
             <DialogTitle>Finish Cooking</DialogTitle>
             <DialogDescription>
-              Are you ready to finish cooking? This will update your pantry based on the ingredients used.
+              Are you ready to finish cooking? This will update your pantry
+              based on the ingredients used.
             </DialogDescription>
           </DialogHeader>
 
           <div className="py-4">
-            <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">
+            <p className="mb-3 text-sm text-slate-600 dark:text-slate-400">
               {completedSteps.size < recipe.instructions.length && (
-                <span className="text-amber-600 dark:text-amber-500 flex items-center gap-2 mb-2">
+                <span className="mb-2 flex items-center gap-2 text-amber-600 dark:text-amber-500">
                   <AlertTriangle className="h-4 w-4" />
                   You haven't completed all steps yet.
                 </span>
               )}
-              This will deduct {deductions.filter(d => d.quantityNeeded !== null && !d.notInPantry && !d.notTracked).length} ingredients from your pantry.
+              This will deduct{' '}
+              {
+                deductions.filter(
+                  (d) =>
+                    d.quantityNeeded !== null && !d.notInPantry && !d.notTracked
+                ).length
+              }{' '}
+              ingredients from your pantry.
             </p>
           </div>
 
