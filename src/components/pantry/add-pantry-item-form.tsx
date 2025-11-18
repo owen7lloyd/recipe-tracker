@@ -4,10 +4,12 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select } from '@/components/ui/select';
 import { IngredientAutocomplete } from './ingredient-autocomplete';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Plus, Loader2 } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
+import { COOKING_UNITS } from '@/lib/constants/units';
 
 interface Ingredient {
   id: string;
@@ -29,10 +31,8 @@ export function AddPantryItemForm({ onItemAdded }: AddPantryItemFormProps) {
 
   const handleIngredientSelect = (ingredient: Ingredient) => {
     setSelectedIngredient(ingredient);
-    // Pre-fill unit with first common unit if available
-    if (ingredient.commonUnits && ingredient.commonUnits.length > 0) {
-      setUnit(ingredient.commonUnits[0]);
-    }
+    // Clear unit on new ingredient selection
+    setUnit('');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -134,21 +134,18 @@ export function AddPantryItemForm({ onItemAdded }: AddPantryItemFormProps) {
 
             <div className="space-y-2">
               <Label htmlFor="unit">Unit (optional)</Label>
-              <Input
+              <Select
                 id="unit"
-                type="text"
-                placeholder="e.g., cups"
                 value={unit}
                 onChange={(e) => setUnit(e.target.value)}
-                list="common-units"
-              />
-              {selectedIngredient && selectedIngredient.commonUnits && (
-                <datalist id="common-units">
-                  {selectedIngredient.commonUnits.map((u) => (
-                    <option key={u} value={u} />
-                  ))}
-                </datalist>
-              )}
+              >
+                <option value="">Select unit...</option>
+                {COOKING_UNITS.map((u) => (
+                  <option key={u.value} value={u.value}>
+                    {u.label}
+                  </option>
+                ))}
+              </Select>
             </div>
           </div>
 

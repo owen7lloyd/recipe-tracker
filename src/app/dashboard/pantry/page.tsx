@@ -134,12 +134,13 @@ export default function PantryPage() {
 
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Available</CardTitle>
+            <CardTitle className="text-sm font-medium">Without Quantity</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
               {items.filter((item) => !item.quantity).length}
             </div>
+            <p className="mt-1 text-xs text-gray-500">Items marked as available</p>
           </CardContent>
         </Card>
       </div>

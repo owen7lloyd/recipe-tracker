@@ -4,8 +4,10 @@ import { useState } from 'react';
 import { Trash2, Edit2, Check, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Select } from '@/components/ui/select';
 import { useToast } from '@/components/ui/use-toast';
 import { Badge } from '@/components/ui/badge';
+import { COOKING_UNITS } from '@/lib/constants/units';
 
 interface PantryItem {
   id: string;
@@ -169,27 +171,24 @@ export function PantryList({ items, onUpdate }: PantryListProps) {
                   placeholder="Quantity"
                   value={editQuantity}
                   onChange={(e) => setEditQuantity(e.target.value)}
-                  className="w-24"
+                  className="w-28"
                 />
-                <Input
-                  type="text"
-                  placeholder="Unit"
+                <Select
                   value={editUnit}
                   onChange={(e) => setEditUnit(e.target.value)}
-                  className="w-24"
-                  list={`units-${item.id}`}
-                />
-                {item.ingredient.commonUnits && (
-                  <datalist id={`units-${item.id}`}>
-                    {item.ingredient.commonUnits.map((u) => (
-                      <option key={u} value={u} />
-                    ))}
-                  </datalist>
-                )}
+                  className="w-40"
+                >
+                  <option value="">Select unit...</option>
+                  {COOKING_UNITS.map((u) => (
+                    <option key={u.value} value={u.value}>
+                      {u.label}
+                    </option>
+                  ))}
+                </Select>
               </div>
             ) : (
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                {item.quantity ? `${item.quantity} ${item.unit || ''}` : 'Available'}
+                {item.quantity ? `${item.quantity} ${item.unit || ''}` : 'No quantity set'}
               </p>
             )}
           </div>
