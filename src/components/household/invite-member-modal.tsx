@@ -131,8 +131,8 @@ export function InviteMemberModal({ householdId }: InviteMemberModalProps) {
 
   return (
     <Dialog open={open} onOpenChange={handleOpen}>
-      <DialogTrigger asChild>
-        <Button>
+      <DialogTrigger asChild suppressHydrationWarning>
+        <Button suppressHydrationWarning>
           <UserPlus className="mr-2 h-4 w-4" />
           Invite Member
         </Button>
