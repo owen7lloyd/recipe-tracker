@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { signOut } from 'next-auth/react';
 import {
   Card,
   CardContent,
@@ -50,10 +51,11 @@ export function JoinHouseholdForm({
         description: 'You have successfully joined the household!',
       });
 
-      // Small delay to show the success message
-      setTimeout(() => {
-        router.push('/dashboard');
-        router.refresh();
+      // Sign out to refresh session with new household
+      // This ensures the JWT token gets the updated householdId
+      setTimeout(async () => {
+        await signOut({ redirect: false });
+        router.push('/login?message=household-joined&callbackUrl=/dashboard');
       }, 1000);
     } catch (error) {
       setIsLoading(false);
@@ -72,7 +74,6 @@ export function JoinHouseholdForm({
     if (autoJoin && !hasAttempted) {
       handleJoin();
     }
-     
   }, [autoJoin]);
 
   if (isLoading) {
