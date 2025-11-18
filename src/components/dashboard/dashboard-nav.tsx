@@ -47,7 +47,8 @@ export function DashboardNav({ user }: DashboardNavProps) {
               <Link
                 href="/dashboard/recipes"
                 className={`rounded-md px-3 py-2 text-sm font-medium ${
-                  pathname.startsWith('/dashboard/recipes')
+                  pathname.startsWith('/dashboard/recipes') &&
+                  pathname !== '/dashboard/recipes/available'
                     ? 'bg-slate-100 text-slate-900 dark:bg-slate-800 dark:text-slate-50'
                     : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-50'
                 }`}
