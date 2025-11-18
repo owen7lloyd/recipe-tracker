@@ -43,7 +43,8 @@ function normalizeUnicodeFractions(str: string): string {
   for (const [unicode, ascii] of Object.entries(UNICODE_FRACTIONS)) {
     result = result.replace(new RegExp(unicode, 'g'), ` ${ascii}`);
   }
-  return result;
+  // Normalize whitespace: trim and replace multiple spaces with single space
+  return result.trim().replace(/\s+/g, ' ');
 }
 
 /**
