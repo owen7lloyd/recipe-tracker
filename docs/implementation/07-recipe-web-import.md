@@ -235,21 +235,46 @@ Implemented recipe import functionality that allows users to import recipes from
 6. Verify saved recipe has correct data
 
 ### Manual Testing Sites
-- AllRecipes.com
-- Food Network
-- Serious Eats
-- BBC Good Food
-- Bon Appétit
-- NYT Cooking
-- Any schema.org compliant site
+
+**Sites that typically work:**
+- Personal WordPress recipe blogs (most use schema.org)
+- Recipe sites hosted on Wix, Squarespace (often have schema.org)
+- Smaller niche recipe websites
+- Recipe pages with schema.org JSON-LD
+
+**Sites that typically block automated access:**
+- AllRecipes.com (bot detection)
+- Food Network (bot detection)
+- NYT Cooking (paywall + bot detection)
+- Bon Appétit (bot detection)
+- Serious Eats (may work occasionally)
+- BBC Good Food (may work occasionally)
+
+**Testing Strategy:**
+1. Find a WordPress recipe blog (search "wordpress recipe" + your favorite food)
+2. Test with smaller, independent recipe sites
+3. Look for sites that have visible schema.org data
+4. Avoid major commercial recipe platforms
 
 ## Known Limitations
 
-1. **Site Coverage:** While schema.org sites are well-supported, some sites may have unique structures requiring site-specific parsers
-2. **Paywalled Content:** Cannot import from sites requiring authentication
-3. **JavaScript-Rendered Content:** May not work with sites that render recipes via JavaScript
-4. **Image URLs:** Some sites may use relative URLs or CDN-specific URLs that may not work outside their domain
-5. **Rate Limiting:** No built-in rate limiting for import requests
+1. **Bot Detection & Blocking:** Most major commercial recipe sites (AllRecipes, Food Network, NYT Cooking, Bon Appétit, etc.) actively block automated access with bot detection. The import feature works best with:
+   - Personal food blogs
+   - WordPress-based recipe sites
+   - Smaller recipe websites
+   - Sites without aggressive anti-scraping measures
+
+2. **Site Coverage:** While schema.org sites are well-supported, some sites may have unique structures requiring site-specific parsers
+
+3. **Paywalled Content:** Cannot import from sites requiring authentication
+
+4. **JavaScript-Rendered Content:** May not work with sites that render recipes via JavaScript (requires server-side rendering)
+
+5. **Image URLs:** Some sites may use relative URLs or CDN-specific URLs that may not work outside their domain
+
+6. **Rate Limiting:** No built-in rate limiting for import requests
+
+7. **CORS & User-Agent Restrictions:** Server-side fetch requests are often blocked by recipe sites as anti-scraping measures
 
 ## Future Enhancements
 

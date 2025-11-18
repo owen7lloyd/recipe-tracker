@@ -85,6 +85,24 @@ export async function POST(request: Request) {
 
     const html = await response.text();
 
+    // Check if we got blocked (common with recipe sites)
+    const htmlLower = html.toLowerCase();
+    if (
+      htmlLower.includes('access denied') ||
+      htmlLower.includes('blocked') ||
+      htmlLower.includes('captcha') ||
+      htmlLower.includes('please verify you are a human') ||
+      html.length < 500
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            'This website is blocking automated access. Try copying the recipe manually or use a different recipe site that allows imports.',
+        },
+        { status: 403 }
+      );
+    }
+
     // Try schema.org parser first
     let recipe = parseSchemaOrg(html);
 
@@ -97,7 +115,7 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           error:
-            'No recipe data found on this page. Please make sure the URL points to a recipe.',
+            'No recipe data found on this page. This site may not be compatible with automated import. Try copying the recipe manually.',
         },
         { status: 400 }
       );

@@ -24,7 +24,7 @@ export interface SchemaOrgRecipe {
   aggregateRating?: {
     ratingValue: number | string;
   };
-  recipeCategory?: string;
+  recipeCategory?: string | string[];
   keywords?: string | string[];
 }
 
@@ -150,11 +150,22 @@ export function parseInstructions(
  * Extract category from schema.org data
  */
 export function extractCategory(
-  recipeCategory?: string
+  recipeCategory?: string | string[]
 ): 'breakfast' | 'lunch' | 'dinner' | 'dessert' | 'snack' | 'beverage' {
   if (!recipeCategory) return 'dinner';
 
-  const normalized = recipeCategory.toLowerCase();
+  // Handle array of categories - use first one
+  let categoryStr: string;
+  if (Array.isArray(recipeCategory)) {
+    categoryStr = recipeCategory[0] || '';
+  } else if (typeof recipeCategory === 'string') {
+    categoryStr = recipeCategory;
+  } else {
+    // Handle other types (objects, etc.)
+    return 'dinner';
+  }
+
+  const normalized = categoryStr.toLowerCase();
 
   if (normalized.includes('breakfast')) return 'breakfast';
   if (normalized.includes('lunch')) return 'lunch';

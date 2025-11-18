@@ -151,11 +151,19 @@ export function RecipeImportModal({
               </div>
 
               <div className="rounded-md border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900">
-                <h4 className="mb-2 text-sm font-semibold">Supported Sites</h4>
-                <p className="text-xs text-slate-600 dark:text-slate-400">
-                  Most recipe websites with structured data (schema.org) are
-                  supported, including: AllRecipes, Food Network, Serious Eats,
-                  BBC Good Food, Bon Appétit, and many more.
+                <h4 className="mb-2 text-sm font-semibold">About Recipe Import</h4>
+                <p className="text-xs text-slate-600 dark:text-slate-400 mb-2">
+                  Works best with recipe websites that use structured data
+                  (schema.org format). Many popular recipe sites block automated
+                  imports to prevent scraping.
+                </p>
+                <p className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                  ✓ Works: Personal blogs, WordPress recipe sites, smaller recipe
+                  sites
+                </p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  ✗ Often blocked: AllRecipes, Food Network, NYT Cooking (major
+                  commercial sites)
                 </p>
               </div>
             </div>
