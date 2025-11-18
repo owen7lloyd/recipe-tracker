@@ -3,6 +3,7 @@ import { z } from 'zod';
 // Recipe ingredient validation schema
 export const recipeIngredientSchema = z.object({
   ingredientId: z.string().uuid('Invalid ingredient ID'),
+  ingredientName: z.string().optional(),
   quantity: z
     .number()
     .positive('Quantity must be positive')
@@ -20,8 +21,18 @@ export const createRecipeSchema = z.object({
     .min(1, 'Title is required')
     .max(255, 'Title must be less than 255 characters'),
   description: z.string().optional().nullable(),
-  imageUrl: z.string().url('Invalid image URL').optional().nullable(),
-  sourceUrl: z.string().url('Invalid source URL').optional().nullable(),
+  imageUrl: z
+    .string()
+    .url('Invalid image URL')
+    .optional()
+    .nullable()
+    .or(z.literal('')),
+  sourceUrl: z
+    .string()
+    .url('Invalid source URL')
+    .optional()
+    .nullable()
+    .or(z.literal('')),
   category: z.enum(
     ['breakfast', 'lunch', 'dinner', 'dessert', 'snack', 'beverage']
   ),

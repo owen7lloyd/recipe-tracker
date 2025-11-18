@@ -196,6 +196,30 @@ export const pantryItems = pgTable(
   })
 );
 
+// Recipe history table (for tracking when recipes are cooked)
+export const recipeHistory = pgTable(
+  'recipe_history',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    recipeId: uuid('recipe_id')
+      .notNull()
+      .references(() => recipes.id, { onDelete: 'cascade' }),
+    householdId: uuid('household_id')
+      .notNull()
+      .references(() => households.id, { onDelete: 'cascade' }),
+    cookedBy: uuid('cooked_by')
+      .notNull()
+      .references(() => users.id),
+    servings: integer('servings').notNull(),
+    cookedAt: timestamp('cooked_at').defaultNow().notNull(),
+  },
+  (table) => ({
+    recipeIdx: index('idx_recipe_history_recipe').on(table.recipeId),
+    householdIdx: index('idx_recipe_history_household').on(table.householdId),
+    cookedAtIdx: index('idx_recipe_history_date').on(table.cookedAt),
+  })
+);
+
 // Grocery lists table
 export const groceryLists = pgTable(
   'grocery_lists',
@@ -396,3 +420,18 @@ export const ingredientSubstitutionsRelations = relations(
     }),
   })
 );
+
+export const recipeHistoryRelations = relations(recipeHistory, ({ one }) => ({
+  recipe: one(recipes, {
+    fields: [recipeHistory.recipeId],
+    references: [recipes.id],
+  }),
+  household: one(households, {
+    fields: [recipeHistory.householdId],
+    references: [households.id],
+  }),
+  cookedByUser: one(users, {
+    fields: [recipeHistory.cookedBy],
+    references: [users.id],
+  }),
+}));

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { RecipeList } from '@/components/recipes/recipe-list';
 import { RecipeFilters } from '@/components/recipes/recipe-filters';
+import { RecipeImportButton } from '@/components/recipes/recipe-import-button';
 import { getUserHouseholdId, searchRecipes } from '@/lib/recipe/helpers';
 import { Plus } from 'lucide-react';
 
@@ -59,12 +60,15 @@ export default async function RecipesPage({
               Manage your recipe collection
             </p>
           </div>
-          <Button asChild>
-            <Link href="/dashboard/recipes/new">
-              <Plus className="mr-2 h-4 w-4" />
-              New Recipe
-            </Link>
-          </Button>
+          <div className="flex gap-2">
+            <RecipeImportButton />
+            <Button asChild>
+              <Link href="/dashboard/recipes/new">
+                <Plus className="mr-2 h-4 w-4" />
+                New Recipe
+              </Link>
+            </Button>
+          </div>
         </div>
 
         <RecipeFilters />

@@ -14,6 +14,7 @@ import {
   Trash2,
   ExternalLink,
   Loader2,
+  ChefHat,
 } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import {
@@ -169,7 +170,13 @@ export function RecipeDetail(recipe: RecipeDetailProps) {
             ))}
           </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          <Button variant="default" size="sm" asChild>
+            <Link href={`/dashboard/recipes/${recipe.id}/cook`}>
+              <ChefHat className="mr-2 h-4 w-4" />
+              Cook This Recipe
+            </Link>
+          </Button>
           <Button variant="outline" size="sm" asChild>
             <Link href={`/dashboard/recipes/${recipe.id}/edit`}>
               <Edit className="mr-2 h-4 w-4" />

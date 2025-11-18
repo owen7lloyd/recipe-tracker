@@ -26,9 +26,10 @@ import { useToast } from '@/components/ui/use-toast';
 interface RecipeFormProps {
   initialData?: any;
   recipeId?: string;
+  onSuccess?: (recipeId: string) => void;
 }
 
-export function RecipeForm({ initialData, recipeId }: RecipeFormProps) {
+export function RecipeForm({ initialData, recipeId, onSuccess }: RecipeFormProps) {
   const router = useRouter();
   const { toast } = useToast();
   const [error, setError] = useState<string | null>(null);
@@ -86,6 +87,23 @@ export function RecipeForm({ initialData, recipeId }: RecipeFormProps) {
     try {
       setError(null);
 
+      // Validate that all ingredients have valid IDs
+      const invalidIngredients = data.ingredients.filter(
+        (ing: any) => !ing.ingredientId || ing.ingredientId === ''
+      );
+
+      if (invalidIngredients.length > 0) {
+        setError(
+          'Some ingredients are not properly selected. Please choose an ingredient from the dropdown for each item. If an ingredient is not found, you may need to add it to your pantry first.'
+        );
+        // Scroll to the first error
+        const ingredientsSection = document.querySelector(
+          '[class*="Ingredients"]'
+        );
+        ingredientsSection?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return;
+      }
+
       const url = isEditing ? `/api/recipes/${recipeId}` : '/api/recipes';
       const method = isEditing ? 'PUT' : 'POST';
 
@@ -107,8 +125,12 @@ export function RecipeForm({ initialData, recipeId }: RecipeFormProps) {
         description: `"${data.title}" has been ${isEditing ? 'updated' : 'created'} successfully.`,
       });
 
-      router.push(`/dashboard/recipes/${result.id}`);
-      router.refresh();
+      if (onSuccess) {
+        onSuccess(result.id);
+      } else {
+        router.push(`/dashboard/recipes/${result.id}`);
+        router.refresh();
+      }
     } catch (err) {
       console.error('Error saving recipe:', err);
       setError(err instanceof Error ? err.message : 'Failed to save recipe');
