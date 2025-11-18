@@ -22,36 +22,41 @@ export async function POST(request: Request) {
     if (existingUser.length > 0) {
       return NextResponse.json(
         { error: 'User with this email already exists' },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
     // Hash password
     const passwordHash = await hash(validatedData.password, 12);
 
-    // Create a default household for the user
-    const [household] = await db
-      .insert(households)
-      .values({
-        name: `${validatedData.name}'s Household`,
-      })
-      .returning();
-
-    // Create user
+    // Create user first
     const [user] = await db
       .insert(users)
       .values({
         email: validatedData.email,
         name: validatedData.name,
         passwordHash,
-        householdId: household.id,
       })
       .returning({
         id: users.id,
         email: users.email,
         name: users.name,
-        householdId: users.householdId,
       });
+
+    // Create a default household for the user
+    const [household] = await db
+      .insert(households)
+      .values({
+        name: `${validatedData.name}'s Household`,
+        createdBy: user.id,
+      })
+      .returning();
+
+    // Update user with household ID
+    await db
+      .update(users)
+      .set({ householdId: household.id })
+      .where(eq(users.id, user.id));
 
     return NextResponse.json(
       {
@@ -59,11 +64,11 @@ export async function POST(request: Request) {
           id: user.id,
           email: user.email,
           name: user.name,
-          householdId: user.householdId,
+          householdId: household.id,
         },
         message: 'User registered successfully',
       },
-      { status: 201 },
+      { status: 201 }
     );
   } catch (error) {
     if (error instanceof Error) {
@@ -71,19 +76,19 @@ export async function POST(request: Request) {
       if (error.name === 'ZodError') {
         return NextResponse.json(
           { error: 'Invalid input data', details: error.message },
-          { status: 400 },
+          { status: 400 }
         );
       }
 
       return NextResponse.json(
         { error: 'An error occurred during registration' },
-        { status: 500 },
+        { status: 500 }
       );
     }
 
     return NextResponse.json(
       { error: 'An unexpected error occurred' },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { signOut } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
-import { LogOut, ChefHat } from 'lucide-react';
+import { LogOut, ChefHat, Settings } from 'lucide-react';
 
 interface DashboardNavProps {
   user: {
@@ -73,6 +73,17 @@ export function DashboardNav({ user }: DashboardNavProps) {
                 }`}
               >
                 Grocery Lists
+              </Link>
+              <Link
+                href="/dashboard/settings"
+                className={`rounded-md px-3 py-2 text-sm font-medium ${
+                  pathname.startsWith('/dashboard/settings')
+                    ? 'bg-slate-100 text-slate-900 dark:bg-slate-800 dark:text-slate-50'
+                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-50'
+                }`}
+              >
+                <Settings className="mr-1 inline h-4 w-4" />
+                Settings
               </Link>
             </div>
           </div>

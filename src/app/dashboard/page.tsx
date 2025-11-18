@@ -1,5 +1,8 @@
 import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
+import { db } from '@/lib/db';
+import { users } from '@/lib/db/schema';
+import { eq } from 'drizzle-orm';
 
 export default async function DashboardPage() {
   const session = await auth();
@@ -7,6 +10,13 @@ export default async function DashboardPage() {
   if (!session?.user) {
     redirect('/login');
   }
+
+  // Fetch user's current household from database (source of truth)
+  const user = await db
+    .select({ householdId: users.householdId })
+    .from(users)
+    .where(eq(users.id, session.user.id))
+    .limit(1);
 
   return (
     <div className="min-h-screen bg-slate-50 p-8 dark:bg-slate-900">
@@ -75,7 +85,7 @@ export default async function DashboardPage() {
                 Household ID
               </dt>
               <dd className="text-sm text-slate-900 dark:text-slate-50">
-                {session.user.householdId || 'Not assigned'}
+                {user[0]?.householdId || 'Not assigned'}
               </dd>
             </div>
           </dl>

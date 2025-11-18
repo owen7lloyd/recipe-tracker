@@ -28,10 +28,7 @@ export const authConfig: NextAuthConfig = {
             return null;
           }
 
-          const isValidPassword = await compare(
-            password,
-            user[0].passwordHash,
-          );
+          const isValidPassword = await compare(password, user[0].passwordHash);
 
           if (!isValidPassword) {
             return null;
