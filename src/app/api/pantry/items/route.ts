@@ -56,6 +56,7 @@ export async function POST(request: Request) {
         .set({
           quantity: validatedData.quantity,
           unit: validatedData.unit,
+          purchaseDate: validatedData.purchaseDate,
           updatedAt: new Date(),
         })
         .where(eq(pantryItems.id, existing[0].id))
@@ -75,6 +76,7 @@ export async function POST(request: Request) {
         ingredientId: validatedData.ingredientId,
         quantity: validatedData.quantity,
         unit: validatedData.unit,
+        purchaseDate: validatedData.purchaseDate,
         addedBy: session.user.id,
       })
       .returning();

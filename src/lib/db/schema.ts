@@ -184,6 +184,7 @@ export const pantryItems = pgTable(
     addedBy: uuid('added_by')
       .notNull()
       .references(() => users.id),
+    purchaseDate: timestamp('purchase_date'),
     updatedAt: timestamp('updated_at').defaultNow().notNull(),
   },
   (table) => ({

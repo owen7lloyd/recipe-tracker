@@ -48,6 +48,7 @@ export async function PUT(
       .set({
         quantity: validatedData.quantity,
         unit: validatedData.unit,
+        purchaseDate: validatedData.purchaseDate,
         updatedAt: new Date(),
       })
       .where(

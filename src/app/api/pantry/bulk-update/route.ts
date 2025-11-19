@@ -65,6 +65,7 @@ export async function POST(request: Request) {
               .set({
                 quantity: item.quantity ?? null,
                 unit: item.unit ?? null,
+                purchaseDate: item.purchaseDate,
                 updatedAt: new Date(),
               })
               .where(eq(pantryItems.id, existing[0].id))
@@ -79,6 +80,7 @@ export async function POST(request: Request) {
                 ingredientId: item.ingredientId,
                 quantity: item.quantity ?? null,
                 unit: item.unit ?? null,
+                purchaseDate: item.purchaseDate,
                 addedBy: session.user.id,
               })
               .returning();
@@ -95,6 +97,7 @@ export async function POST(request: Request) {
             .set({
               quantity: item.quantity ?? null,
               unit: item.unit ?? null,
+              purchaseDate: item.purchaseDate,
               updatedAt: new Date(),
             })
             .where(

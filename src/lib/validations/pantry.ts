@@ -15,6 +15,7 @@ export const addPantryItemSchema = z.object({
     .transform((val) => val.toString())
     .optional(),
   unit: z.string().min(1).max(50).optional(),
+  purchaseDate: z.coerce.date().optional(),
 });
 
 // Schema for updating a pantry item
@@ -25,6 +26,7 @@ export const updatePantryItemSchema = z.object({
     .transform((val) => val.toString())
     .optional(),
   unit: z.string().min(1).max(50).optional(),
+  purchaseDate: z.coerce.date().optional(),
 });
 
 // Schema for bulk operations
@@ -39,6 +41,7 @@ export const bulkUpdateSchema = z.object({
           .transform((val) => val.toString())
           .optional(),
         unit: z.string().min(1).max(50).optional(),
+        purchaseDate: z.coerce.date().optional(),
       })
     )
     .optional(),
@@ -52,6 +55,7 @@ export const bulkUpdateSchema = z.object({
           .transform((val) => val.toString())
           .optional(),
         unit: z.string().min(1).max(50).optional(),
+        purchaseDate: z.coerce.date().optional(),
       })
     )
     .optional(),
