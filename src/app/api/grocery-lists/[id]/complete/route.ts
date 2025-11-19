@@ -114,6 +114,7 @@ export async function POST(
             .set({
               quantity: newQuantity,
               unit: item.unit || existingPantryItem.unit,
+              purchaseDate: new Date(),
               updatedAt: new Date(),
             })
             .where(eq(pantryItems.id, existingPantryItem.id));
@@ -127,6 +128,7 @@ export async function POST(
             quantity: item.quantity,
             unit: item.unit,
             addedBy: session.user.id,
+            purchaseDate: new Date(),
           });
 
           addedCount++;
