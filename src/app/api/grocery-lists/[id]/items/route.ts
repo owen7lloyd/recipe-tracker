@@ -90,6 +90,7 @@ export async function POST(
         quantity: validated.quantity.toString(),
         unit: validated.unit,
         category: category,
+        store: validated.store || null,
         checked: false,
       })
       .returning();
@@ -115,6 +116,7 @@ export async function POST(
         quantity: itemWithIngredient.item.quantity,
         unit: itemWithIngredient.item.unit,
         category: itemWithIngredient.item.category,
+        store: itemWithIngredient.item.store,
         checked: itemWithIngredient.item.checked,
         checkedBy: itemWithIngredient.item.checkedBy,
         checkedAt: itemWithIngredient.item.checkedAt,
@@ -125,7 +127,7 @@ export async function POST(
   } catch (error) {
     if (error instanceof ZodError) {
       return NextResponse.json(
-        { error: 'Validation error', details: error.errors },
+        { error: 'Validation error', details: error.issues },
         { status: 400 }
       );
     }

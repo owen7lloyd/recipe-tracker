@@ -16,7 +16,8 @@ interface ListItem {
   quantity: string;
   unit: string | null;
   category: string;
-  checked: boolean;
+  store: string | null;
+  checked: boolean | null;
   checkedBy: string | null;
   checkedAt: Date | null;
   recipeIds: string[] | null;

@@ -4,7 +4,9 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select } from '@/components/ui/select';
 import { Loader2 } from 'lucide-react';
+import { COOKING_UNITS } from '@/lib/constants/units';
 
 interface Ingredient {
   id: string;
@@ -17,6 +19,7 @@ interface AddManualItemProps {
     ingredientId: string;
     quantity: number;
     unit: string;
+    store?: string;
   }) => void;
   onCancel: () => void;
 }
@@ -27,6 +30,7 @@ export function AddManualItem({ onAdd, onCancel }: AddManualItemProps) {
     useState<Ingredient | null>(null);
   const [quantity, setQuantity] = useState<number>(1);
   const [unit, setUnit] = useState('');
+  const [store, setStore] = useState('');
   const [suggestions, setSuggestions] = useState<Ingredient[]>([]);
   const [isSearching, setIsSearching] = useState(false);
 
@@ -73,6 +77,7 @@ export function AddManualItem({ onAdd, onCancel }: AddManualItemProps) {
       ingredientId: selectedIngredient.id,
       quantity,
       unit,
+      store: store || undefined,
     });
   };
 
@@ -129,13 +134,29 @@ export function AddManualItem({ onAdd, onCancel }: AddManualItemProps) {
         </div>
         <div className="space-y-2">
           <Label htmlFor="unit">Unit</Label>
-          <Input
+          <Select
             id="unit"
             value={unit}
             onChange={(e) => setUnit(e.target.value)}
-            placeholder="e.g., cups, lbs"
-          />
+          >
+            <option value="">Select unit...</option>
+            {COOKING_UNITS.map((u) => (
+              <option key={u.value} value={u.value}>
+                {u.label}
+              </option>
+            ))}
+          </Select>
         </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="store">Store (Optional)</Label>
+        <Input
+          id="store"
+          value={store}
+          onChange={(e) => setStore(e.target.value)}
+          placeholder="e.g., Trader Joe's, Whole Foods"
+        />
       </div>
 
       <div className="flex justify-end gap-2">

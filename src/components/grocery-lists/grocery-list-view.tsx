@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { GroceryListItem } from './grocery-list-item';
+import { CategorySection } from './category-section';
 import { AddManualItem } from './add-manual-item';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
@@ -19,6 +19,11 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { useRouter } from 'next/navigation';
+import {
+  getCategoryLabel,
+  getCategoryIcon,
+  DEFAULT_CATEGORY_ORDER,
+} from '@/lib/constants/grocery-categories';
 
 interface Ingredient {
   id: string;
@@ -33,7 +38,8 @@ interface ListItem {
   quantity: string;
   unit: string | null;
   category: string;
-  checked: boolean;
+  store: string | null;
+  checked: boolean | null;
   checkedBy: string | null;
   checkedAt: Date | null;
   recipeIds: string[] | null;
@@ -52,28 +58,6 @@ interface GroceryListViewProps {
   onUpdate?: () => void;
 }
 
-const categoryOrder = [
-  'produce',
-  'bakery',
-  'dairy',
-  'meat',
-  'seafood',
-  'frozen',
-  'pantry',
-  'other',
-];
-
-const categoryLabels: Record<string, string> = {
-  produce: 'Produce',
-  bakery: 'Bakery',
-  dairy: 'Dairy & Eggs',
-  meat: 'Meat',
-  seafood: 'Seafood',
-  frozen: 'Frozen Foods',
-  pantry: 'Pantry/Dry Goods',
-  other: 'Other',
-};
-
 export function GroceryListView({ list, onUpdate }: GroceryListViewProps) {
   const router = useRouter();
   const { toast } = useToast();
@@ -81,6 +65,25 @@ export function GroceryListView({ list, onUpdate }: GroceryListViewProps) {
   const [showChecked, setShowChecked] = useState(true);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isCompleting, setIsCompleting] = useState(false);
+  const [categoryOrder, setCategoryOrder] = useState<string[]>(
+    DEFAULT_CATEGORY_ORDER
+  );
+
+  // Fetch category order on mount
+  useEffect(() => {
+    async function fetchCategoryOrder() {
+      try {
+        const res = await fetch('/api/household/category-order');
+        if (res.ok) {
+          const data = await res.json();
+          setCategoryOrder(data.order);
+        }
+      } catch (error) {
+        console.error('Error fetching category order:', error);
+      }
+    }
+    fetchCategoryOrder();
+  }, []);
 
   const handleItemUpdate = async (
     itemId: string,
@@ -143,6 +146,7 @@ export function GroceryListView({ list, onUpdate }: GroceryListViewProps) {
     ingredientId: string;
     quantity: number;
     unit: string;
+    store?: string;
   }) => {
     try {
       const res = await fetch(`/api/grocery-lists/${list.id}/items`, {
@@ -201,11 +205,13 @@ export function GroceryListView({ list, onUpdate }: GroceryListViewProps) {
     }
   };
 
-  const handleCompleteShopping = async () => {
+  const handleCompleteShopping = async (deleteList: boolean = true) => {
     setIsCompleting(true);
     try {
       const res = await fetch(`/api/grocery-lists/${list.id}/complete`, {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ deleteList }),
       });
 
       if (!res.ok) {
@@ -219,7 +225,12 @@ export function GroceryListView({ list, onUpdate }: GroceryListViewProps) {
         description: `Added ${data.addedCount} new items and updated ${data.updatedCount} items in your pantry.`,
       });
 
-      router.push('/dashboard/grocery-lists');
+      if (deleteList) {
+        router.push('/dashboard/grocery-lists');
+      } else {
+        // Refresh the current page to show updated list
+        router.refresh();
+      }
     } catch (error) {
       console.error('Error completing shopping:', error);
       toast({
@@ -232,32 +243,47 @@ export function GroceryListView({ list, onUpdate }: GroceryListViewProps) {
     }
   };
 
-  // Group items by category
-  const itemsByCategory = list.items.reduce(
+  // Group items by store first, then by category within each store
+  const itemsByStore = list.items.reduce(
     (acc, item) => {
-      const category = item.category || 'other';
-      if (!acc[category]) {
-        acc[category] = [];
+      const store = item.store || 'Unassigned';
+      if (!acc[store]) {
+        acc[store] = {};
       }
-      acc[category].push(item);
+
+      const category = item.category || 'other';
+      if (!acc[store][category]) {
+        acc[store][category] = [];
+      }
+      acc[store][category].push(item);
       return acc;
     },
-    {} as Record<string, ListItem[]>
+    {} as Record<string, Record<string, ListItem[]>>
   );
 
-  // Sort categories
-  const sortedCategories = Object.keys(itemsByCategory).sort((a, b) => {
-    const aIndex = categoryOrder.indexOf(a);
-    const bIndex = categoryOrder.indexOf(b);
-    if (aIndex === -1 && bIndex === -1) return a.localeCompare(b);
-    if (aIndex === -1) return 1;
-    if (bIndex === -1) return -1;
-    return aIndex - bIndex;
+  // Sort stores alphabetically, with "Unassigned" last
+  const sortedStores = Object.keys(itemsByStore).sort((a, b) => {
+    if (a === 'Unassigned') return 1;
+    if (b === 'Unassigned') return -1;
+    return a.localeCompare(b);
   });
+
+  // Helper to sort categories
+  const sortCategories = (categories: string[]) => {
+    return categories.sort((a, b) => {
+      const aIndex = categoryOrder.indexOf(a);
+      const bIndex = categoryOrder.indexOf(b);
+      if (aIndex === -1 && bIndex === -1) return a.localeCompare(b);
+      if (aIndex === -1) return 1;
+      if (bIndex === -1) return -1;
+      return aIndex - bIndex;
+    });
+  };
 
   const checkedCount = list.items.filter((item) => item.checked).length;
   const totalCount = list.items.length;
   const allItemsChecked = totalCount > 0 && checkedCount === totalCount;
+  const hasCheckedItems = checkedCount > 0;
 
   return (
     <div className="space-y-6">
@@ -269,7 +295,7 @@ export function GroceryListView({ list, onUpdate }: GroceryListViewProps) {
           </p>
         </div>
         <div className="flex gap-2">
-          {allItemsChecked && (
+          {hasCheckedItems && (
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button
@@ -285,14 +311,37 @@ export function GroceryListView({ list, onUpdate }: GroceryListViewProps) {
                 <AlertDialogHeader>
                   <AlertDialogTitle>Complete Shopping Trip</AlertDialogTitle>
                   <AlertDialogDescription>
-                    This will add all checked items to your pantry and delete
-                    this grocery list. Are you sure you want to continue?
+                    {allItemsChecked ? (
+                      <>
+                        This will add all checked items to your pantry and
+                        delete this grocery list. Are you sure you want to
+                        continue?
+                      </>
+                    ) : (
+                      <>
+                        You have {totalCount - checkedCount} unchecked item
+                        {totalCount - checkedCount !== 1 ? 's' : ''}. What would
+                        you like to do?
+                      </>
+                    )}
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                   <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleCompleteShopping}>
-                    Complete Shopping
+                  {!allItemsChecked && (
+                    <AlertDialogAction
+                      onClick={() => handleCompleteShopping(false)}
+                      className="bg-blue-600 hover:bg-blue-700"
+                    >
+                      Keep Unchecked Items
+                    </AlertDialogAction>
+                  )}
+                  <AlertDialogAction
+                    onClick={() => handleCompleteShopping(true)}
+                  >
+                    {allItemsChecked
+                      ? 'Complete Shopping'
+                      : 'Delete Entire List'}
                   </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
@@ -358,32 +407,54 @@ export function GroceryListView({ list, onUpdate }: GroceryListViewProps) {
         </Card>
       ) : (
         <div className="space-y-6">
-          {sortedCategories.map((category) => {
-            const items = itemsByCategory[category];
-            const visibleItems = showChecked
-              ? items
-              : items.filter((item) => !item.checked);
+          {sortedStores.map((store) => {
+            const storeCategories = itemsByStore[store];
+            const sortedCategories = sortCategories(
+              Object.keys(storeCategories)
+            );
 
-            if (visibleItems.length === 0) return null;
+            // Count items for this store
+            const storeItemCount = sortedCategories.reduce(
+              (count, category) => count + storeCategories[category].length,
+              0
+            );
 
             return (
-              <Card key={category}>
-                <CardHeader>
-                  <CardTitle className="text-lg">
-                    {categoryLabels[category] || category}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  {visibleItems.map((item) => (
-                    <GroceryListItem
-                      key={item.id}
-                      item={item}
-                      onUpdate={(updates) => handleItemUpdate(item.id, updates)}
-                      onDelete={() => handleItemDelete(item.id)}
-                    />
-                  ))}
-                </CardContent>
-              </Card>
+              <div key={store} className="space-y-3">
+                {/* Store Header */}
+                <div className="flex items-center gap-3 border-b-2 border-slate-200 pb-2 dark:border-slate-700">
+                  <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">
+                    {store === 'Unassigned' ? '📋 Unassigned' : `🏪 ${store}`}
+                  </h2>
+                  <span className="text-sm text-slate-500">
+                    {storeItemCount} {storeItemCount === 1 ? 'item' : 'items'}
+                  </span>
+                </div>
+
+                {/* Categories within this store */}
+                <div className="space-y-3">
+                  {sortedCategories.map((category) => {
+                    const items = storeCategories[category];
+                    const visibleItems = showChecked
+                      ? items
+                      : items.filter((item) => !item.checked);
+
+                    if (visibleItems.length === 0) return null;
+
+                    return (
+                      <CategorySection
+                        key={`${store}-${category}`}
+                        categoryId={category}
+                        categoryName={getCategoryLabel(category)}
+                        categoryIcon={getCategoryIcon(category)}
+                        items={visibleItems}
+                        onItemUpdate={handleItemUpdate}
+                        onItemDelete={handleItemDelete}
+                      />
+                    );
+                  })}
+                </div>
+              </div>
             );
           })}
         </div>

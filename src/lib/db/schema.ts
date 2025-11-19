@@ -258,6 +258,7 @@ export const groceryListItems = pgTable(
     quantity: decimal('quantity', { precision: 10, scale: 2 }).notNull(),
     unit: text('unit'),
     category: ingredientCategoryEnum('category').notNull(),
+    store: text('store'),
     checked: boolean('checked').default(false),
     checkedBy: uuid('checked_by').references(() => users.id),
     checkedAt: timestamp('checked_at'),
@@ -268,8 +269,30 @@ export const groceryListItems = pgTable(
       table.groceryListId
     ),
     categoryIdx: index('idx_grocery_list_items_category').on(table.category),
+    storeIdx: index('idx_grocery_list_items_store').on(table.store),
   })
 );
+
+// Household category order table
+export const householdCategoryOrder = pgTable('household_category_order', {
+  householdId: uuid('household_id')
+    .primaryKey()
+    .references(() => households.id, { onDelete: 'cascade' }),
+  categoryOrder: text('category_order')
+    .array()
+    .notNull()
+    .default([
+      'produce',
+      'bakery',
+      'dairy',
+      'meat',
+      'seafood',
+      'frozen',
+      'pantry',
+      'other',
+    ]),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
 
 // Relations
 export const usersRelations = relations(users, ({ one, many }) => ({
@@ -294,6 +317,10 @@ export const householdsRelations = relations(households, ({ one, many }) => ({
   pantryItems: many(pantryItems),
   groceryLists: many(groceryLists),
   invites: many(householdInvites),
+  categoryOrder: one(householdCategoryOrder, {
+    fields: [households.id],
+    references: [householdCategoryOrder.householdId],
+  }),
   creator: one(users, {
     fields: [households.createdBy],
     references: [users.id],
@@ -436,3 +463,13 @@ export const recipeHistoryRelations = relations(recipeHistory, ({ one }) => ({
     references: [users.id],
   }),
 }));
+
+export const householdCategoryOrderRelations = relations(
+  householdCategoryOrder,
+  ({ one }) => ({
+    household: one(households, {
+      fields: [householdCategoryOrder.householdId],
+      references: [households.id],
+    }),
+  })
+);
