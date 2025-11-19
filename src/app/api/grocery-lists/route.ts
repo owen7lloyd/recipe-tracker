@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth/config';
+import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { users, groceryLists, groceryListItems, ingredients } from '@/lib/db/schema';
 import { eq, desc } from 'drizzle-orm';
@@ -10,9 +9,9 @@ import { ZodError } from 'zod';
 // GET /api/grocery-lists - List all grocery lists for household
 export async function GET(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
 
-    if (!session?.user?.email) {
+    if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -20,7 +19,7 @@ export async function GET(req: NextRequest) {
     const [user] = await db
       .select()
       .from(users)
-      .where(eq(users.email, session.user.email));
+      .where(eq(users.id, session.user.id));
 
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
@@ -93,9 +92,9 @@ export async function GET(req: NextRequest) {
 // POST /api/grocery-lists - Create a custom grocery list
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
 
-    if (!session?.user?.email) {
+    if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -103,7 +102,7 @@ export async function POST(req: NextRequest) {
     const [user] = await db
       .select()
       .from(users)
-      .where(eq(users.email, session.user.email));
+      .where(eq(users.id, session.user.id));
 
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });

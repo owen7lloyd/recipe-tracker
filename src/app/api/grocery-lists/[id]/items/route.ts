@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth/config';
+import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { users, groceryLists, groceryListItems, ingredients } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
@@ -13,9 +12,9 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
 
-    if (!session?.user?.email) {
+    if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -23,7 +22,7 @@ export async function POST(
     const [user] = await db
       .select()
       .from(users)
-      .where(eq(users.email, session.user.email));
+      .where(eq(users.id, session.user.id));
 
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
