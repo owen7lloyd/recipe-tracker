@@ -203,11 +203,13 @@ export function GroceryListView({ list, onUpdate }: GroceryListViewProps) {
     }
   };
 
-  const handleCompleteShopping = async () => {
+  const handleCompleteShopping = async (deleteList: boolean = true) => {
     setIsCompleting(true);
     try {
       const res = await fetch(`/api/grocery-lists/${list.id}/complete`, {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ deleteList }),
       });
 
       if (!res.ok) {
@@ -221,7 +223,12 @@ export function GroceryListView({ list, onUpdate }: GroceryListViewProps) {
         description: `Added ${data.addedCount} new items and updated ${data.updatedCount} items in your pantry.`,
       });
 
-      router.push('/dashboard/grocery-lists');
+      if (deleteList) {
+        router.push('/dashboard/grocery-lists');
+      } else {
+        // Refresh the current page to show updated list
+        router.refresh();
+      }
     } catch (error) {
       console.error('Error completing shopping:', error);
       toast({
@@ -260,6 +267,7 @@ export function GroceryListView({ list, onUpdate }: GroceryListViewProps) {
   const checkedCount = list.items.filter((item) => item.checked).length;
   const totalCount = list.items.length;
   const allItemsChecked = totalCount > 0 && checkedCount === totalCount;
+  const hasCheckedItems = checkedCount > 0;
 
   return (
     <div className="space-y-6">
@@ -271,7 +279,7 @@ export function GroceryListView({ list, onUpdate }: GroceryListViewProps) {
           </p>
         </div>
         <div className="flex gap-2">
-          {allItemsChecked && (
+          {hasCheckedItems && (
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button
@@ -287,14 +295,37 @@ export function GroceryListView({ list, onUpdate }: GroceryListViewProps) {
                 <AlertDialogHeader>
                   <AlertDialogTitle>Complete Shopping Trip</AlertDialogTitle>
                   <AlertDialogDescription>
-                    This will add all checked items to your pantry and delete
-                    this grocery list. Are you sure you want to continue?
+                    {allItemsChecked ? (
+                      <>
+                        This will add all checked items to your pantry and
+                        delete this grocery list. Are you sure you want to
+                        continue?
+                      </>
+                    ) : (
+                      <>
+                        You have {totalCount - checkedCount} unchecked item
+                        {totalCount - checkedCount !== 1 ? 's' : ''}. What would
+                        you like to do?
+                      </>
+                    )}
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                   <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleCompleteShopping}>
-                    Complete Shopping
+                  {!allItemsChecked && (
+                    <AlertDialogAction
+                      onClick={() => handleCompleteShopping(false)}
+                      className="bg-blue-600 hover:bg-blue-700"
+                    >
+                      Keep Unchecked Items
+                    </AlertDialogAction>
+                  )}
+                  <AlertDialogAction
+                    onClick={() => handleCompleteShopping(true)}
+                  >
+                    {allItemsChecked
+                      ? 'Complete Shopping'
+                      : 'Delete Entire List'}
                   </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>

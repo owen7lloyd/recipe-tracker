@@ -172,7 +172,18 @@ export async function POST(req: NextRequest) {
 
     const itemsMap = new Map<
       string,
-      typeof groceryLists.$inferSelect & { items: unknown[] }
+      {
+        id: string;
+        ingredientId: string;
+        ingredient: typeof ingredients.$inferSelect;
+        quantity: string;
+        unit: string | null;
+        category: string;
+        checked: boolean | null;
+        checkedBy: string | null;
+        checkedAt: Date | null;
+        recipeIds: string[] | null;
+      }
     >();
     for (const row of listWithItems) {
       if (row.item && row.ingredient) {

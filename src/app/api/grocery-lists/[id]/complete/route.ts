@@ -24,6 +24,10 @@ export async function POST(
     // Await params in Next.js 15+
     const { id: listId } = await params;
 
+    // Get request body
+    const body = await req.json();
+    const deleteList = body.deleteList !== false; // Default to true if not specified
+
     // Get user with household
     const [user] = await db
       .select()
@@ -137,8 +141,18 @@ export async function POST(
         }
       }
 
-      // Delete the grocery list (items will be cascade deleted)
-      await tx.delete(groceryLists).where(eq(groceryLists.id, listId));
+      // Delete the grocery list or just checked items based on user choice
+      if (deleteList) {
+        // Delete the entire grocery list (items will be cascade deleted)
+        await tx.delete(groceryLists).where(eq(groceryLists.id, listId));
+      } else {
+        // Only delete checked items, keep unchecked items in the list
+        for (const item of checkedItems) {
+          await tx
+            .delete(groceryListItems)
+            .where(eq(groceryListItems.id, item.id));
+        }
+      }
 
       return { addedCount, updatedCount, totalProcessed: checkedItems.length };
     });
