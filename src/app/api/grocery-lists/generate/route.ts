@@ -50,6 +50,21 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Handle the case where no items are needed
+    if (
+      error instanceof Error &&
+      error.message.startsWith('NO_ITEMS_NEEDED:')
+    ) {
+      const message = error.message.replace('NO_ITEMS_NEEDED:', '');
+      return NextResponse.json(
+        {
+          error: 'NO_ITEMS_NEEDED',
+          message,
+        },
+        { status: 400 }
+      );
+    }
+
     console.error('Error generating grocery list:', error);
     return NextResponse.json(
       { error: 'Failed to generate grocery list' },

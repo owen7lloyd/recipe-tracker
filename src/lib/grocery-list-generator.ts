@@ -37,24 +37,15 @@ export async function generateGroceryList(
     .select()
     .from(recipes)
     .where(inArray(recipes.id, req.recipeIds))
-    .innerJoin(
-      recipeIngredients,
-      eq(recipes.id, recipeIngredients.recipeId)
-    )
-    .innerJoin(
-      ingredients,
-      eq(recipeIngredients.ingredientId, ingredients.id)
-    );
+    .innerJoin(recipeIngredients, eq(recipes.id, recipeIngredients.recipeId))
+    .innerJoin(ingredients, eq(recipeIngredients.ingredientId, ingredients.id));
 
   // Fetch pantry items for the household
   const pantryData = await db
     .select()
     .from(pantryItems)
     .where(eq(pantryItems.householdId, householdId))
-    .innerJoin(
-      ingredients,
-      eq(pantryItems.ingredientId, ingredients.id)
-    );
+    .innerJoin(ingredients, eq(pantryItems.ingredientId, ingredients.id));
 
   // Build pantry lookup map
   const pantryMap = new Map<
@@ -177,6 +168,23 @@ export async function generateGroceryList(
     }
   }
 
+  // Check if any items are needed
+  const itemsToInsert = Array.from(needed.values()).map((item) => ({
+    ingredientId: item.ingredientId,
+    quantity: item.quantity.toString(),
+    unit: item.unit,
+    category: item.ingredient.category,
+    recipeIds: item.recipeIds,
+    checked: false,
+  }));
+
+  // If no items are needed, throw an error to prevent creating an empty list
+  if (itemsToInsert.length === 0) {
+    throw new Error(
+      'NO_ITEMS_NEEDED:You already have all the ingredients needed for the selected recipes in your pantry!'
+    );
+  }
+
   // Create grocery list
   const listName =
     req.name || `Shopping List - ${new Date().toLocaleDateString()}`;
@@ -190,20 +198,13 @@ export async function generateGroceryList(
     })
     .returning();
 
-  // Create grocery list items
-  const itemsToInsert = Array.from(needed.values()).map((item) => ({
+  // Add groceryListId to items and insert
+  const itemsWithListId = itemsToInsert.map((item) => ({
+    ...item,
     groceryListId: newList.id,
-    ingredientId: item.ingredientId,
-    quantity: item.quantity.toString(),
-    unit: item.unit,
-    category: item.ingredient.category as any,
-    recipeIds: item.recipeIds,
-    checked: false,
   }));
 
-  if (itemsToInsert.length > 0) {
-    await db.insert(groceryListItems).values(itemsToInsert);
-  }
+  await db.insert(groceryListItems).values(itemsWithListId);
 
   // Fetch the complete list with items and ingredients
   const listWithItems = await db
@@ -218,13 +219,24 @@ export async function generateGroceryList(
       groceryListItems,
       eq(groceryLists.id, groceryListItems.groceryListId)
     )
-    .leftJoin(
-      ingredients,
-      eq(groceryListItems.ingredientId, ingredients.id)
-    );
+    .leftJoin(ingredients, eq(groceryListItems.ingredientId, ingredients.id));
 
   // Format the response
-  const itemsMap = new Map<string, any>();
+  const itemsMap = new Map<
+    string,
+    {
+      id: string;
+      ingredientId: string;
+      ingredient: typeof ingredients.$inferSelect;
+      quantity: string;
+      unit: string | null;
+      category: string;
+      checked: boolean;
+      checkedBy: string | null;
+      checkedAt: Date | null;
+      recipeIds: string[] | null;
+    }
+  >();
   for (const row of listWithItems) {
     if (row.item && row.ingredient) {
       itemsMap.set(row.item.id, {

@@ -28,7 +28,9 @@ interface RecipeSelectorProps {
 export function RecipeSelector({ recipes }: RecipeSelectorProps) {
   const router = useRouter();
   const { toast } = useToast();
-  const [selectedRecipes, setSelectedRecipes] = useState<Set<string>>(new Set());
+  const [selectedRecipes, setSelectedRecipes] = useState<Set<string>>(
+    new Set()
+  );
   const [servings, setServings] = useState<Record<string, number>>({});
   const [isGenerating, setIsGenerating] = useState(false);
 
@@ -72,6 +74,18 @@ export function RecipeSelector({ recipes }: RecipeSelectorProps) {
 
       if (!res.ok) {
         const error = await res.json();
+
+        // Handle the special case where no items are needed
+        if (error.error === 'NO_ITEMS_NEEDED') {
+          toast({
+            title: 'No grocery shopping needed!',
+            description:
+              error.message || 'You already have all the ingredients.',
+          });
+          setIsGenerating(false);
+          return;
+        }
+
         throw new Error(error.error || 'Failed to generate list');
       }
 
@@ -112,7 +126,9 @@ export function RecipeSelector({ recipes }: RecipeSelectorProps) {
   };
 
   const totalTime = (recipe: Recipe) => {
-    return (recipe.prepTimeMinutes || 0) + (recipe.cookTimeMinutes || 0) || null;
+    return (
+      (recipe.prepTimeMinutes || 0) + (recipe.cookTimeMinutes || 0) || null
+    );
   };
 
   return (
@@ -144,7 +160,9 @@ export function RecipeSelector({ recipes }: RecipeSelectorProps) {
               onClick={generateList}
               disabled={selectedRecipes.size === 0 || isGenerating}
             >
-              {isGenerating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {isGenerating && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
               Generate Shopping List
             </Button>
           </div>
@@ -185,7 +203,7 @@ export function RecipeSelector({ recipes }: RecipeSelectorProps) {
                     <div>
                       <h3 className="font-semibold">{recipe.title}</h3>
                       {recipe.description && (
-                        <p className="mt-1 text-sm text-slate-600 dark:text-slate-400 line-clamp-2">
+                        <p className="mt-1 line-clamp-2 text-sm text-slate-600 dark:text-slate-400">
                           {recipe.description}
                         </p>
                       )}
@@ -209,7 +227,10 @@ export function RecipeSelector({ recipes }: RecipeSelectorProps) {
                         className="flex items-center gap-2"
                         onClick={(e) => e.stopPropagation()}
                       >
-                        <Label htmlFor={`servings-${recipe.id}`} className="text-sm">
+                        <Label
+                          htmlFor={`servings-${recipe.id}`}
+                          className="text-sm"
+                        >
                           Servings:
                         </Label>
                         <Input
