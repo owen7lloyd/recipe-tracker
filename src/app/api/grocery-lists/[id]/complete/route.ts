@@ -41,6 +41,8 @@ export async function POST(
       );
     }
 
+    const householdId = user.householdId; // Type narrowing for TypeScript
+
     // Check if list exists and belongs to household
     const [existingList] = await db
       .select()
@@ -48,7 +50,7 @@ export async function POST(
       .where(
         and(
           eq(groceryLists.id, listId),
-          eq(groceryLists.householdId, user.householdId)
+          eq(groceryLists.householdId, householdId)
         )
       );
 
@@ -83,7 +85,7 @@ export async function POST(
           .from(pantryItems)
           .where(
             and(
-              eq(pantryItems.householdId, user.householdId),
+              eq(pantryItems.householdId, householdId),
               eq(pantryItems.ingredientId, item.ingredientId)
             )
           );
@@ -123,7 +125,7 @@ export async function POST(
         } else {
           // Create new pantry item
           await tx.insert(pantryItems).values({
-            householdId: user.householdId,
+            householdId: householdId,
             ingredientId: item.ingredientId,
             quantity: item.quantity,
             unit: item.unit,

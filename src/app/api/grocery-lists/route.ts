@@ -1,13 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { users, groceryLists, groceryListItems, ingredients } from '@/lib/db/schema';
+import {
+  users,
+  groceryLists,
+  groceryListItems,
+  ingredients,
+} from '@/lib/db/schema';
 import { eq, desc } from 'drizzle-orm';
 import { groceryListCreateSchema } from '@/lib/validations/grocery-list';
 import { ZodError } from 'zod';
 
 // GET /api/grocery-lists - List all grocery lists for household
-export async function GET(req: NextRequest) {
+export async function GET(_req: NextRequest) {
   try {
     const session = await auth();
 
@@ -45,14 +50,14 @@ export async function GET(req: NextRequest) {
         groceryListItems,
         eq(groceryLists.id, groceryListItems.groceryListId)
       )
-      .leftJoin(
-        ingredients,
-        eq(groceryListItems.ingredientId, ingredients.id)
-      )
+      .leftJoin(ingredients, eq(groceryListItems.ingredientId, ingredients.id))
       .orderBy(desc(groceryLists.createdAt));
 
     // Group items by list
-    const listsMap = new Map<string, any>();
+    const listsMap = new Map<
+      string,
+      typeof groceryLists.$inferSelect & { items: unknown[] }
+    >();
 
     for (const row of lists) {
       if (!listsMap.has(row.list.id)) {
@@ -135,7 +140,15 @@ export async function POST(req: NextRequest) {
         ingredientId: item.ingredientId,
         quantity: item.quantity.toString(),
         unit: item.unit,
-        category: item.category as any,
+        category: item.category as
+          | 'produce'
+          | 'dairy'
+          | 'meat'
+          | 'seafood'
+          | 'pantry'
+          | 'frozen'
+          | 'bakery'
+          | 'other',
         checked: false,
       }));
 
@@ -155,12 +168,12 @@ export async function POST(req: NextRequest) {
         groceryListItems,
         eq(groceryLists.id, groceryListItems.groceryListId)
       )
-      .leftJoin(
-        ingredients,
-        eq(groceryListItems.ingredientId, ingredients.id)
-      );
+      .leftJoin(ingredients, eq(groceryListItems.ingredientId, ingredients.id));
 
-    const itemsMap = new Map<string, any>();
+    const itemsMap = new Map<
+      string,
+      typeof groceryLists.$inferSelect & { items: unknown[] }
+    >();
     for (const row of listWithItems) {
       if (row.item && row.ingredient) {
         itemsMap.set(row.item.id, {
@@ -188,7 +201,7 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     if (error instanceof ZodError) {
       return NextResponse.json(
-        { error: 'Validation error', details: error.errors },
+        { error: 'Validation error', details: error.issues },
         { status: 400 }
       );
     }

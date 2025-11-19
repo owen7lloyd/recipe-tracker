@@ -173,7 +173,15 @@ export async function generateGroceryList(
     ingredientId: item.ingredientId,
     quantity: item.quantity.toString(),
     unit: item.unit,
-    category: item.ingredient.category,
+    category: item.ingredient.category as
+      | 'produce'
+      | 'dairy'
+      | 'meat'
+      | 'seafood'
+      | 'pantry'
+      | 'frozen'
+      | 'bakery'
+      | 'other',
     recipeIds: item.recipeIds,
     checked: false,
   }));
@@ -231,7 +239,7 @@ export async function generateGroceryList(
       quantity: string;
       unit: string | null;
       category: string;
-      checked: boolean;
+      checked: boolean | null;
       checkedBy: string | null;
       checkedAt: Date | null;
       recipeIds: string[] | null;

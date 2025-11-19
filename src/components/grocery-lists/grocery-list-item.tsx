@@ -19,7 +19,7 @@ interface ListItem {
   quantity: string;
   unit: string | null;
   category: string;
-  checked: boolean;
+  checked: boolean | null;
   checkedBy: string | null;
   checkedAt: Date | null;
   recipeIds: string[] | null;
@@ -71,7 +71,7 @@ export function GroceryListItem({
       }`}
     >
       <Checkbox
-        checked={item.checked}
+        checked={item.checked ?? false}
         onCheckedChange={handleCheckChange}
         className="mt-1"
       />
@@ -80,7 +80,7 @@ export function GroceryListItem({
         <div className="flex items-center gap-2">
           <span
             className={`font-medium ${
-              item.checked ? 'line-through text-slate-500' : ''
+              item.checked ? 'text-slate-500 line-through' : ''
             }`}
           >
             {item.ingredient.name}

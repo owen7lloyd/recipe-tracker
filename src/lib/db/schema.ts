@@ -271,6 +271,27 @@ export const groceryListItems = pgTable(
   })
 );
 
+// Household category order table
+export const householdCategoryOrder = pgTable('household_category_order', {
+  householdId: uuid('household_id')
+    .primaryKey()
+    .references(() => households.id, { onDelete: 'cascade' }),
+  categoryOrder: text('category_order')
+    .array()
+    .notNull()
+    .default([
+      'produce',
+      'bakery',
+      'dairy',
+      'meat',
+      'seafood',
+      'frozen',
+      'pantry',
+      'other',
+    ]),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ one, many }) => ({
   household: one(households, {
@@ -294,6 +315,10 @@ export const householdsRelations = relations(households, ({ one, many }) => ({
   pantryItems: many(pantryItems),
   groceryLists: many(groceryLists),
   invites: many(householdInvites),
+  categoryOrder: one(householdCategoryOrder, {
+    fields: [households.id],
+    references: [householdCategoryOrder.householdId],
+  }),
   creator: one(users, {
     fields: [households.createdBy],
     references: [users.id],
@@ -436,3 +461,13 @@ export const recipeHistoryRelations = relations(recipeHistory, ({ one }) => ({
     references: [users.id],
   }),
 }));
+
+export const householdCategoryOrderRelations = relations(
+  householdCategoryOrder,
+  ({ one }) => ({
+    household: one(households, {
+      fields: [householdCategoryOrder.householdId],
+      references: [households.id],
+    }),
+  })
+);

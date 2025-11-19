@@ -77,9 +77,9 @@ export async function GET(
       ingredientId: string;
       ingredient: typeof ingredients.$inferSelect;
       quantity: string;
-      unit: string;
+      unit: string | null;
       category: string;
-      checked: boolean;
+      checked: boolean | null;
       checkedBy: string | null;
       checkedAt: Date | null;
       recipeIds: string[] | null;
@@ -198,9 +198,9 @@ export async function PUT(
       ingredientId: string;
       ingredient: typeof ingredients.$inferSelect;
       quantity: string;
-      unit: string;
+      unit: string | null;
       category: string;
-      checked: boolean;
+      checked: boolean | null;
       checkedBy: string | null;
       checkedAt: Date | null;
       recipeIds: string[] | null;
@@ -229,7 +229,7 @@ export async function PUT(
   } catch (error) {
     if (error instanceof ZodError) {
       return NextResponse.json(
-        { error: 'Validation error', details: error.errors },
+        { error: 'Validation error', details: error.issues },
         { status: 400 }
       );
     }

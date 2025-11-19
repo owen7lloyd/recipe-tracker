@@ -47,9 +47,9 @@ async function getGroceryList(listId: string, householdId: string) {
     ingredientId: string;
     ingredient: typeof ingredients.$inferSelect;
     quantity: string;
-    unit: string;
+    unit: string | null;
     category: string;
-    checked: boolean;
+    checked: boolean | null;
     checkedBy: string | null;
     checkedAt: Date | null;
     recipeIds: string[] | null;

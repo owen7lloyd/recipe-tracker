@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { GroceryListItem } from './grocery-list-item';
+import { CategorySection } from './category-section';
 import { AddManualItem } from './add-manual-item';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
@@ -19,6 +19,11 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { useRouter } from 'next/navigation';
+import {
+  getCategoryLabel,
+  getCategoryIcon,
+  DEFAULT_CATEGORY_ORDER,
+} from '@/lib/constants/grocery-categories';
 
 interface Ingredient {
   id: string;
@@ -33,7 +38,7 @@ interface ListItem {
   quantity: string;
   unit: string | null;
   category: string;
-  checked: boolean;
+  checked: boolean | null;
   checkedBy: string | null;
   checkedAt: Date | null;
   recipeIds: string[] | null;
@@ -52,28 +57,6 @@ interface GroceryListViewProps {
   onUpdate?: () => void;
 }
 
-const categoryOrder = [
-  'produce',
-  'bakery',
-  'dairy',
-  'meat',
-  'seafood',
-  'frozen',
-  'pantry',
-  'other',
-];
-
-const categoryLabels: Record<string, string> = {
-  produce: 'Produce',
-  bakery: 'Bakery',
-  dairy: 'Dairy & Eggs',
-  meat: 'Meat',
-  seafood: 'Seafood',
-  frozen: 'Frozen Foods',
-  pantry: 'Pantry/Dry Goods',
-  other: 'Other',
-};
-
 export function GroceryListView({ list, onUpdate }: GroceryListViewProps) {
   const router = useRouter();
   const { toast } = useToast();
@@ -81,6 +64,25 @@ export function GroceryListView({ list, onUpdate }: GroceryListViewProps) {
   const [showChecked, setShowChecked] = useState(true);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isCompleting, setIsCompleting] = useState(false);
+  const [categoryOrder, setCategoryOrder] = useState<string[]>(
+    DEFAULT_CATEGORY_ORDER
+  );
+
+  // Fetch category order on mount
+  useEffect(() => {
+    async function fetchCategoryOrder() {
+      try {
+        const res = await fetch('/api/household/category-order');
+        if (res.ok) {
+          const data = await res.json();
+          setCategoryOrder(data.order);
+        }
+      } catch (error) {
+        console.error('Error fetching category order:', error);
+      }
+    }
+    fetchCategoryOrder();
+  }, []);
 
   const handleItemUpdate = async (
     itemId: string,
@@ -357,7 +359,7 @@ export function GroceryListView({ list, onUpdate }: GroceryListViewProps) {
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-3">
           {sortedCategories.map((category) => {
             const items = itemsByCategory[category];
             const visibleItems = showChecked
@@ -367,23 +369,15 @@ export function GroceryListView({ list, onUpdate }: GroceryListViewProps) {
             if (visibleItems.length === 0) return null;
 
             return (
-              <Card key={category}>
-                <CardHeader>
-                  <CardTitle className="text-lg">
-                    {categoryLabels[category] || category}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  {visibleItems.map((item) => (
-                    <GroceryListItem
-                      key={item.id}
-                      item={item}
-                      onUpdate={(updates) => handleItemUpdate(item.id, updates)}
-                      onDelete={() => handleItemDelete(item.id)}
-                    />
-                  ))}
-                </CardContent>
-              </Card>
+              <CategorySection
+                key={category}
+                categoryId={category}
+                categoryName={getCategoryLabel(category)}
+                categoryIcon={getCategoryIcon(category)}
+                items={visibleItems}
+                onItemUpdate={handleItemUpdate}
+                onItemDelete={handleItemDelete}
+              />
             );
           })}
         </div>
