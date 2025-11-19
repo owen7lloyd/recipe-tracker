@@ -67,9 +67,7 @@ export default async function GroceryListsPage() {
       <div className="mx-auto max-w-7xl space-y-8">
         <div className="flex items-center justify-between">
           <div className="space-y-1">
-            <h1 className="text-3xl font-bold tracking-tight">
-              Grocery Lists
-            </h1>
+            <h1 className="text-3xl font-bold tracking-tight">Grocery Lists</h1>
             <p className="text-slate-600 dark:text-slate-400">
               Manage your shopping lists
             </p>
@@ -95,7 +93,7 @@ export default async function GroceryListsPage() {
               <Link href="/dashboard/grocery-lists/new">
                 <Button>
                   <Plus className="mr-2 h-4 w-4" />
-                  Create Grocery List
+                  New Grocery List
                 </Button>
               </Link>
             </CardContent>
@@ -103,10 +101,7 @@ export default async function GroceryListsPage() {
         ) : (
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
             {listsWithCounts.map((list) => (
-              <Link
-                key={list.id}
-                href={`/dashboard/grocery-lists/${list.id}`}
-              >
+              <Link key={list.id} href={`/dashboard/grocery-lists/${list.id}`}>
                 <Card className="h-full transition-shadow hover:shadow-lg">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
