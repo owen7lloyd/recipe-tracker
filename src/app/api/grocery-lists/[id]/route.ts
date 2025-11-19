@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { users, groceryLists, groceryListItems, ingredients } from '@/lib/db/schema';
+import {
+  users,
+  groceryLists,
+  groceryListItems,
+  ingredients,
+} from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { groceryListUpdateSchema } from '@/lib/validations/grocery-list';
 import { ZodError } from 'zod';
@@ -9,7 +14,7 @@ import { ZodError } from 'zod';
 // GET /api/grocery-lists/:id - Get specific grocery list
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await auth();
@@ -17,6 +22,9 @@ export async function GET(
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    // Await params in Next.js 15+
+    const { id: listId } = await params;
 
     // Get user with household
     const [user] = await db
@@ -34,8 +42,6 @@ export async function GET(
         { status: 400 }
       );
     }
-
-    const listId = params.id;
 
     // Fetch the grocery list with items
     const listData = await db
@@ -55,10 +61,7 @@ export async function GET(
         groceryListItems,
         eq(groceryLists.id, groceryListItems.groceryListId)
       )
-      .leftJoin(
-        ingredients,
-        eq(groceryListItems.ingredientId, ingredients.id)
-      );
+      .leftJoin(ingredients, eq(groceryListItems.ingredientId, ingredients.id));
 
     if (listData.length === 0) {
       return NextResponse.json(
@@ -69,7 +72,18 @@ export async function GET(
 
     // Format the response
     const list = listData[0].list;
-    const items: any[] = [];
+    const items: Array<{
+      id: string;
+      ingredientId: string;
+      ingredient: typeof ingredients.$inferSelect;
+      quantity: string;
+      unit: string;
+      category: string;
+      checked: boolean;
+      checkedBy: string | null;
+      checkedAt: Date | null;
+      recipeIds: string[] | null;
+    }> = [];
 
     for (const row of listData) {
       if (row.item && row.ingredient) {
@@ -104,7 +118,7 @@ export async function GET(
 // PUT /api/grocery-lists/:id - Update grocery list
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await auth();
@@ -112,6 +126,9 @@ export async function PUT(
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    // Await params in Next.js 15+
+    const { id: listId } = await params;
 
     // Get user with household
     const [user] = await db
@@ -130,7 +147,6 @@ export async function PUT(
       );
     }
 
-    const listId = params.id;
     const body = await req.json();
     const validated = groceryListUpdateSchema.parse(body);
 
@@ -175,12 +191,20 @@ export async function PUT(
         groceryListItems,
         eq(groceryLists.id, groceryListItems.groceryListId)
       )
-      .leftJoin(
-        ingredients,
-        eq(groceryListItems.ingredientId, ingredients.id)
-      );
+      .leftJoin(ingredients, eq(groceryListItems.ingredientId, ingredients.id));
 
-    const items: any[] = [];
+    const items: Array<{
+      id: string;
+      ingredientId: string;
+      ingredient: typeof ingredients.$inferSelect;
+      quantity: string;
+      unit: string;
+      category: string;
+      checked: boolean;
+      checkedBy: string | null;
+      checkedAt: Date | null;
+      recipeIds: string[] | null;
+    }> = [];
     for (const row of listWithItems) {
       if (row.item && row.ingredient) {
         items.push({
@@ -221,7 +245,7 @@ export async function PUT(
 // DELETE /api/grocery-lists/:id - Delete grocery list
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await auth();
@@ -229,6 +253,9 @@ export async function DELETE(
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    // Await params in Next.js 15+
+    const { id: listId } = await params;
 
     // Get user with household
     const [user] = await db
@@ -246,8 +273,6 @@ export async function DELETE(
         { status: 400 }
       );
     }
-
-    const listId = params.id;
 
     // Check if list exists and belongs to household
     const [existingList] = await db

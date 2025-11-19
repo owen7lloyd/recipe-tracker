@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { users, groceryLists, groceryListItems, ingredients } from '@/lib/db/schema';
+import {
+  users,
+  groceryLists,
+  groceryListItems,
+  ingredients,
+} from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { groceryListItemUpdateSchema } from '@/lib/validations/grocery-list';
 import { ZodError } from 'zod';
@@ -9,7 +14,7 @@ import { ZodError } from 'zod';
 // PUT /api/grocery-lists/:id/items/:itemId - Update item
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { id: string; itemId: string } }
+  { params }: { params: Promise<{ id: string; itemId: string }> }
 ) {
   try {
     const session = await auth();
@@ -17,6 +22,9 @@ export async function PUT(
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    // Await params in Next.js 15+
+    const { id: listId, itemId } = await params;
 
     // Get user with household
     const [user] = await db
@@ -34,8 +42,6 @@ export async function PUT(
         { status: 400 }
       );
     }
-
-    const { id: listId, itemId } = params;
     const body = await req.json();
     const validated = groceryListItemUpdateSchema.parse(body);
 
@@ -69,14 +75,17 @@ export async function PUT(
       );
 
     if (!existingItem) {
-      return NextResponse.json(
-        { error: 'Item not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Item not found' }, { status: 404 });
     }
 
     // Build update object
-    const updateData: any = {};
+    const updateData: {
+      quantity?: string;
+      unit?: string;
+      checked?: boolean;
+      checkedBy?: string | null;
+      checkedAt?: Date | null;
+    } = {};
     if (validated.quantity !== undefined) {
       updateData.quantity = validated.quantity.toString();
     }
@@ -95,11 +104,10 @@ export async function PUT(
     }
 
     // Update the item
-    const [updatedItem] = await db
+    await db
       .update(groceryListItems)
       .set(updateData)
-      .where(eq(groceryListItems.id, itemId))
-      .returning();
+      .where(eq(groceryListItems.id, itemId));
 
     // Fetch updated item with ingredient details
     const [itemWithIngredient] = await db
@@ -145,7 +153,7 @@ export async function PUT(
 // DELETE /api/grocery-lists/:id/items/:itemId - Delete item
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string; itemId: string } }
+  { params }: { params: Promise<{ id: string; itemId: string }> }
 ) {
   try {
     const session = await auth();
@@ -153,6 +161,9 @@ export async function DELETE(
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    // Await params in Next.js 15+
+    const { id: listId, itemId } = await params;
 
     // Get user with household
     const [user] = await db
@@ -170,8 +181,6 @@ export async function DELETE(
         { status: 400 }
       );
     }
-
-    const { id: listId, itemId } = params;
 
     // Check if list exists and belongs to household
     const [existingList] = await db
@@ -203,10 +212,7 @@ export async function DELETE(
       );
 
     if (!existingItem) {
-      return NextResponse.json(
-        { error: 'Item not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Item not found' }, { status: 404 });
     }
 
     // Delete the item

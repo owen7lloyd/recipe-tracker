@@ -12,9 +12,9 @@ import {
 import { eq, and } from 'drizzle-orm';
 
 interface PageProps {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 async function getGroceryList(listId: string, householdId: string) {
@@ -42,7 +42,18 @@ async function getGroceryList(listId: string, householdId: string) {
   }
 
   const list = listData[0].list;
-  const items: any[] = [];
+  const items: Array<{
+    id: string;
+    ingredientId: string;
+    ingredient: typeof ingredients.$inferSelect;
+    quantity: string;
+    unit: string;
+    category: string;
+    checked: boolean;
+    checkedBy: string | null;
+    checkedAt: Date | null;
+    recipeIds: string[] | null;
+  }> = [];
 
   for (const row of listData) {
     if (row.item && row.ingredient) {
@@ -74,6 +85,9 @@ export default async function GroceryListDetailPage({ params }: PageProps) {
     redirect('/login');
   }
 
+  // Await params in Next.js 15+
+  const { id } = await params;
+
   // Get user with household
   const [user] = await db
     .select()
@@ -94,7 +108,7 @@ export default async function GroceryListDetailPage({ params }: PageProps) {
     );
   }
 
-  const list = await getGroceryList(params.id, user.householdId);
+  const list = await getGroceryList(id, user.householdId);
 
   if (!list) {
     notFound();

@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { users, groceryLists, groceryListItems, ingredients } from '@/lib/db/schema';
+import {
+  users,
+  groceryLists,
+  groceryListItems,
+  ingredients,
+} from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { groceryListItemSchema } from '@/lib/validations/grocery-list';
 import { ZodError } from 'zod';
@@ -9,7 +14,7 @@ import { ZodError } from 'zod';
 // POST /api/grocery-lists/:id/items - Add item to grocery list
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await auth();
@@ -17,6 +22,9 @@ export async function POST(
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    // Await params in Next.js 15+
+    const { id: listId } = await params;
 
     // Get user with household
     const [user] = await db
@@ -34,8 +42,6 @@ export async function POST(
         { status: 400 }
       );
     }
-
-    const listId = params.id;
     const body = await req.json();
     const validated = groceryListItemSchema.parse(body);
 
@@ -72,7 +78,7 @@ export async function POST(
         );
       }
 
-      category = ingredient.category as any;
+      category = ingredient.category;
     }
 
     // Add the item
@@ -83,7 +89,7 @@ export async function POST(
         ingredientId: validated.ingredientId,
         quantity: validated.quantity.toString(),
         unit: validated.unit,
-        category: category as any,
+        category: category,
         checked: false,
       })
       .returning();
