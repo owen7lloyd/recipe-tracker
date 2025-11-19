@@ -49,6 +49,7 @@ async function getGroceryList(listId: string, householdId: string) {
     quantity: string;
     unit: string | null;
     category: string;
+    store: string | null;
     checked: boolean | null;
     checkedBy: string | null;
     checkedAt: Date | null;
@@ -64,6 +65,7 @@ async function getGroceryList(listId: string, householdId: string) {
         quantity: row.item.quantity,
         unit: row.item.unit,
         category: row.item.category,
+        store: row.item.store,
         checked: row.item.checked,
         checkedBy: row.item.checkedBy,
         checkedAt: row.item.checkedAt,

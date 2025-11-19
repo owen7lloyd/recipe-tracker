@@ -17,6 +17,7 @@ interface AddManualItemProps {
     ingredientId: string;
     quantity: number;
     unit: string;
+    store?: string;
   }) => void;
   onCancel: () => void;
 }
@@ -27,6 +28,7 @@ export function AddManualItem({ onAdd, onCancel }: AddManualItemProps) {
     useState<Ingredient | null>(null);
   const [quantity, setQuantity] = useState<number>(1);
   const [unit, setUnit] = useState('');
+  const [store, setStore] = useState('');
   const [suggestions, setSuggestions] = useState<Ingredient[]>([]);
   const [isSearching, setIsSearching] = useState(false);
 
@@ -73,6 +75,7 @@ export function AddManualItem({ onAdd, onCancel }: AddManualItemProps) {
       ingredientId: selectedIngredient.id,
       quantity,
       unit,
+      store: store || undefined,
     });
   };
 
@@ -136,6 +139,16 @@ export function AddManualItem({ onAdd, onCancel }: AddManualItemProps) {
             placeholder="e.g., cups, lbs"
           />
         </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="store">Store (Optional)</Label>
+        <Input
+          id="store"
+          value={store}
+          onChange={(e) => setStore(e.target.value)}
+          placeholder="e.g., Trader Joe's, Whole Foods"
+        />
       </div>
 
       <div className="flex justify-end gap-2">

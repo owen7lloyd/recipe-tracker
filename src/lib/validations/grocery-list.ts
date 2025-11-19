@@ -37,6 +37,7 @@ export const groceryListItemSchema = z.object({
   ingredientId: z.string().uuid(),
   quantity: z.number().positive(),
   unit: z.string(),
+  store: z.string().optional(),
   category: z
     .enum([
       'produce',
@@ -54,6 +55,7 @@ export const groceryListItemSchema = z.object({
 export const groceryListItemUpdateSchema = z.object({
   quantity: z.number().positive().optional(),
   unit: z.string().optional(),
+  store: z.string().optional(),
   checked: z.boolean().optional(),
 });
 

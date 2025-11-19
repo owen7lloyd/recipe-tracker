@@ -82,6 +82,7 @@ export async function PUT(
     const updateData: {
       quantity?: string;
       unit?: string;
+      store?: string;
       checked?: boolean;
       checkedBy?: string | null;
       checkedAt?: Date | null;
@@ -91,6 +92,9 @@ export async function PUT(
     }
     if (validated.unit !== undefined) {
       updateData.unit = validated.unit;
+    }
+    if (validated.store !== undefined) {
+      updateData.store = validated.store;
     }
     if (validated.checked !== undefined) {
       updateData.checked = validated.checked;
@@ -129,6 +133,7 @@ export async function PUT(
       quantity: itemWithIngredient.item.quantity,
       unit: itemWithIngredient.item.unit,
       category: itemWithIngredient.item.category,
+      store: itemWithIngredient.item.store,
       checked: itemWithIngredient.item.checked,
       checkedBy: itemWithIngredient.item.checkedBy,
       checkedAt: itemWithIngredient.item.checkedAt,

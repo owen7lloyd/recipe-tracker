@@ -38,6 +38,7 @@ interface ListItem {
   quantity: string;
   unit: string | null;
   category: string;
+  store: string | null;
   checked: boolean | null;
   checkedBy: string | null;
   checkedAt: Date | null;
@@ -145,6 +146,7 @@ export function GroceryListView({ list, onUpdate }: GroceryListViewProps) {
     ingredientId: string;
     quantity: number;
     unit: string;
+    store?: string;
   }) => {
     try {
       const res = await fetch(`/api/grocery-lists/${list.id}/items`, {
@@ -241,28 +243,42 @@ export function GroceryListView({ list, onUpdate }: GroceryListViewProps) {
     }
   };
 
-  // Group items by category
-  const itemsByCategory = list.items.reduce(
+  // Group items by store first, then by category within each store
+  const itemsByStore = list.items.reduce(
     (acc, item) => {
-      const category = item.category || 'other';
-      if (!acc[category]) {
-        acc[category] = [];
+      const store = item.store || 'Unassigned';
+      if (!acc[store]) {
+        acc[store] = {};
       }
-      acc[category].push(item);
+
+      const category = item.category || 'other';
+      if (!acc[store][category]) {
+        acc[store][category] = [];
+      }
+      acc[store][category].push(item);
       return acc;
     },
-    {} as Record<string, ListItem[]>
+    {} as Record<string, Record<string, ListItem[]>>
   );
 
-  // Sort categories
-  const sortedCategories = Object.keys(itemsByCategory).sort((a, b) => {
-    const aIndex = categoryOrder.indexOf(a);
-    const bIndex = categoryOrder.indexOf(b);
-    if (aIndex === -1 && bIndex === -1) return a.localeCompare(b);
-    if (aIndex === -1) return 1;
-    if (bIndex === -1) return -1;
-    return aIndex - bIndex;
+  // Sort stores alphabetically, with "Unassigned" last
+  const sortedStores = Object.keys(itemsByStore).sort((a, b) => {
+    if (a === 'Unassigned') return 1;
+    if (b === 'Unassigned') return -1;
+    return a.localeCompare(b);
   });
+
+  // Helper to sort categories
+  const sortCategories = (categories: string[]) => {
+    return categories.sort((a, b) => {
+      const aIndex = categoryOrder.indexOf(a);
+      const bIndex = categoryOrder.indexOf(b);
+      if (aIndex === -1 && bIndex === -1) return a.localeCompare(b);
+      if (aIndex === -1) return 1;
+      if (bIndex === -1) return -1;
+      return aIndex - bIndex;
+    });
+  };
 
   const checkedCount = list.items.filter((item) => item.checked).length;
   const totalCount = list.items.length;
@@ -390,25 +406,55 @@ export function GroceryListView({ list, onUpdate }: GroceryListViewProps) {
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-3">
-          {sortedCategories.map((category) => {
-            const items = itemsByCategory[category];
-            const visibleItems = showChecked
-              ? items
-              : items.filter((item) => !item.checked);
+        <div className="space-y-6">
+          {sortedStores.map((store) => {
+            const storeCategories = itemsByStore[store];
+            const sortedCategories = sortCategories(
+              Object.keys(storeCategories)
+            );
 
-            if (visibleItems.length === 0) return null;
+            // Count items for this store
+            const storeItemCount = sortedCategories.reduce(
+              (count, category) => count + storeCategories[category].length,
+              0
+            );
 
             return (
-              <CategorySection
-                key={category}
-                categoryId={category}
-                categoryName={getCategoryLabel(category)}
-                categoryIcon={getCategoryIcon(category)}
-                items={visibleItems}
-                onItemUpdate={handleItemUpdate}
-                onItemDelete={handleItemDelete}
-              />
+              <div key={store} className="space-y-3">
+                {/* Store Header */}
+                <div className="flex items-center gap-3 border-b-2 border-slate-200 pb-2 dark:border-slate-700">
+                  <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">
+                    {store === 'Unassigned' ? '📋 Unassigned' : `🏪 ${store}`}
+                  </h2>
+                  <span className="text-sm text-slate-500">
+                    {storeItemCount} {storeItemCount === 1 ? 'item' : 'items'}
+                  </span>
+                </div>
+
+                {/* Categories within this store */}
+                <div className="space-y-3">
+                  {sortedCategories.map((category) => {
+                    const items = storeCategories[category];
+                    const visibleItems = showChecked
+                      ? items
+                      : items.filter((item) => !item.checked);
+
+                    if (visibleItems.length === 0) return null;
+
+                    return (
+                      <CategorySection
+                        key={`${store}-${category}`}
+                        categoryId={category}
+                        categoryName={getCategoryLabel(category)}
+                        categoryIcon={getCategoryIcon(category)}
+                        items={visibleItems}
+                        onItemUpdate={handleItemUpdate}
+                        onItemDelete={handleItemDelete}
+                      />
+                    );
+                  })}
+                </div>
+              </div>
             );
           })}
         </div>

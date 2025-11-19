@@ -258,6 +258,7 @@ export const groceryListItems = pgTable(
     quantity: decimal('quantity', { precision: 10, scale: 2 }).notNull(),
     unit: text('unit'),
     category: ingredientCategoryEnum('category').notNull(),
+    store: text('store'),
     checked: boolean('checked').default(false),
     checkedBy: uuid('checked_by').references(() => users.id),
     checkedAt: timestamp('checked_at'),
@@ -268,6 +269,7 @@ export const groceryListItems = pgTable(
       table.groceryListId
     ),
     categoryIdx: index('idx_grocery_list_items_category').on(table.category),
+    storeIdx: index('idx_grocery_list_items_store').on(table.store),
   })
 );
 
