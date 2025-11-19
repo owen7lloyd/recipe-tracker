@@ -6,7 +6,7 @@ import { GroceryListItem } from './grocery-list-item';
 import { AddManualItem } from './add-manual-item';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
-import { Trash2, Plus } from 'lucide-react';
+import { Trash2, Plus, CheckCircle2 } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -80,20 +80,18 @@ export function GroceryListView({ list, onUpdate }: GroceryListViewProps) {
   const [showAddItem, setShowAddItem] = useState(false);
   const [showChecked, setShowChecked] = useState(true);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isCompleting, setIsCompleting] = useState(false);
 
   const handleItemUpdate = async (
     itemId: string,
     updates: { quantity?: number; unit?: string; checked?: boolean }
   ) => {
     try {
-      const res = await fetch(
-        `/api/grocery-lists/${list.id}/items/${itemId}`,
-        {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(updates),
-        }
-      );
+      const res = await fetch(`/api/grocery-lists/${list.id}/items/${itemId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updates),
+      });
 
       if (!res.ok) {
         throw new Error('Failed to update item');
@@ -117,12 +115,9 @@ export function GroceryListView({ list, onUpdate }: GroceryListViewProps) {
 
   const handleItemDelete = async (itemId: string) => {
     try {
-      const res = await fetch(
-        `/api/grocery-lists/${list.id}/items/${itemId}`,
-        {
-          method: 'DELETE',
-        }
-      );
+      const res = await fetch(`/api/grocery-lists/${list.id}/items/${itemId}`, {
+        method: 'DELETE',
+      });
 
       if (!res.ok) {
         throw new Error('Failed to delete item');
@@ -206,6 +201,37 @@ export function GroceryListView({ list, onUpdate }: GroceryListViewProps) {
     }
   };
 
+  const handleCompleteShopping = async () => {
+    setIsCompleting(true);
+    try {
+      const res = await fetch(`/api/grocery-lists/${list.id}/complete`, {
+        method: 'POST',
+      });
+
+      if (!res.ok) {
+        throw new Error('Failed to complete shopping');
+      }
+
+      const data = await res.json();
+
+      toast({
+        title: 'Shopping completed!',
+        description: `Added ${data.addedCount} new items and updated ${data.updatedCount} items in your pantry.`,
+      });
+
+      router.push('/dashboard/grocery-lists');
+    } catch (error) {
+      console.error('Error completing shopping:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to complete shopping trip',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsCompleting(false);
+    }
+  };
+
   // Group items by category
   const itemsByCategory = list.items.reduce(
     (acc, item) => {
@@ -231,6 +257,7 @@ export function GroceryListView({ list, onUpdate }: GroceryListViewProps) {
 
   const checkedCount = list.items.filter((item) => item.checked).length;
   const totalCount = list.items.length;
+  const allItemsChecked = totalCount > 0 && checkedCount === totalCount;
 
   return (
     <div className="space-y-6">
@@ -242,6 +269,35 @@ export function GroceryListView({ list, onUpdate }: GroceryListViewProps) {
           </p>
         </div>
         <div className="flex gap-2">
+          {allItemsChecked && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="default"
+                  disabled={isCompleting}
+                  className="bg-green-600 hover:bg-green-700"
+                >
+                  <CheckCircle2 className="mr-2 h-4 w-4" />
+                  Complete Shopping
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Complete Shopping Trip</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will add all checked items to your pantry and delete
+                    this grocery list. Are you sure you want to continue?
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleCompleteShopping}>
+                    Complete Shopping
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
           <Button
             variant="outline"
             onClick={() => setShowChecked(!showChecked)}
