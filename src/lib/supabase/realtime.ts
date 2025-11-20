@@ -1,4 +1,4 @@
-import { supabase } from './client';
+import { supabase, isSupabaseConfigured } from './client';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 
 export interface GroceryListUpdate {
@@ -22,6 +22,13 @@ export function subscribeToGroceryList(
   listId: string,
   onUpdate: (payload: GroceryListUpdate) => void
 ): () => void {
+  if (!supabase || !isSupabaseConfigured) {
+    console.warn(
+      'Supabase not configured. Real-time sync disabled. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY to enable.'
+    );
+    return () => {}; // Return no-op function
+  }
+
   const channel = supabase
     .channel(`grocery_list:${listId}`)
     .on(
@@ -59,6 +66,11 @@ export function subscribeToGroceryListPresence(
   userName: string,
   onPresenceUpdate: (users: Array<{ id: string; name: string }>) => void
 ): () => void {
+  if (!supabase || !isSupabaseConfigured) {
+    console.warn('Supabase not configured. Presence tracking disabled.');
+    return () => {}; // Return no-op function
+  }
+
   const channel = supabase.channel(`grocery_list_presence:${listId}`);
 
   channel
@@ -95,6 +107,11 @@ export async function broadcastListUpdate(
   event: string,
   data: any
 ): Promise<void> {
+  if (!supabase || !isSupabaseConfigured) {
+    console.warn('Supabase not configured. Broadcast disabled.');
+    return;
+  }
+
   const channel = supabase.channel(`grocery_list:${listId}`);
 
   await channel.send({
