@@ -44,11 +44,13 @@ interface GroceryList {
 interface OrganizedGroceryListProps {
   listId: string;
   readOnly?: boolean;
+  showChecked?: boolean;
 }
 
 export function OrganizedGroceryList({
   listId,
   readOnly = false,
+  showChecked = true,
 }: OrganizedGroceryListProps) {
   const { data: session } = useSession();
   const { toast } = useToast();
@@ -318,6 +320,11 @@ export function OrganizedGroceryList({
                 <div className="space-y-3">
                   {sortedCategories.map((category) => {
                     const items = storeCategories[category];
+                    const visibleItems = showChecked
+                      ? items
+                      : items.filter((item) => !item.checked);
+
+                    if (visibleItems.length === 0) return null;
 
                     return (
                       <CategorySection
@@ -325,7 +332,7 @@ export function OrganizedGroceryList({
                         categoryId={category}
                         categoryName={getCategoryLabel(category)}
                         categoryIcon={getCategoryIcon(category)}
-                        items={items}
+                        items={visibleItems}
                         onItemUpdate={handleItemUpdate}
                         onItemDelete={handleItemDelete}
                         readOnly={readOnly}
