@@ -37,6 +37,7 @@ interface CategorySectionProps {
   ) => void;
   onItemDelete: (itemId: string) => void;
   defaultCollapsed?: boolean;
+  readOnly?: boolean;
 }
 
 export function CategorySection({
@@ -47,6 +48,7 @@ export function CategorySection({
   onItemUpdate,
   onItemDelete,
   defaultCollapsed = false,
+  readOnly = false,
 }: CategorySectionProps) {
   const [isCollapsed, setIsCollapsed] = useState(defaultCollapsed);
 
@@ -84,6 +86,7 @@ export function CategorySection({
               item={item}
               onUpdate={(updates) => onItemUpdate(item.id, updates)}
               onDelete={() => onItemDelete(item.id)}
+              readOnly={readOnly}
             />
           ))}
         </CardContent>

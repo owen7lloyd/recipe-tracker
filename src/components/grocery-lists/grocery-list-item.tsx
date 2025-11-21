@@ -37,12 +37,14 @@ interface GroceryListItemProps {
     checked?: boolean;
   }) => void;
   onDelete: () => void;
+  readOnly?: boolean;
 }
 
 export function GroceryListItem({
   item,
   onUpdate,
   onDelete,
+  readOnly = false,
 }: GroceryListItemProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editQuantity, setEditQuantity] = useState(parseFloat(item.quantity));
@@ -81,6 +83,7 @@ export function GroceryListItem({
         checked={item.checked ?? false}
         onCheckedChange={handleCheckChange}
         className="mt-1"
+        disabled={readOnly}
       />
 
       <div className="flex-1">
@@ -149,7 +152,7 @@ export function GroceryListItem({
         )}
       </div>
 
-      {!item.checked && (
+      {!item.checked && !readOnly && (
         <div className="flex gap-1">
           {!isEditing && (
             <Button

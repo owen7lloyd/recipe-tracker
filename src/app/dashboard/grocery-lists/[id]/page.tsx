@@ -1,83 +1,15 @@
 import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { notFound } from 'next/navigation';
-import { GroceryListClientWrapper } from '@/components/grocery-lists/grocery-list-client-wrapper';
+import { GroceryListWithRealtime } from '@/components/grocery-lists/GroceryListWithRealtime';
 import { db } from '@/lib/db';
-import {
-  users,
-  groceryLists,
-  groceryListItems,
-  ingredients,
-} from '@/lib/db/schema';
+import { users, groceryLists } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
 
 interface PageProps {
   params: Promise<{
     id: string;
   }>;
-}
-
-async function getGroceryList(listId: string, householdId: string) {
-  const listData = await db
-    .select({
-      list: groceryLists,
-      item: groceryListItems,
-      ingredient: ingredients,
-    })
-    .from(groceryLists)
-    .where(
-      and(
-        eq(groceryLists.id, listId),
-        eq(groceryLists.householdId, householdId)
-      )
-    )
-    .leftJoin(
-      groceryListItems,
-      eq(groceryLists.id, groceryListItems.groceryListId)
-    )
-    .leftJoin(ingredients, eq(groceryListItems.ingredientId, ingredients.id));
-
-  if (listData.length === 0) {
-    return null;
-  }
-
-  const list = listData[0].list;
-  const items: Array<{
-    id: string;
-    ingredientId: string;
-    ingredient: typeof ingredients.$inferSelect;
-    quantity: string;
-    unit: string | null;
-    category: string;
-    store: string | null;
-    checked: boolean | null;
-    checkedBy: string | null;
-    checkedAt: Date | null;
-    recipeIds: string[] | null;
-  }> = [];
-
-  for (const row of listData) {
-    if (row.item && row.ingredient) {
-      items.push({
-        id: row.item.id,
-        ingredientId: row.item.ingredientId,
-        ingredient: row.ingredient,
-        quantity: row.item.quantity,
-        unit: row.item.unit,
-        category: row.item.category,
-        store: row.item.store,
-        checked: row.item.checked,
-        checkedBy: row.item.checkedBy,
-        checkedAt: row.item.checkedAt,
-        recipeIds: row.item.recipeIds,
-      });
-    }
-  }
-
-  return {
-    ...list,
-    items,
-  };
 }
 
 export default async function GroceryListDetailPage({ params }: PageProps) {
@@ -110,16 +42,23 @@ export default async function GroceryListDetailPage({ params }: PageProps) {
     );
   }
 
-  const list = await getGroceryList(id, user.householdId);
+  // Verify list exists and belongs to household
+  const [list] = await db
+    .select()
+    .from(groceryLists)
+    .where(
+      and(eq(groceryLists.id, id), eq(groceryLists.householdId, user.householdId))
+    );
 
   if (!list) {
-    notFound();
+    // Redirect to grocery lists page if list not found
+    redirect('/dashboard/grocery-lists');
   }
 
   return (
     <div className="min-h-screen bg-slate-50 p-8 dark:bg-slate-900">
       <div className="mx-auto max-w-5xl">
-        <GroceryListClientWrapper initialList={list} />
+        <GroceryListWithRealtime listId={list.id} listName={list.name} />
       </div>
     </div>
   );

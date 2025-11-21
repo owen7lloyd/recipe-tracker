@@ -9,6 +9,11 @@ export default auth((req) => {
   const publicRoutes = ['/', '/login', '/register'];
   const authRoutes = ['/login', '/register'];
 
+  // Allow shared grocery lists (read-only public access)
+  if (pathname.startsWith('/shared/') || pathname.startsWith('/api/grocery-lists/shared/')) {
+    return NextResponse.next();
+  }
+
   // Allow public routes
   if (publicRoutes.includes(pathname)) {
     // Redirect authenticated users away from auth pages
