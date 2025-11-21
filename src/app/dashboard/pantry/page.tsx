@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Search, Loader2, PackageOpen } from 'lucide-react';
+import { PantryEmptyState, SearchEmptyState } from '@/components/ui/empty-state';
 
 interface PantryItem {
   id: string;
@@ -205,18 +206,22 @@ export default function PantryPage() {
                 </div>
               )}
 
-              {/* Empty State */}
-              {!isLoading && filteredItems.length === 0 && search && (
-                <div className="flex flex-col items-center justify-center py-12 text-center">
-                  <PackageOpen className="mb-4 h-12 w-12 text-gray-400" />
-                  <p className="text-gray-500 dark:text-gray-400">
-                    No items found matching "{search}"
-                  </p>
-                </div>
+              {/* Empty States */}
+              {!isLoading && items.length === 0 && (
+                <PantryEmptyState onAddItem={() => {
+                  // Focus on the add item form (already visible on the page)
+                  document.querySelector('input[name="ingredient"]')?.focus();
+                }} />
+              )}
+
+              {!isLoading && items.length > 0 && filteredItems.length === 0 && (
+                <SearchEmptyState searchTerm={search || selectedCategory} />
               )}
 
               {/* Pantry List */}
-              {!isLoading && <PantryList items={filteredItems} onUpdate={fetchPantryItems} />}
+              {!isLoading && filteredItems.length > 0 && (
+                <PantryList items={filteredItems} onUpdate={fetchPantryItems} />
+              )}
             </CardContent>
           </Card>
         </div>

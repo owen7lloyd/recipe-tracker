@@ -1,6 +1,7 @@
 import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { DashboardNav } from '@/components/dashboard/dashboard-nav';
+import { DashboardErrorBoundary } from '@/components/dashboard/dashboard-error-boundary';
 
 export default async function DashboardLayout({
   children,
@@ -16,7 +17,11 @@ export default async function DashboardLayout({
   return (
     <div className="min-h-screen">
       <DashboardNav user={session.user} />
-      <main>{children}</main>
+      <main>
+        <DashboardErrorBoundary>
+          {children}
+        </DashboardErrorBoundary>
+      </main>
     </div>
   );
 }
