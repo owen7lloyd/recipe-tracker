@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useGroceryListRealtime } from '@/lib/hooks/useGroceryListRealtime';
 import { OrganizedGroceryList } from './OrganizedGroceryList';
 import Link from 'next/link';
@@ -14,6 +15,7 @@ interface GroceryList {
 }
 
 export function SharedListView({ token }: { token: string }) {
+  const queryClient = useQueryClient();
   const [list, setList] = useState<GroceryList | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -41,6 +43,9 @@ export function SharedListView({ token }: { token: string }) {
         const data = await res.json();
         console.log('Shared list loaded:', data);
         setList(data);
+
+        // Pre-populate React Query cache so OrganizedGroceryList can use it
+        queryClient.setQueryData(['grocery-list', data.id], data);
       } catch (err) {
         console.error('Error fetching shared list:', err);
         setError('Failed to load shared list');
@@ -50,7 +55,7 @@ export function SharedListView({ token }: { token: string }) {
     }
 
     fetchSharedList();
-  }, [token]);
+  }, [token, queryClient]);
 
   // Subscribe to real-time updates for this list
   useGroceryListRealtime(list?.id || '');
