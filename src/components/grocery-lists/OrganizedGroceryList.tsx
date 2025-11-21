@@ -80,8 +80,10 @@ export function OrganizedGroceryList({
     session?.user?.name
   );
 
-  // Fetch category order
+  // Fetch category order (skip for read-only shared lists)
   useEffect(() => {
+    if (readOnly) return; // Don't fetch household settings for shared lists
+
     async function fetchCategoryOrder() {
       try {
         const res = await fetch('/api/household/category-order');
@@ -94,7 +96,7 @@ export function OrganizedGroceryList({
       }
     }
     fetchCategoryOrder();
-  }, []);
+  }, [readOnly]);
 
   // Optimistic update mutation for checking items
   const checkMutation = useMutation({
