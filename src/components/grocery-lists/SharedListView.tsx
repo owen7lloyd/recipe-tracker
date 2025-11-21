@@ -25,6 +25,9 @@ export function SharedListView({ token }: { token: string }) {
         const res = await fetch(`/api/grocery-lists/shared/${token}`);
 
         if (!res.ok) {
+          const errorData = await res.json().catch(() => ({}));
+          console.error('Share link API error:', res.status, errorData);
+
           if (res.status === 404) {
             setError('Share link not found');
           } else if (res.status === 410) {
@@ -36,8 +39,10 @@ export function SharedListView({ token }: { token: string }) {
         }
 
         const data = await res.json();
+        console.log('Shared list loaded:', data);
         setList(data);
       } catch (err) {
+        console.error('Error fetching shared list:', err);
         setError('Failed to load shared list');
       } finally {
         setIsLoading(false);

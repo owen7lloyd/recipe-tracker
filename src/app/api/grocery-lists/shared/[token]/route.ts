@@ -10,6 +10,7 @@ export async function GET(
 ) {
   try {
     const { token } = await params;
+    console.log('[Shared List API] Fetching list with token:', token);
 
     // Find the list by share token
     const [list] = await db
@@ -18,14 +19,18 @@ export async function GET(
       .where(eq(groceryLists.shareToken, token));
 
     if (!list) {
+      console.log('[Shared List API] No list found for token:', token);
       return NextResponse.json(
         { error: 'Share link not found' },
         { status: 404 }
       );
     }
 
+    console.log('[Shared List API] Found list:', list.id, list.name);
+
     // Check if share link has expired
     if (list.shareExpiresAt && list.shareExpiresAt < new Date()) {
+      console.log('[Shared List API] Share link has expired:', list.shareExpiresAt);
       return NextResponse.json(
         { error: 'Share link has expired' },
         { status: 410 }
@@ -33,6 +38,7 @@ export async function GET(
     }
 
     // Fetch list items
+    console.log('[Shared List API] Fetching items for list:', list.id);
     const listData = await db
       .select({
         item: groceryListItems,
@@ -72,6 +78,8 @@ export async function GET(
       }
     }
 
+    console.log('[Shared List API] Returning list with', items.length, 'items');
+
     return NextResponse.json({
       ...list,
       items,
@@ -79,7 +87,7 @@ export async function GET(
       expiresAt: list.shareExpiresAt,
     });
   } catch (error) {
-    console.error('Error fetching shared grocery list:', error);
+    console.error('[Shared List API] Error fetching shared grocery list:', error);
     return NextResponse.json(
       { error: 'Failed to fetch shared grocery list' },
       { status: 500 }
