@@ -5,10 +5,19 @@ import { AddPantryItemForm } from '@/components/pantry/add-pantry-item-form';
 import { PantryList } from '@/components/pantry/pantry-list';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Search, Loader2, PackageOpen } from 'lucide-react';
-import { PantryEmptyState, SearchEmptyState } from '@/components/ui/empty-state';
+import {
+  PantryEmptyState,
+  SearchEmptyState,
+} from '@/components/ui/empty-state';
 
 interface PantryItem {
   id: string;
@@ -75,7 +84,9 @@ export default function PantryPage() {
 
     // Apply category filter
     if (selectedCategory) {
-      filtered = filtered.filter((item) => item.ingredient.category === selectedCategory);
+      filtered = filtered.filter(
+        (item) => item.ingredient.category === selectedCategory
+      );
     }
 
     setFilteredItems(filtered);
@@ -85,7 +96,8 @@ export default function PantryPage() {
   const getCategoryStats = () => {
     const stats: Record<string, number> = {};
     items.forEach((item) => {
-      stats[item.ingredient.category] = (stats[item.ingredient.category] || 0) + 1;
+      stats[item.ingredient.category] =
+        (stats[item.ingredient.category] || 0) + 1;
     });
     return stats;
   };
@@ -118,13 +130,17 @@ export default function PantryPage() {
             <CardTitle className="text-sm font-medium">Categories</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{Object.keys(categoryStats).length}</div>
+            <div className="text-2xl font-bold">
+              {Object.keys(categoryStats).length}
+            </div>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">With Quantities</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              With Quantities
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
@@ -135,13 +151,17 @@ export default function PantryPage() {
 
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Without Quantity</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Without Quantity
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
               {items.filter((item) => !item.quantity).length}
             </div>
-            <p className="mt-1 text-xs text-gray-500">Items marked as available</p>
+            <p className="mt-1 text-xs text-gray-500">
+              Items marked as available
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -186,13 +206,17 @@ export default function PantryPage() {
                   {CATEGORIES.map((cat) => (
                     <Badge
                       key={cat.value}
-                      variant={selectedCategory === cat.value ? 'default' : 'outline'}
+                      variant={
+                        selectedCategory === cat.value ? 'default' : 'outline'
+                      }
                       className="cursor-pointer"
                       onClick={() => setSelectedCategory(cat.value)}
                     >
                       {cat.label}
                       {cat.value && categoryStats[cat.value] && (
-                        <span className="ml-1">({categoryStats[cat.value]})</span>
+                        <span className="ml-1">
+                          ({categoryStats[cat.value]})
+                        </span>
                       )}
                     </Badge>
                   ))}
@@ -208,10 +232,15 @@ export default function PantryPage() {
 
               {/* Empty States */}
               {!isLoading && items.length === 0 && (
-                <PantryEmptyState onAddItem={() => {
-                  // Focus on the add item form (already visible on the page)
-                  document.querySelector('input[name="ingredient"]')?.focus();
-                }} />
+                <PantryEmptyState
+                  onAddItem={() => {
+                    // Focus on the add item form (already visible on the page)
+                    const input = document.querySelector(
+                      'input[name="ingredient"]'
+                    ) as HTMLInputElement;
+                    input?.focus();
+                  }}
+                />
               )}
 
               {!isLoading && items.length > 0 && filteredItems.length === 0 && (
