@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useGroceryListRealtime } from '@/lib/hooks/useGroceryListRealtime';
 import { useGroceryListPresence } from '@/lib/hooks/useGroceryListPresence';
 import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 import { CategorySection } from './category-section';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
@@ -54,24 +55,47 @@ export function OrganizedGroceryList({
 }: OrganizedGroceryListProps) {
   const { data: session } = useSession();
   const { toast } = useToast();
+  const router = useRouter();
   const queryClient = useQueryClient();
   const [categoryOrder, setCategoryOrder] = useState<string[]>(
     DEFAULT_CATEGORY_ORDER
   );
 
   // Fetch the grocery list
-  const { data: list, isLoading } = useQuery<GroceryList>({
+  const { data: list, isLoading, error } = useQuery<GroceryList>({
     queryKey: ['grocery-list', listId],
     queryFn: async () => {
       const res = await fetch(`/api/grocery-lists/${listId}`);
-      if (!res.ok) throw new Error('Failed to fetch list');
+      if (!res.ok) {
+        if (res.status === 404) {
+          throw new Error('LIST_NOT_FOUND');
+        }
+        throw new Error('Failed to fetch list');
+      }
       return res.json();
     },
-    enabled: !!listId,
+    enabled: !!listId && !readOnly, // Skip for read-only (shared lists use cache)
+    retry: (failureCount, error) => {
+      // Don't retry if list not found
+      if (error.message === 'LIST_NOT_FOUND') return false;
+      return failureCount < 3;
+    },
   });
 
-  // Subscribe to real-time updates
-  useGroceryListRealtime(listId);
+  // Redirect if list is deleted
+  useEffect(() => {
+    if (error && error.message === 'LIST_NOT_FOUND' && !readOnly) {
+      toast({
+        title: 'List not found',
+        description: 'This grocery list no longer exists.',
+        variant: 'destructive',
+      });
+      router.push('/dashboard/grocery-lists');
+    }
+  }, [error, readOnly, router, toast]);
+
+  // Subscribe to real-time updates (with list deletion detection)
+  useGroceryListRealtime(listId, readOnly);
 
   // Subscribe to presence (who's viewing)
   const activeUsers = useGroceryListPresence(

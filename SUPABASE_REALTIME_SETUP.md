@@ -93,6 +93,7 @@ Run this once in Supabase SQL Editor:
 ```sql
 -- Disable RLS (security handled by API)
 ALTER TABLE grocery_list_items DISABLE ROW LEVEL SECURITY;
+ALTER TABLE grocery_lists DISABLE ROW LEVEL SECURITY;
 
 -- Grant permissions
 GRANT SELECT, INSERT, UPDATE, DELETE ON grocery_list_items TO anon;
@@ -104,10 +105,16 @@ GRANT SELECT ON ingredients TO authenticated;
 
 -- Set replica identity
 ALTER TABLE grocery_list_items REPLICA IDENTITY FULL;
+ALTER TABLE grocery_lists REPLICA IDENTITY FULL;
 
 -- Add to publication (ignore error if already exists)
 ALTER PUBLICATION supabase_realtime ADD TABLE grocery_list_items;
+ALTER PUBLICATION supabase_realtime ADD TABLE grocery_lists;
 ```
+
+**Note:** Realtime is enabled on both `grocery_list_items` (for item changes) and `grocery_lists` (for list deletion detection). This allows the app to:
+- Instantly sync item changes across all viewers
+- Automatically redirect users when a list is deleted/completed
 
 ## Environment Variables
 

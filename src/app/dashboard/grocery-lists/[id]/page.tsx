@@ -51,7 +51,8 @@ export default async function GroceryListDetailPage({ params }: PageProps) {
     );
 
   if (!list) {
-    notFound();
+    // Redirect to grocery lists page if list not found
+    redirect('/dashboard/grocery-lists');
   }
 
   return (

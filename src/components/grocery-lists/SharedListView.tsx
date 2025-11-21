@@ -52,8 +52,8 @@ export function SharedListView({ token }: { token: string }) {
     fetchSharedList();
   }, [token, queryClient]);
 
-  // Subscribe to real-time updates for this list
-  useGroceryListRealtime(list?.id || '');
+  // Subscribe to real-time updates for this list (read-only, no redirect on delete)
+  useGroceryListRealtime(list?.id || '', true);
 
   if (isLoading) {
     return (

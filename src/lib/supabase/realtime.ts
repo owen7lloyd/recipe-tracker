@@ -17,10 +17,12 @@ export interface BroadcastPayload {
 
 /**
  * Subscribe to real-time updates for a grocery list
+ * Listens to both item changes and list deletion
  */
 export function subscribeToGroceryList(
   listId: string,
-  onUpdate: (payload: GroceryListUpdate) => void
+  onUpdate: (payload: GroceryListUpdate) => void,
+  onListDeleted?: () => void
 ): () => void {
   if (!supabase || !isSupabaseConfigured) {
     console.warn(
@@ -31,6 +33,7 @@ export function subscribeToGroceryList(
 
   const channel = supabase
     .channel(`grocery_list:${listId}`)
+    // Listen to grocery_list_items changes
     .on(
       'postgres_changes',
       {
@@ -47,6 +50,21 @@ export function subscribeToGroceryList(
           old: payload.old,
           table: 'grocery_list_items',
         });
+      }
+    )
+    // Listen to grocery_lists deletion
+    .on(
+      'postgres_changes',
+      {
+        event: 'DELETE',
+        schema: 'public',
+        table: 'grocery_lists',
+        filter: `id=eq.${listId}`,
+      },
+      (payload) => {
+        if (onListDeleted) {
+          onListDeleted();
+        }
       }
     )
     .subscribe();
