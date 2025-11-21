@@ -7,6 +7,7 @@ import { Plus, ShoppingCart, Calendar } from 'lucide-react';
 import { db } from '@/lib/db';
 import { users, groceryLists, groceryListItems } from '@/lib/db/schema';
 import { eq, desc } from 'drizzle-orm';
+import { GroceryListsEmptyState } from '@/components/ui/empty-state';
 
 export default async function GroceryListsPage() {
   const session = await auth();

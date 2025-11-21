@@ -187,13 +187,7 @@ export function PantryList({ items, onUpdate }: PantryListProps) {
   };
 
   if (items.length === 0) {
-    return (
-      <div className="rounded-lg border border-dashed border-gray-300 p-8 text-center dark:border-gray-700">
-        <p className="text-gray-500 dark:text-gray-400">
-          Your pantry is empty. Add ingredients to get started!
-        </p>
-      </div>
-    );
+    return null; // Empty state will be handled by the parent page
   }
 
   return (
