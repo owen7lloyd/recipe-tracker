@@ -10,38 +10,14 @@ export function useGroceryListRealtime(listId: string) {
 
   useEffect(() => {
     const unsubscribe = subscribeToGroceryList(listId, (payload: GroceryListUpdate) => {
-      // Update the local cache based on the event
-      queryClient.setQueryData(['grocery-list', listId], (old: any) => {
-        if (!old) return old;
+      console.log('Real-time update received:', payload.eventType, payload);
 
-        switch (payload.eventType) {
-          case 'INSERT':
-            return {
-              ...old,
-              items: [...(old.items || []), payload.new],
-            };
-
-          case 'UPDATE':
-            return {
-              ...old,
-              items: (old.items || []).map((item: any) =>
-                item.id === payload.new.id ? { ...item, ...payload.new } : item
-              ),
-            };
-
-          case 'DELETE':
-            return {
-              ...old,
-              items: (old.items || []).filter((item: any) => item.id !== payload.old.id),
-            };
-
-          default:
-            return old;
-        }
+      // Invalidate the query to refetch complete data from server
+      // This ensures we get the full item with nested ingredient object
+      queryClient.invalidateQueries({
+        queryKey: ['grocery-list', listId],
+        refetchType: 'active' // Only refetch if the query is currently being used
       });
-
-      // Invalidate the query to refetch from server (optional, for data consistency)
-      queryClient.invalidateQueries({ queryKey: ['grocery-list', listId] });
     });
 
     return unsubscribe;
