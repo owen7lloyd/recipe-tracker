@@ -83,15 +83,30 @@ A multi-platform application designed to streamline meal planning and grocery sh
 
 ## Available Scripts
 
+### Development
 - `pnpm dev` - Start development server
 - `pnpm build` - Build for production
 - `pnpm start` - Start production server
 - `pnpm lint` - Run ESLint
 - `pnpm type-check` - Run TypeScript type checking
+
+### Database
 - `pnpm db:generate` - Generate database migrations
 - `pnpm db:migrate` - Run database migrations
 - `pnpm db:push` - Push schema changes to database
 - `pnpm db:studio` - Open Drizzle Studio (database GUI)
+- `pnpm db:seed` - Seed database with initial data
+
+### Testing
+- `pnpm test` - Run unit tests
+- `pnpm test:watch` - Run tests in watch mode
+- `pnpm test:coverage` - Run tests with coverage
+- `pnpm test:e2e` - Run end-to-end tests
+- `pnpm test:e2e:ui` - Run E2E tests with UI
+
+### Deployment
+- `./scripts/migrate-production.sh` - Run production migrations
+- `./scripts/rollback.sh` - Rollback deployment
 
 ## Project Structure
 
@@ -173,7 +188,7 @@ pnpm dlx shadcn@latest add button
 
 ## Environment Variables
 
-Required environment variables:
+Required environment variables (see `.env.example` for full list):
 
 ```env
 # Database
@@ -186,9 +201,45 @@ NEXTAUTH_SECRET="" # Generate with: openssl rand -base64 32
 # File Storage (Vercel Blob)
 BLOB_READ_WRITE_TOKEN=""
 
+# Supabase (for real-time sync)
+NEXT_PUBLIC_SUPABASE_URL=""
+NEXT_PUBLIC_SUPABASE_ANON_KEY=""
+
+# Sentry (Error Tracking - Production only)
+SENTRY_DSN=""
+NEXT_PUBLIC_SENTRY_DSN=""
+
 # Application
 NODE_ENV="development"
 ```
+
+## Deployment
+
+This application is designed to be deployed on Vercel. For detailed deployment instructions, see [DEPLOYMENT.md](DEPLOYMENT.md).
+
+### Quick Deploy
+
+1. **Connect to Vercel**
+   ```bash
+   vercel
+   ```
+
+2. **Set Environment Variables**
+   - Go to Vercel Dashboard → Project Settings → Environment Variables
+   - Add all required variables
+
+3. **Deploy to Production**
+   ```bash
+   vercel --prod
+   ```
+
+### CI/CD
+
+The project includes automated deployment via GitHub Actions:
+- **Preview Deployments**: Automatic on pull requests
+- **Production Deployments**: Automatic on merge to main
+
+See [.github/workflows/deploy.yml](.github/workflows/deploy.yml) for details.
 
 ## Contributing
 
@@ -205,6 +256,10 @@ NODE_ENV="development"
 
 - [Product Requirements Document](recipe-pantry-tracker-PRD.md)
 - [Implementation Plan](IMPLEMENTATION_PLAN.md)
+- [Deployment Guide](DEPLOYMENT.md)
+- [Database Setup](DATABASE_SETUP.md)
+- [Authentication Setup](AUTHENTICATION_SETUP.md)
+- [Test Documentation](TEST_DOCUMENTATION.md)
 - [GitHub Issues](.github-issues/)
 
 ## License
