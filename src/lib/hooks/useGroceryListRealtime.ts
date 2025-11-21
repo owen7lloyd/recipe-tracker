@@ -10,8 +10,6 @@ export function useGroceryListRealtime(listId: string) {
 
   useEffect(() => {
     const unsubscribe = subscribeToGroceryList(listId, (payload: GroceryListUpdate) => {
-      console.log('Real-time update received:', payload.eventType, payload);
-
       // Invalidate the query to refetch complete data from server
       // This ensures we get the full item with nested ingredient object
       queryClient.invalidateQueries({

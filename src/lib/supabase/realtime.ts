@@ -29,8 +29,6 @@ export function subscribeToGroceryList(
     return () => {}; // Return no-op function
   }
 
-  console.log(`[Realtime] Subscribing to grocery_list:${listId}`);
-
   const channel = supabase
     .channel(`grocery_list:${listId}`)
     .on(
@@ -42,7 +40,6 @@ export function subscribeToGroceryList(
         filter: `grocery_list_id=eq.${listId}`,
       },
       (payload) => {
-        console.log('[Realtime] Received postgres_changes event:', payload);
         onUpdate({
           id: listId,
           eventType: payload.eventType as 'INSERT' | 'UPDATE' | 'DELETE',
@@ -52,21 +49,9 @@ export function subscribeToGroceryList(
         });
       }
     )
-    .subscribe((status, err) => {
-      if (status === 'SUBSCRIBED') {
-        console.log(`[Realtime] Successfully subscribed to grocery_list:${listId}`);
-      } else if (status === 'CHANNEL_ERROR') {
-        console.error(`[Realtime] Channel error for grocery_list:${listId}:`, err);
-      } else if (status === 'TIMED_OUT') {
-        console.error(`[Realtime] Subscription timed out for grocery_list:${listId}`);
-      } else {
-        console.log(`[Realtime] Subscription status: ${status}`);
-      }
-    });
+    .subscribe();
 
-  // Return unsubscribe function
   return () => {
-    console.log(`[Realtime] Unsubscribing from grocery_list:${listId}`);
     channel.unsubscribe();
   };
 }

@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import { OrganizedGroceryList } from './OrganizedGroceryList';
 import { ShareListModal } from './ShareListModal';
 import { AddManualItem } from './add-manual-item';
-import { RealtimeDebugger } from './RealtimeDebugger';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -209,11 +208,6 @@ export function GroceryListWithRealtime({
 
       {/* Grocery List with Real-time */}
       <OrganizedGroceryList listId={listId} showChecked={showChecked} />
-
-      {/* Realtime Debugger (for development) */}
-      {process.env.NODE_ENV === 'development' && (
-        <RealtimeDebugger listId={listId} />
-      )}
 
       {/* Share Modal */}
       <ShareListModal
