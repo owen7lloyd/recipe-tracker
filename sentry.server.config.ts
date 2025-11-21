@@ -18,7 +18,7 @@ Sentry.init({
   ],
 
   // Filter out certain errors
-  beforeSend(event, hint) {
+  beforeSend(event) {
     // Don't send certain types of errors in development
     if (process.env.NODE_ENV === 'development') {
       return null;

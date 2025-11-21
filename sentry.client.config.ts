@@ -19,24 +19,24 @@ Sentry.init({
   // in development and sample at a lower rate in production
   replaysSessionSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
 
+  // Set 'tracePropagationTargets' to control for which URLs distributed tracing should be enabled
+  tracePropagationTargets: [
+    'localhost',
+    /^https:\/\/.*\.vercel\.app/,
+    /^https:\/\/recipe-tracker\.app/, // Replace with your production domain
+  ],
+
   integrations: [
     Sentry.replayIntegration({
       // Additional SDK configuration goes in here, for example:
       maskAllText: true,
       blockAllMedia: true,
     }),
-    Sentry.browserTracingIntegration({
-      // Set 'tracePropagationTargets' to control for which URLs distributed tracing should be enabled
-      tracePropagationTargets: [
-        'localhost',
-        /^https:\/\/.*\.vercel\.app/,
-        /^https:\/\/recipe-tracker\.app/, // Replace with your production domain
-      ],
-    }),
+    Sentry.browserTracingIntegration(),
   ],
 
   // Filter out certain errors that are not actionable
-  beforeSend(event, hint) {
+  beforeSend(event) {
     // Filter out ResizeObserver errors (common browser quirk)
     if (event.exception?.values?.[0]?.value?.includes('ResizeObserver')) {
       return null;
