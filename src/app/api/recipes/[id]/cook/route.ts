@@ -9,6 +9,12 @@ import {
   getRecipeWithIngredients,
 } from '@/lib/recipe/helpers';
 import { scaleRecipe } from '@/lib/recipe-scaling';
+import {
+  convertBetweenUnits,
+  unitsMatch,
+  canConvert,
+  roundForDisplay,
+} from '@/lib/units/converter';
 
 // Schema for cook recipe request
 const cookRecipeSchema = z.object({
@@ -128,8 +134,37 @@ export async function POST(
         // Skip if no quantity tracked
         if (!pantryItem.quantity) continue;
 
+        // Handle unit conversion
+        let convertedQuantityNeeded = quantityNeeded;
+        const pantryUnit = pantryItem.unit;
+        const recipeUnit = ingredient.unit;
+
+        // If units don't match, attempt conversion
+        if (!unitsMatch(pantryUnit, recipeUnit)) {
+          // Check if conversion is possible
+          if (pantryUnit && recipeUnit && canConvert(recipeUnit, pantryUnit)) {
+            const converted = convertBetweenUnits(
+              quantityNeeded,
+              recipeUnit,
+              pantryUnit
+            );
+            if (converted !== null) {
+              convertedQuantityNeeded = converted;
+            } else {
+              // Conversion failed, skip this ingredient
+              continue;
+            }
+          } else {
+            // Units are incompatible (e.g., weight vs volume), skip deduction
+            continue;
+          }
+        }
+
         const currentQuantity = parseFloat(pantryItem.quantity);
-        const remainingQuantity = currentQuantity - quantityNeeded;
+        const remainingQuantity = roundForDisplay(
+          currentQuantity - convertedQuantityNeeded,
+          4
+        );
 
         if (remainingQuantity <= 0) {
           // Remove item from pantry
@@ -141,14 +176,15 @@ export async function POST(
             before: pantryItem.quantity,
             after: '0',
             removed: true,
-            unit: ingredient.unit,
+            unit: pantryItem.unit,
           });
         } else {
-          // Update quantity
+          // Update quantity (round for storage to avoid floating point issues)
+          const roundedRemaining = roundForDisplay(remainingQuantity, 4);
           await tx
             .update(pantryItems)
             .set({
-              quantity: remainingQuantity.toString(),
+              quantity: roundedRemaining.toString(),
               updatedAt: new Date(),
             })
             .where(eq(pantryItems.id, pantryItem.id));
@@ -157,9 +193,9 @@ export async function POST(
             ingredientId: ingredient.ingredientId,
             ingredientName: ingredient.ingredientName,
             before: pantryItem.quantity,
-            after: remainingQuantity.toString(),
+            after: roundedRemaining.toString(),
             removed: false,
-            unit: ingredient.unit,
+            unit: pantryItem.unit,
           });
         }
       }
