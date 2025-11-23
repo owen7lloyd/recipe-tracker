@@ -10,6 +10,8 @@ export const authConfigEdge: NextAuthConfig = {
   pages: {
     signIn: '/login',
   },
+  // Trust the host header from Vercel - required for preview deployments
+  trustHost: true,
   callbacks: {
     authorized({ auth, request: { nextUrl } }) {
       const isAuthenticated = !!auth?.user;
