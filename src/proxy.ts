@@ -1,40 +1,9 @@
-import { auth } from '@/lib/auth';
-import { NextResponse } from 'next/server';
+import NextAuth from 'next-auth';
+import { authConfigEdge } from '@/lib/auth/config.edge';
 
-export default auth((req) => {
-  const { pathname } = req.nextUrl;
-  const isAuthenticated = !!req.auth;
+const { auth } = NextAuth(authConfigEdge);
 
-  // Public routes that don't require authentication
-  const publicRoutes = ['/', '/login', '/register'];
-  const authRoutes = ['/login', '/register'];
-
-  // Allow shared grocery lists (read-only public access)
-  if (
-    pathname.startsWith('/shared/') ||
-    pathname.startsWith('/api/grocery-lists/shared/')
-  ) {
-    return NextResponse.next();
-  }
-
-  // Allow public routes
-  if (publicRoutes.includes(pathname)) {
-    // Redirect authenticated users away from auth pages
-    if (isAuthenticated && authRoutes.includes(pathname)) {
-      return NextResponse.redirect(new URL('/dashboard', req.url));
-    }
-    return NextResponse.next();
-  }
-
-  // Protect all other routes
-  if (!isAuthenticated) {
-    const signInUrl = new URL('/login', req.url);
-    signInUrl.searchParams.set('callbackUrl', pathname);
-    return NextResponse.redirect(signInUrl);
-  }
-
-  return NextResponse.next();
-});
+export default auth;
 
 export const config = {
   matcher: [
