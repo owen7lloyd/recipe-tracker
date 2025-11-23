@@ -10,7 +10,10 @@ export default auth((req) => {
   const authRoutes = ['/login', '/register'];
 
   // Allow shared grocery lists (read-only public access)
-  if (pathname.startsWith('/shared/') || pathname.startsWith('/api/grocery-lists/shared/')) {
+  if (
+    pathname.startsWith('/shared/') ||
+    pathname.startsWith('/api/grocery-lists/shared/')
+  ) {
     return NextResponse.next();
   }
 
