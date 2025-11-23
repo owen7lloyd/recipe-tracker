@@ -1,4 +1,4 @@
-import { auth } from '@/lib/auth';
+import { getSession } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { db } from '@/lib/db';
 import { users } from '@/lib/db/schema';
@@ -7,7 +7,7 @@ import { getHouseholdWithMembers } from '@/lib/household/helpers';
 import { HouseholdSettingsForm } from '@/components/household/household-settings-form';
 
 export default async function SettingsPage() {
-  const session = await auth();
+  const session = await getSession();
 
   if (!session?.user?.id) {
     redirect('/login');

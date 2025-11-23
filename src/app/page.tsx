@@ -1,10 +1,10 @@
 import Link from 'next/link';
-import { auth } from '@/lib/auth';
+import { getSession } from '@/lib/auth';
 import { Button } from '@/components/ui/button';
 import { ChefHat } from 'lucide-react';
 
 export default async function Home() {
-  const session = await auth();
+  const session = await getSession();
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
@@ -53,8 +53,8 @@ export default async function Home() {
                 Track Pantry
               </h3>
               <p className="text-sm text-slate-600 dark:text-slate-400">
-                Know what you have. See what recipes you can make with
-                available ingredients.
+                Know what you have. See what recipes you can make with available
+                ingredients.
               </p>
             </div>
             <div>

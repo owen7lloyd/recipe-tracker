@@ -1,11 +1,11 @@
-import { auth } from '@/lib/auth';
+import { getSession } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { db } from '@/lib/db';
 import { users } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 
 export default async function DashboardPage() {
-  const session = await auth();
+  const session = await getSession();
 
   if (!session?.user) {
     redirect('/login');

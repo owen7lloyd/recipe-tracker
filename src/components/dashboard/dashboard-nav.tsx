@@ -8,7 +8,7 @@ import { LogOut, ChefHat, Settings } from 'lucide-react';
 
 interface DashboardNavProps {
   user: {
-    name: string;
+    name: string | null;
     email: string;
   };
 }
@@ -102,7 +102,7 @@ export function DashboardNav({ user }: DashboardNavProps) {
           <div className="flex items-center space-x-4">
             <div className="text-sm">
               <p className="font-medium text-slate-900 dark:text-slate-50">
-                {user.name}
+                {user.name || 'User'}
               </p>
               <p className="text-slate-500 dark:text-slate-400">{user.email}</p>
             </div>

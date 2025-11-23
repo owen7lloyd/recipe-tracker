@@ -1,4 +1,4 @@
-import { auth } from '@/lib/auth';
+import { getSession } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { notFound } from 'next/navigation';
 import { GroceryListWithRealtime } from '@/components/grocery-lists/GroceryListWithRealtime';
@@ -13,7 +13,7 @@ interface PageProps {
 }
 
 export default async function GroceryListDetailPage({ params }: PageProps) {
-  const session = await auth();
+  const session = await getSession();
 
   if (!session?.user) {
     redirect('/login');
@@ -47,7 +47,10 @@ export default async function GroceryListDetailPage({ params }: PageProps) {
     .select()
     .from(groceryLists)
     .where(
-      and(eq(groceryLists.id, id), eq(groceryLists.householdId, user.householdId))
+      and(
+        eq(groceryLists.id, id),
+        eq(groceryLists.householdId, user.householdId)
+      )
     );
 
   if (!list) {
