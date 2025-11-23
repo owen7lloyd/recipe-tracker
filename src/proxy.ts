@@ -1,9 +1,50 @@
-import NextAuth from 'next-auth';
-import { authConfigEdge } from '@/lib/auth/config.edge';
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+import { getToken } from 'next-auth/jwt';
 
-const { auth } = NextAuth(authConfigEdge);
+export async function proxy(request: NextRequest) {
+  const { pathname } = request.nextUrl;
 
-export default auth;
+  // Get the session token directly - bypasses NextAuth's URL construction
+  const token = await getToken({
+    req: request,
+    secret: process.env.NEXTAUTH_SECRET,
+  });
+
+  const isAuthenticated = !!token;
+
+  // Public routes that don't require authentication
+  const publicRoutes = ['/', '/login', '/register'];
+  const authRoutes = ['/login', '/register'];
+
+  // Allow shared grocery lists (read-only public access)
+  if (
+    pathname.startsWith('/shared/') ||
+    pathname.startsWith('/api/grocery-lists/shared/')
+  ) {
+    return NextResponse.next();
+  }
+
+  // Allow public routes
+  if (publicRoutes.includes(pathname)) {
+    // Redirect authenticated users away from auth pages
+    if (isAuthenticated && authRoutes.includes(pathname)) {
+      return NextResponse.redirect(new URL('/dashboard', request.url));
+    }
+    return NextResponse.next();
+  }
+
+  // Protect all other routes - redirect to login if not authenticated
+  if (!isAuthenticated) {
+    const signInUrl = new URL('/login', request.url);
+    signInUrl.searchParams.set('callbackUrl', pathname);
+    return NextResponse.redirect(signInUrl);
+  }
+
+  return NextResponse.next();
+}
+
+export default proxy;
 
 export const config = {
   matcher: [
