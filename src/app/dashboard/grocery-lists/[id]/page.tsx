@@ -30,10 +30,10 @@ export default async function GroceryListDetailPage({ params }: PageProps) {
 
   if (!user || !user.householdId) {
     return (
-      <div className="min-h-screen bg-slate-50 p-8 dark:bg-slate-900">
+      <div className="min-h-screen bg-gradient-to-b from-[#faf8f3] to-[#f0ebe0] p-8">
         <div className="mx-auto max-w-7xl">
-          <div className="rounded-lg border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-950">
-            <p className="text-slate-600 dark:text-slate-400">
+          <div className="rounded-2xl border-2 border-[#e8dcc8] bg-white p-6">
+            <p className="text-[#6b6250]">
               You need to be part of a household to view grocery lists.
             </p>
           </div>
@@ -59,7 +59,7 @@ export default async function GroceryListDetailPage({ params }: PageProps) {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 p-8 dark:bg-slate-900">
+    <div className="min-h-screen bg-gradient-to-b from-[#faf8f3] to-[#f0ebe0] p-8">
       <div className="mx-auto max-w-5xl">
         <GroceryListWithRealtime listId={list.id} listName={list.name} />
       </div>
