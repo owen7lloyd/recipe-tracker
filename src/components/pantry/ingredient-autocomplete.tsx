@@ -1,15 +1,19 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Search, X } from 'lucide-react';
+import { Search, X, Plus } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
+import { useToast } from '@/components/ui/use-toast';
+import { CreateCustomIngredientModal } from '@/components/ingredients/create-custom-ingredient-modal';
 
 interface Ingredient {
   id: string;
   name: string;
   category: string;
-  commonUnits: string[];
+  commonUnits: string[] | null;
+  isCustom?: boolean;
 }
 
 interface IngredientAutocompleteProps {
@@ -17,24 +21,42 @@ interface IngredientAutocompleteProps {
   label?: string;
   placeholder?: string;
   category?: string;
+  allowCreate?: boolean;
 }
+
+const VALID_CATEGORIES = [
+  'produce',
+  'dairy',
+  'meat',
+  'seafood',
+  'pantry',
+  'frozen',
+  'bakery',
+  'other',
+];
 
 export function IngredientAutocomplete({
   onSelect,
   label = 'Ingredient',
   placeholder = 'Search for ingredients...',
   category,
+  allowCreate = true,
 }: IngredientAutocompleteProps) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Ingredient[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
+  const { toast } = useToast();
 
   // Close dropdown when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
+      if (
+        wrapperRef.current &&
+        !wrapperRef.current.contains(event.target as Node)
+      ) {
         setIsOpen(false);
       }
     }
@@ -83,6 +105,14 @@ export function IngredientAutocomplete({
     setIsOpen(false);
   };
 
+  const handleOpenCreateModal = () => {
+    setIsModalOpen(true);
+  };
+
+  const handleModalSuccess = (ingredient: Ingredient) => {
+    handleSelect(ingredient);
+  };
+
   const handleClear = () => {
     setQuery('');
     setResults([]);
@@ -126,16 +156,24 @@ export function IngredientAutocomplete({
                   className="w-full px-4 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700"
                 >
                   <div className="flex items-center justify-between">
-                    <span className="font-medium">{ingredient.name}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">{ingredient.name}</span>
+                      {ingredient.isCustom && (
+                        <span className="rounded bg-blue-100 px-2 py-0.5 text-xs font-semibold text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                          Custom
+                        </span>
+                      )}
+                    </div>
                     <span className="text-xs capitalize text-gray-500 dark:text-gray-400">
                       {ingredient.category}
                     </span>
                   </div>
-                  {ingredient.commonUnits && ingredient.commonUnits.length > 0 && (
-                    <div className="mt-1 text-xs text-gray-500">
-                      Common units: {ingredient.commonUnits.join(', ')}
-                    </div>
-                  )}
+                  {ingredient.commonUnits &&
+                    ingredient.commonUnits.length > 0 && (
+                      <div className="mt-1 text-xs text-gray-500">
+                        Common units: {ingredient.commonUnits.join(', ')}
+                      </div>
+                    )}
                 </button>
               </li>
             ))}
@@ -150,12 +188,47 @@ export function IngredientAutocomplete({
         </div>
       )}
 
-      {/* No results */}
-      {isOpen && !isLoading && results.length === 0 && query.length >= 2 && (
-        <div className="absolute z-10 mt-1 w-full rounded-md border border-gray-200 bg-white p-4 text-center text-sm text-gray-500 shadow-lg dark:border-gray-700 dark:bg-gray-800">
-          No ingredients found
-        </div>
-      )}
+      {/* No results with create option */}
+      {isOpen &&
+        !isLoading &&
+        results.length === 0 &&
+        query.length >= 2 &&
+        allowCreate && (
+          <div className="absolute z-10 mt-1 w-full rounded-md border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800">
+            <div className="p-4 text-center text-sm text-gray-500">
+              No ingredients found for "{query}"
+            </div>
+            <div className="border-t border-gray-200 dark:border-gray-700">
+              <Button
+                type="button"
+                onClick={handleOpenCreateModal}
+                variant="ghost"
+                className="w-full justify-start rounded-none px-4 py-2 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Create custom ingredient: "{query}"
+              </Button>
+            </div>
+          </div>
+        )}
+
+      {/* No results without create option */}
+      {isOpen &&
+        !isLoading &&
+        results.length === 0 &&
+        query.length >= 2 &&
+        !allowCreate && (
+          <div className="absolute z-10 mt-1 w-full rounded-md border border-gray-200 bg-white p-4 text-center text-sm text-gray-500 shadow-lg dark:border-gray-700 dark:bg-gray-800">
+            No ingredients found
+          </div>
+        )}
+
+      <CreateCustomIngredientModal
+        isOpen={isModalOpen}
+        onOpenChange={setIsModalOpen}
+        onSuccess={handleModalSuccess}
+        defaultCategory={category}
+      />
     </div>
   );
 }

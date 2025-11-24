@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { ingredients } from '@/lib/db/schema';
-import { ilike, and, eq } from 'drizzle-orm';
+import { ingredients, customIngredients, users } from '@/lib/db/schema';
+import { ilike, and, eq, or, sql } from 'drizzle-orm';
 
 // Valid ingredient categories
 const VALID_CATEGORIES = [
@@ -54,21 +54,75 @@ export async function GET(request: Request) {
       conditions.push(eq(ingredients.category, category));
     }
 
-    // Build and execute query
+    // Get user's household
+    const user = await db
+      .select({ householdId: users.householdId })
+      .from(users)
+      .where(eq(users.id, session.user.id))
+      .then((results) => results[0]);
+
+    // Search all ingredients (both default and custom for this household)
+    const defaultConditions = [
+      ...conditions,
+      sql`"ingredients"."household_id" IS NULL`,
+    ];
+
     const baseQuery = db
       .select({
         id: ingredients.id,
         name: ingredients.name,
         category: ingredients.category,
         commonUnits: ingredients.commonUnits,
+        isCustom: sql<boolean>`false`,
       })
       .from(ingredients);
 
-    const results = await (conditions.length > 0
-      ? baseQuery.where(and(...conditions)).limit(limit)
-      : baseQuery.limit(limit));
+    const defaultResults = await (defaultConditions.length > 0
+      ? baseQuery.where(and(...defaultConditions)).limit(limit)
+      : baseQuery
+          .where(sql`"ingredients"."household_id" IS NULL`)
+          .limit(limit));
 
-    return NextResponse.json(results);
+    // Also search custom ingredients for this household
+    let customResults: typeof defaultResults = [];
+    if (user?.householdId) {
+      const householdId = user.householdId;
+      const customConditions = [eq(ingredients.householdId, householdId)];
+
+      if (query) {
+        customConditions.push(ilike(ingredients.name, `%${query}%`));
+      }
+      if (category) {
+        customConditions.push(eq(ingredients.category, category));
+      }
+
+      const results = await db
+        .select({
+          id: ingredients.id,
+          name: ingredients.name,
+          category: ingredients.category,
+          commonUnits: ingredients.commonUnits,
+          isCustom: sql<boolean>`true`,
+        })
+        .from(ingredients)
+        .where(and(...customConditions))
+        .limit(limit);
+
+      customResults = results;
+    }
+
+    // Combine and deduplicate results (prioritize custom ingredients if same name)
+    const combinedResults = [
+      ...customResults,
+      ...defaultResults.filter(
+        (d) =>
+          !customResults.some(
+            (c) => c.name.toLowerCase() === d.name.toLowerCase()
+          )
+      ),
+    ].slice(0, limit);
+
+    return NextResponse.json(combinedResults);
   } catch (error) {
     console.error('Error searching ingredients:', error);
     return NextResponse.json(

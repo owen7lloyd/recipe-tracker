@@ -8,6 +8,7 @@ import {
   boolean,
   pgEnum,
   index,
+  uniqueIndex,
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 
@@ -80,14 +81,26 @@ export const ingredients = pgTable(
   'ingredients',
   {
     id: uuid('id').primaryKey().defaultRandom(),
-    name: text('name').notNull().unique(),
+    name: text('name').notNull(),
     category: ingredientCategoryEnum('category').notNull(),
     commonUnits: text('common_units').array(),
+    householdId: uuid('household_id').references(() => households.id, {
+      onDelete: 'cascade',
+    }),
+    createdBy: uuid('created_by').references(() => users.id),
     createdAt: timestamp('created_at').defaultNow().notNull(),
   },
   (table) => ({
     nameIdx: index('idx_ingredients_name').on(table.name),
     categoryIdx: index('idx_ingredients_category').on(table.category),
+    householdIdx: index('idx_ingredients_household').on(table.householdId),
+    uniqueHouseholdIngredient: uniqueIndex('idx_ingredients_household_name').on(
+      table.householdId,
+      table.name
+    ),
+    uniqueDefaultIngredient: uniqueIndex('idx_ingredients_name_default').on(
+      table.name
+    ),
   })
 );
 
@@ -153,7 +166,7 @@ export const recipeIngredients = pgTable(
       .references(() => recipes.id, { onDelete: 'cascade' }),
     ingredientId: uuid('ingredient_id')
       .notNull()
-      .references(() => ingredients.id),
+      .references(() => ingredients.id, { onDelete: 'cascade' }),
     quantity: decimal('quantity', { precision: 10, scale: 2 }),
     unit: text('unit'),
     notes: text('notes'),
@@ -178,7 +191,7 @@ export const pantryItems = pgTable(
       .references(() => households.id, { onDelete: 'cascade' }),
     ingredientId: uuid('ingredient_id')
       .notNull()
-      .references(() => ingredients.id),
+      .references(() => ingredients.id, { onDelete: 'cascade' }),
     quantity: decimal('quantity', { precision: 10, scale: 2 }),
     unit: text('unit'),
     addedBy: uuid('added_by')
@@ -254,7 +267,7 @@ export const groceryListItems = pgTable(
       .references(() => groceryLists.id, { onDelete: 'cascade' }),
     ingredientId: uuid('ingredient_id')
       .notNull()
-      .references(() => ingredients.id),
+      .references(() => ingredients.id, { onDelete: 'cascade' }),
     quantity: decimal('quantity', { precision: 10, scale: 2 }).notNull(),
     unit: text('unit'),
     category: ingredientCategoryEnum('category').notNull(),
@@ -294,6 +307,33 @@ export const householdCategoryOrder = pgTable('household_category_order', {
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 
+// Custom ingredients table (household-created ingredients)
+export const customIngredients = pgTable(
+  'custom_ingredients',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    householdId: uuid('household_id')
+      .notNull()
+      .references(() => households.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    defaultUnit: text('default_unit'),
+    category: ingredientCategoryEnum('category'),
+    createdBy: uuid('created_by')
+      .notNull()
+      .references(() => users.id),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  },
+  (table) => ({
+    householdIdIdx: index('idx_custom_ingredients_household').on(
+      table.householdId
+    ),
+    uniqueHouseholdIngredient: uniqueIndex(
+      'idx_custom_ingredients_household_name'
+    ).on(table.householdId, table.name),
+  })
+);
+
 // Relations
 export const usersRelations = relations(users, ({ one, many }) => ({
   household: one(households, {
@@ -316,6 +356,7 @@ export const householdsRelations = relations(households, ({ one, many }) => ({
   recipes: many(recipes),
   pantryItems: many(pantryItems),
   groceryLists: many(groceryLists),
+  customIngredients: many(customIngredients),
   invites: many(householdInvites),
   categoryOrder: one(householdCategoryOrder, {
     fields: [households.id],
@@ -470,6 +511,20 @@ export const householdCategoryOrderRelations = relations(
     household: one(households, {
       fields: [householdCategoryOrder.householdId],
       references: [households.id],
+    }),
+  })
+);
+
+export const customIngredientsRelations = relations(
+  customIngredients,
+  ({ one }) => ({
+    household: one(households, {
+      fields: [customIngredients.householdId],
+      references: [households.id],
+    }),
+    createdByUser: one(users, {
+      fields: [customIngredients.createdBy],
+      references: [users.id],
     }),
   })
 );

@@ -20,6 +20,9 @@
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "db:seed": "tsx src/lib/db/seed/seed.ts",
+    "migrate:verify": "tsx scripts/migrate-production.ts --verify-only",
+    "migrate:dry-run": "tsx scripts/migrate-production.ts --dry-run --verbose",
+    "migrate:prod": "tsx scripts/migrate-production.ts",
     "prepare": "husky"
   },
   "packageManager": "pnpm@10.22.0",

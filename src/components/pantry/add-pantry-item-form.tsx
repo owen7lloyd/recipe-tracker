@@ -15,7 +15,7 @@ interface Ingredient {
   id: string;
   name: string;
   category: string;
-  commonUnits: string[];
+  commonUnits: string[] | null;
 }
 
 interface AddPantryItemFormProps {
@@ -23,7 +23,8 @@ interface AddPantryItemFormProps {
 }
 
 export function AddPantryItemForm({ onItemAdded }: AddPantryItemFormProps) {
-  const [selectedIngredient, setSelectedIngredient] = useState<Ingredient | null>(null);
+  const [selectedIngredient, setSelectedIngredient] =
+    useState<Ingredient | null>(null);
   const [quantity, setQuantity] = useState('');
   const [unit, setUnit] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -84,7 +85,8 @@ export function AddPantryItemForm({ onItemAdded }: AddPantryItemFormProps) {
     } catch (error) {
       toast({
         title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to add pantry item',
+        description:
+          error instanceof Error ? error.message : 'Failed to add pantry item',
         variant: 'destructive',
       });
     } finally {
