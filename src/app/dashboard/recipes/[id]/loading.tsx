@@ -2,7 +2,7 @@ import { RecipeDetailSkeleton } from '@/components/ui/skeleton';
 
 export default function RecipeDetailLoading() {
   return (
-    <div className="min-h-screen bg-slate-50 p-8 dark:bg-slate-900">
+    <div className="min-h-screen bg-gradient-to-b from-[#faf8f3] to-[#f0ebe0] p-8">
       <RecipeDetailSkeleton />
     </div>
   );
