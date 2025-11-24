@@ -166,7 +166,7 @@ export const recipeIngredients = pgTable(
       .references(() => recipes.id, { onDelete: 'cascade' }),
     ingredientId: uuid('ingredient_id')
       .notNull()
-      .references(() => ingredients.id),
+      .references(() => ingredients.id, { onDelete: 'cascade' }),
     quantity: decimal('quantity', { precision: 10, scale: 2 }),
     unit: text('unit'),
     notes: text('notes'),
@@ -191,7 +191,7 @@ export const pantryItems = pgTable(
       .references(() => households.id, { onDelete: 'cascade' }),
     ingredientId: uuid('ingredient_id')
       .notNull()
-      .references(() => ingredients.id),
+      .references(() => ingredients.id, { onDelete: 'cascade' }),
     quantity: decimal('quantity', { precision: 10, scale: 2 }),
     unit: text('unit'),
     addedBy: uuid('added_by')
@@ -267,7 +267,7 @@ export const groceryListItems = pgTable(
       .references(() => groceryLists.id, { onDelete: 'cascade' }),
     ingredientId: uuid('ingredient_id')
       .notNull()
-      .references(() => ingredients.id),
+      .references(() => ingredients.id, { onDelete: 'cascade' }),
     quantity: decimal('quantity', { precision: 10, scale: 2 }).notNull(),
     unit: text('unit'),
     category: ingredientCategoryEnum('category').notNull(),
