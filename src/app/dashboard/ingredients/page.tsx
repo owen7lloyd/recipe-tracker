@@ -180,7 +180,7 @@ export default function IngredientsPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-slate-50 p-8 dark:bg-slate-900">
+      <div className="min-h-screen bg-gradient-to-b from-[#faf8f3] to-[#f0ebe0] p-8">
         <div className="mx-auto max-w-7xl">
           <div className="text-center">Loading ingredients...</div>
         </div>
@@ -189,14 +189,14 @@ export default function IngredientsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 p-8 dark:bg-slate-900">
+    <div className="min-h-screen bg-gradient-to-b from-[#faf8f3] to-[#f0ebe0] p-8">
       <div className="mx-auto max-w-7xl">
         <div className="mb-8 flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-50">
+            <h1 className="font-merriweather text-3xl font-bold text-[#2d5016]">
               Custom Ingredients
             </h1>
-            <p className="mt-2 text-slate-600 dark:text-slate-400">
+            <p className="mt-2 text-[#6b6250]">
               Manage custom ingredients for your household
             </p>
           </div>
@@ -207,8 +207,8 @@ export default function IngredientsPage() {
         </div>
 
         {ingredients.length === 0 ? (
-          <div className="rounded-lg border border-dashed border-slate-300 bg-white p-8 text-center dark:border-slate-700 dark:bg-slate-950">
-            <p className="text-slate-600 dark:text-slate-400">
+          <div className="rounded-2xl border-2 border-dashed border-[#e8dcc8] bg-white p-8 text-center">
+            <p className="text-[#6b6250]">
               No custom ingredients yet. Create one to get started!
             </p>
             <Button
@@ -221,17 +221,17 @@ export default function IngredientsPage() {
             </Button>
           </div>
         ) : (
-          <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950">
+          <div className="overflow-x-auto rounded-2xl border-2 border-[#e8dcc8] bg-white">
             <table className="w-full">
               <thead>
-                <tr className="border-b border-slate-200 dark:border-slate-800">
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-slate-900 dark:text-slate-50">
+                <tr className="border-b-2 border-[#e8dcc8]">
+                  <th className="px-6 py-3 text-left text-sm font-semibold text-[#2d5016]">
                     Name
                   </th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-slate-900 dark:text-slate-50">
+                  <th className="px-6 py-3 text-left text-sm font-semibold text-[#2d5016]">
                     Category
                   </th>
-                  <th className="px-6 py-3 text-right text-sm font-semibold text-slate-900 dark:text-slate-50">
+                  <th className="px-6 py-3 text-right text-sm font-semibold text-[#2d5016]">
                     Actions
                   </th>
                 </tr>
@@ -241,7 +241,7 @@ export default function IngredientsPage() {
                   editingId === ingredient.id ? (
                     <tr
                       key={ingredient.id}
-                      className="border-b border-slate-200 dark:border-slate-800"
+                      className="border-b border-[#e8dcc8]"
                     >
                       <td className="px-6 py-4">
                         <Input
@@ -256,7 +256,7 @@ export default function IngredientsPage() {
                           value={editCategory}
                           onChange={(e) => setEditCategory(e.target.value)}
                           disabled={isSaving}
-                          className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-800 dark:bg-slate-950 dark:ring-offset-slate-950 dark:placeholder:text-slate-400 dark:focus-visible:ring-slate-300"
+                          className="flex h-10 w-full rounded-xl border-2 border-[#e8dcc8] bg-white px-3 py-2 text-sm text-[#2c2415] ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-[#6b6250] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4a574] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                         >
                           {Object.entries(CATEGORY_LABELS).map(
                             ([key, label]) => (
@@ -288,13 +288,13 @@ export default function IngredientsPage() {
                   ) : (
                     <tr
                       key={ingredient.id}
-                      className="border-b border-slate-200 hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-900"
+                      className="border-b border-[#e8dcc8] hover:bg-[#faf8f3]"
                     >
-                      <td className="px-6 py-4 text-slate-900 dark:text-slate-50">
+                      <td className="px-6 py-4 text-[#2d5016]">
                         {ingredient.name}
                       </td>
                       <td className="px-6 py-4">
-                        <span className="inline-flex rounded-full bg-slate-100 px-2.5 py-0.5 text-sm font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                        <span className="inline-flex rounded-full bg-[#6b8e23]/10 px-2.5 py-0.5 text-sm font-medium text-[#6b8e23]">
                           {CATEGORY_LABELS[ingredient.category]}
                         </span>
                       </td>
