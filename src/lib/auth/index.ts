@@ -1,27 +1,36 @@
 import NextAuth from 'next-auth';
-import { getToken } from 'next-auth/jwt';
+import { decode } from 'next-auth/jwt';
 import { cookies } from 'next/headers';
 import { authConfig } from './config';
 
 export const { handlers, auth, signIn, signOut } = NextAuth(authConfig);
 
 /**
- * Get the session using getToken instead of auth()
+ * Get the session by directly reading and decoding the JWT cookie.
  * This avoids the URL construction bug in NextAuth v5 beta
- * that causes "Invalid URL" errors on Vercel preview deployments
+ * that causes "Invalid URL" errors on Vercel preview deployments.
  */
 export async function getSession() {
   try {
     const cookieStore = await cookies();
-    const token = await getToken({
-      req: {
-        cookies: Object.fromEntries(
-          cookieStore.getAll().map((c) => [c.name, c.value])
-        ),
-        headers: {},
-      } as Parameters<typeof getToken>[0]['req'],
-      secret: process.env.NEXTAUTH_SECRET,
-      secureCookie: process.env.NODE_ENV === 'production',
+
+    // NextAuth v5 uses different cookie names in dev vs production
+    const cookieName =
+      process.env.NODE_ENV === 'production'
+        ? '__Secure-authjs.session-token'
+        : 'authjs.session-token';
+
+    const sessionCookie = cookieStore.get(cookieName);
+
+    if (!sessionCookie?.value) {
+      return null;
+    }
+
+    // Decode the JWT token directly
+    const token = await decode({
+      token: sessionCookie.value,
+      secret: process.env.NEXTAUTH_SECRET!,
+      salt: cookieName,
     });
 
     if (!token) {
@@ -38,7 +47,11 @@ export async function getSession() {
       },
       expires: new Date((token.exp as number) * 1000).toISOString(),
     };
-  } catch {
+  } catch (error) {
+    // Log error in development for debugging
+    if (process.env.NODE_ENV === 'development') {
+      console.error('[getSession] Error:', error);
+    }
     return null;
   }
 }
