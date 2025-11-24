@@ -37,12 +37,12 @@ export function RecipeCard({
   return (
     <Link
       href={`/dashboard/recipes/${id}`}
-      className="group block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-lg"
+      className="group block rounded-3xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
       aria-label={`View recipe: ${title}`}
     >
-      <Card className="h-full overflow-hidden transition-all duration-200 hover:shadow-lg hover:border-slate-300 dark:hover:border-slate-700">
+      <Card className="h-full overflow-hidden transition-all duration-300 hover:-translate-y-2 hover:border-[#d4a574] hover:shadow-xl rounded-3xl">
         {/* Recipe Image */}
-        <div className="aspect-video w-full overflow-hidden bg-slate-100 dark:bg-slate-800">
+        <div className="aspect-video w-full overflow-hidden bg-[#f0ebe0]">
           <OptimizedImage
             src={imageUrl}
             alt={`Photo of ${title}`}
@@ -52,10 +52,10 @@ export function RecipeCard({
           />
         </div>
 
-        <CardContent className="p-4">
+        <CardContent className="p-6">
           {/* Title and Rating */}
-          <div className="mb-2 flex items-start justify-between gap-2">
-            <h3 className="line-clamp-2 text-lg font-semibold text-slate-900 dark:text-slate-50 group-hover:text-slate-700 dark:group-hover:text-slate-200 transition-colors">
+          <div className="mb-3 flex items-start justify-between gap-2">
+            <h3 className="line-clamp-2 font-merriweather text-lg font-bold text-[#2d5016] transition-colors group-hover:text-[#3d6b1f]">
               {title}
             </h3>
             {rating && (
@@ -68,25 +68,25 @@ export function RecipeCard({
 
           {/* Description */}
           {description && (
-            <p className="mb-3 line-clamp-2 text-sm text-slate-600 dark:text-slate-400">
+            <p className="mb-3 line-clamp-2 text-sm text-[#6b6250]">
               {description}
             </p>
           )}
 
           {/* Category and Tags */}
-          <div className="mb-3 flex flex-wrap gap-2" role="list" aria-label="Recipe categories and tags">
-            <Badge variant="secondary" className="capitalize" role="listitem">
+          <div className="mb-4 flex flex-wrap gap-2" role="list" aria-label="Recipe categories and tags">
+            <Badge className="rounded-full bg-[#6b8e23] text-white capitalize" role="listitem">
               {category}
             </Badge>
             {tags?.slice(0, 2).map((tag, index) => (
-              <Badge key={index} variant="outline" role="listitem">
+              <Badge key={index} variant="outline" className="rounded-full border-[#d4a574] text-[#2d5016]" role="listitem">
                 {tag}
               </Badge>
             ))}
           </div>
 
           {/* Time and Servings Info */}
-          <div className="flex items-center gap-4 text-sm text-slate-600 dark:text-slate-400">
+          <div className="flex gap-4 text-sm text-[#6b6250]">
             {totalTime && (
               <div className="flex items-center gap-1">
                 <Clock className="h-4 w-4" aria-hidden="true" />

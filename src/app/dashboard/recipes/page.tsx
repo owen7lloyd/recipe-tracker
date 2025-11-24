@@ -23,10 +23,10 @@ export default async function RecipesPage({
   const householdId = await getUserHouseholdId(session.user.id);
   if (!householdId) {
     return (
-      <div className="min-h-screen bg-slate-50 p-8 dark:bg-slate-900">
+      <div className="min-h-screen bg-gradient-to-b from-[#faf8f3] to-[#f0ebe0] p-8">
         <div className="mx-auto max-w-7xl">
-          <div className="rounded-lg border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-950">
-            <p className="text-slate-600 dark:text-slate-400">
+          <div className="rounded-2xl border-2 border-[#e8dcc8] bg-white p-6">
+            <p className="text-[#6b6250]">
               You need to be part of a household to manage recipes.
             </p>
           </div>
@@ -50,14 +50,14 @@ export default async function RecipesPage({
   });
 
   return (
-    <div className="min-h-screen bg-slate-50 p-8 dark:bg-slate-900">
+    <div className="min-h-screen bg-gradient-to-b from-[#faf8f3] to-[#f0ebe0] p-8">
       <div className="mx-auto max-w-7xl">
         <div className="mb-8 flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-50">
+            <h1 className="font-merriweather text-3xl font-bold text-[#2d5016]">
               Recipes
             </h1>
-            <p className="mt-2 text-slate-600 dark:text-slate-400">
+            <p className="mt-2 text-[#6b6250]">
               Manage your recipe collection
             </p>
           </div>
@@ -84,10 +84,10 @@ export default async function RecipesPage({
                 <Link
                   key={pageNum}
                   href={`/dashboard/recipes?page=${pageNum}`}
-                  className={`rounded-md px-4 py-2 text-sm font-medium ${
+                  className={`rounded-full px-4 py-2 text-sm font-medium transition-all ${
                     pageNum === pagination.page
-                      ? 'bg-slate-900 text-white dark:bg-slate-50 dark:text-slate-900'
-                      : 'bg-white text-slate-900 hover:bg-slate-100 dark:bg-slate-950 dark:text-slate-50 dark:hover:bg-slate-800'
+                      ? 'bg-[#2d5016] text-white'
+                      : 'bg-white text-[#2d5016] hover:bg-[#f0ebe0]'
                   }`}
                 >
                   {pageNum}

@@ -5,7 +5,7 @@ interface SkeletonProps extends React.HTMLAttributes<HTMLDivElement> {}
 export function Skeleton({ className, ...props }: SkeletonProps) {
   return (
     <div
-      className={cn('animate-pulse rounded-md bg-slate-200 dark:bg-slate-800', className)}
+      className={cn('animate-pulse rounded-md bg-[#e8dcc8]/50', className)}
       {...props}
     />
   );
@@ -14,7 +14,7 @@ export function Skeleton({ className, ...props }: SkeletonProps) {
 // Recipe Card Skeleton
 export function RecipeCardSkeleton() {
   return (
-    <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-950">
+    <div className="overflow-hidden rounded-2xl border-2 border-[#e8dcc8] bg-white shadow-sm">
       <Skeleton className="h-48 w-full rounded-none" />
       <div className="p-4">
         <Skeleton className="mb-2 h-6 w-3/4" />
@@ -47,7 +47,7 @@ export function RecipeListSkeleton({ count = 8 }: { count?: number }) {
 export function RecipeDetailSkeleton() {
   return (
     <div className="mx-auto max-w-4xl">
-      <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-lg dark:border-slate-800 dark:bg-slate-950">
+      <div className="overflow-hidden rounded-2xl border-2 border-[#e8dcc8] bg-white shadow-lg">
         {/* Header */}
         <div className="p-6">
           <Skeleton className="mb-3 h-10 w-3/4" />
@@ -111,7 +111,7 @@ export function PantryListSkeleton({ count = 10 }: { count?: number }) {
       {Array.from({ length: count }).map((_, i) => (
         <div
           key={i}
-          className="flex items-center justify-between rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950"
+          className="flex items-center justify-between rounded-xl border-2 border-[#e8dcc8] bg-white p-4"
         >
           <div className="flex-1">
             <Skeleton className="mb-2 h-5 w-48" />
@@ -138,7 +138,7 @@ export function GroceryListSkeleton() {
             {Array.from({ length: 3 + (categoryIdx % 3) }).map((_, itemIdx) => (
               <div
                 key={itemIdx}
-                className="flex items-center gap-3 rounded-md border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-950"
+                className="flex items-center gap-3 rounded-xl border-2 border-[#e8dcc8] bg-white p-3"
               >
                 <Skeleton className="h-5 w-5 rounded" />
                 <div className="flex-1">
@@ -198,7 +198,7 @@ export function TableSkeleton({ rows = 5, columns = 4 }: { rows?: number; column
 export function LoadingSpinner({ className }: { className?: string }) {
   return (
     <div className={cn('flex items-center justify-center', className)}>
-      <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-slate-900 dark:border-slate-700 dark:border-t-slate-50" />
+      <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#e8dcc8] border-t-[#2d5016]" />
     </div>
   );
 }
@@ -206,10 +206,10 @@ export function LoadingSpinner({ className }: { className?: string }) {
 // Full Page Loading
 export function PageLoadingSkeleton() {
   return (
-    <div className="flex min-h-screen items-center justify-center">
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-[#faf8f3] to-[#f0ebe0]">
       <div className="text-center">
         <LoadingSpinner className="mb-4" />
-        <p className="text-sm text-slate-600 dark:text-slate-400">Loading...</p>
+        <p className="text-sm text-[#6b6250]">Loading...</p>
       </div>
     </div>
   );

@@ -105,14 +105,15 @@ export default function PantryPage() {
   const categoryStats = getCategoryStats();
 
   return (
-    <div className="container mx-auto max-w-7xl space-y-6 p-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold">Pantry Management</h1>
-        <p className="text-gray-600 dark:text-gray-400">
-          Manage your household ingredient inventory
-        </p>
-      </div>
+    <div className="min-h-screen bg-gradient-to-b from-[#faf8f3] to-[#f0ebe0] p-8">
+      <div className="mx-auto max-w-7xl space-y-6">
+        {/* Header */}
+        <div>
+          <h1 className="font-merriweather text-3xl font-bold text-[#2d5016]">Pantry Management</h1>
+          <p className="text-[#6b6250]">
+            Manage your household ingredient inventory
+          </p>
+        </div>
 
       {/* Stats */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -190,7 +191,7 @@ export default function PantryPage() {
                   <Label htmlFor="search" className="sr-only">
                     Search
                   </Label>
-                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#d4a574]" />
                   <Input
                     id="search"
                     type="text"
@@ -226,7 +227,7 @@ export default function PantryPage() {
               {/* Loading State */}
               {isLoading && (
                 <div className="flex items-center justify-center py-12">
-                  <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+                  <Loader2 className="h-8 w-8 animate-spin text-[#d4a574]" />
                 </div>
               )}
 
@@ -254,6 +255,7 @@ export default function PantryPage() {
             </CardContent>
           </Card>
         </div>
+      </div>
       </div>
     </div>
   );
