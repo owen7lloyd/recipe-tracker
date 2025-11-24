@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
+import { CreateCustomIngredientModal } from '@/components/ingredients/create-custom-ingredient-modal';
 
 interface Ingredient {
   id: string;
@@ -45,7 +46,7 @@ export function IngredientAutocomplete({
   const [results, setResults] = useState<Ingredient[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [isCreating, setIsCreating] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
@@ -104,63 +105,12 @@ export function IngredientAutocomplete({
     setIsOpen(false);
   };
 
-  const handleCreateCustom = async () => {
-    if (!query.trim()) {
-      toast({
-        title: 'Error',
-        description: 'Please enter an ingredient name',
-        variant: 'destructive',
-      });
-      return;
-    }
+  const handleOpenCreateModal = () => {
+    setIsModalOpen(true);
+  };
 
-    setIsCreating(true);
-    try {
-      const response = await fetch('/api/ingredients/custom', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: query.trim(),
-          category:
-            category && VALID_CATEGORIES.includes(category) ? category : null,
-        }),
-      });
-
-      if (response.ok) {
-        const newIngredient = await response.json();
-        toast({
-          title: 'Success',
-          description: `Created custom ingredient: ${newIngredient.name}`,
-        });
-        handleSelect({
-          ...newIngredient,
-          isCustom: true,
-          commonUnits: newIngredient.commonUnits || [],
-        });
-      } else if (response.status === 409) {
-        const error = await response.json();
-        toast({
-          title: 'Error',
-          description: error.error || 'This ingredient already exists',
-          variant: 'destructive',
-        });
-      } else {
-        toast({
-          title: 'Error',
-          description: 'Failed to create custom ingredient',
-          variant: 'destructive',
-        });
-      }
-    } catch (error) {
-      console.error('Error creating custom ingredient:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to create custom ingredient',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsCreating(false);
-    }
+  const handleModalSuccess = (ingredient: Ingredient) => {
+    handleSelect(ingredient);
   };
 
   const handleClear = () => {
@@ -251,8 +201,7 @@ export function IngredientAutocomplete({
             <div className="border-t border-gray-200 dark:border-gray-700">
               <Button
                 type="button"
-                onClick={handleCreateCustom}
-                disabled={isCreating}
+                onClick={handleOpenCreateModal}
                 variant="ghost"
                 className="w-full justify-start rounded-none px-4 py-2 hover:bg-blue-50 dark:hover:bg-blue-900/20"
               >
@@ -273,6 +222,13 @@ export function IngredientAutocomplete({
             No ingredients found
           </div>
         )}
+
+      <CreateCustomIngredientModal
+        isOpen={isModalOpen}
+        onOpenChange={setIsModalOpen}
+        onSuccess={handleModalSuccess}
+        defaultCategory={category}
+      />
     </div>
   );
 }

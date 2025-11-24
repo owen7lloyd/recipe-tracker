@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { X, GripVertical, Plus } from 'lucide-react';
 import { COOKING_UNITS } from '@/lib/constants/units';
 import { useToast } from '@/components/ui/use-toast';
+import { CreateCustomIngredientModal } from '@/components/ingredients/create-custom-ingredient-modal';
 
 interface Ingredient {
   id: string;
@@ -54,7 +55,7 @@ export function IngredientInput({
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [selectedIngredient, setSelectedIngredient] =
     useState<Ingredient | null>(null);
-  const [isCreating, setIsCreating] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const searchTimeout = useRef<NodeJS.Timeout | undefined>(undefined);
   const containerRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
@@ -118,61 +119,12 @@ export function IngredientInput({
     });
   };
 
-  const handleCreateCustom = async () => {
-    if (!searchQuery.trim()) {
-      toast({
-        title: 'Error',
-        description: 'Please enter an ingredient name',
-        variant: 'destructive',
-      });
-      return;
-    }
+  const handleOpenCreateModal = () => {
+    setIsModalOpen(true);
+  };
 
-    setIsCreating(true);
-    try {
-      const response = await fetch('/api/ingredients/custom', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: searchQuery.trim(),
-        }),
-      });
-
-      if (response.ok) {
-        const newIngredient = await response.json();
-        toast({
-          title: 'Success',
-          description: `Created custom ingredient: ${newIngredient.name}`,
-        });
-        handleSelectIngredient({
-          ...newIngredient,
-          isCustom: true,
-          commonUnits: newIngredient.commonUnits || [],
-        });
-      } else if (response.status === 409) {
-        const error = await response.json();
-        toast({
-          title: 'Error',
-          description: error.error || 'This ingredient already exists',
-          variant: 'destructive',
-        });
-      } else {
-        toast({
-          title: 'Error',
-          description: 'Failed to create custom ingredient',
-          variant: 'destructive',
-        });
-      }
-    } catch (error) {
-      console.error('Error creating custom ingredient:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to create custom ingredient',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsCreating(false);
-    }
+  const handleModalSuccess = (ingredient: Ingredient) => {
+    handleSelectIngredient(ingredient);
   };
 
   // Use ingredient's common units if available, otherwise use all cooking units
@@ -243,8 +195,7 @@ export function IngredientInput({
                 <div className="border-t border-slate-200 dark:border-slate-800">
                   <Button
                     type="button"
-                    onClick={handleCreateCustom}
-                    disabled={isCreating}
+                    onClick={handleOpenCreateModal}
                     variant="ghost"
                     className="w-full justify-start rounded-none px-3 py-2 text-sm hover:bg-blue-50 dark:hover:bg-blue-900/20"
                   >
@@ -313,6 +264,12 @@ export function IngredientInput({
           <X className="h-4 w-4" />
         </Button>
       </div>
+
+      <CreateCustomIngredientModal
+        isOpen={isModalOpen}
+        onOpenChange={setIsModalOpen}
+        onSuccess={handleModalSuccess}
+      />
     </div>
   );
 }
