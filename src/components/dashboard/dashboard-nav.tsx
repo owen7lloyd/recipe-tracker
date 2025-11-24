@@ -6,7 +6,6 @@ import { signOut } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
 import {
   LogOut,
-  LayoutDashboard,
   BookOpen,
   Carrot,
   ShoppingCart,
@@ -42,84 +41,79 @@ export function DashboardNav({ user }: DashboardNavProps) {
               <span>Recipe Tracker</span>
             </Link>
 
-            <div className="ml-10 flex items-baseline space-x-1">
-              <Link
-                href="/dashboard"
-                className={`flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
-                  pathname === '/dashboard'
-                    ? 'bg-[#3d6b1f] text-white'
-                    : 'text-white hover:text-[#d4a574]'
-                }`}
-              >
-                <LayoutDashboard className="h-4 w-4" />
-                Dashboard
-              </Link>
+            <div className="ml-8 flex items-center gap-2">
               <Link
                 href="/dashboard/recipes"
-                className={`flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+                className={`rounded-md p-2 transition-colors ${
                   pathname.startsWith('/dashboard/recipes') &&
                   pathname !== '/dashboard/recipes/available'
                     ? 'bg-[#3d6b1f] text-white'
                     : 'text-white hover:text-[#d4a574]'
                 }`}
+                title="Recipes"
+                aria-label="Recipes"
               >
-                <BookOpen className="h-4 w-4" />
-                Recipes
+                <BookOpen className="h-5 w-5" />
               </Link>
               <Link
                 href="/dashboard/recipes/available"
-                className={`flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+                className={`rounded-md p-2 transition-colors ${
                   pathname === '/dashboard/recipes/available'
                     ? 'bg-[#3d6b1f] text-white'
                     : 'text-white hover:text-[#d4a574]'
                 }`}
+                title="What Can I Cook?"
+                aria-label="What Can I Cook?"
               >
-                <Zap className="h-4 w-4" />
-                What Can I Cook?
+                <Zap className="h-5 w-5" />
               </Link>
               <Link
                 href="/dashboard/pantry"
-                className={`flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+                className={`rounded-md p-2 transition-colors ${
                   pathname.startsWith('/dashboard/pantry')
                     ? 'bg-[#3d6b1f] text-white'
                     : 'text-white hover:text-[#d4a574]'
                 }`}
+                title="Pantry"
+                aria-label="Pantry"
               >
-                <Carrot className="h-4 w-4" />
-                Pantry
+                <Carrot className="h-5 w-5" />
               </Link>
               <Link
                 href="/dashboard/grocery-lists"
-                className={`flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+                className={`rounded-md p-2 transition-colors ${
                   pathname.startsWith('/dashboard/grocery-lists')
                     ? 'bg-[#3d6b1f] text-white'
                     : 'text-white hover:text-[#d4a574]'
                 }`}
+                title="Grocery Lists"
+                aria-label="Grocery Lists"
               >
-                <ShoppingCart className="h-4 w-4" />
-                Grocery Lists
+                <ShoppingCart className="h-5 w-5" />
               </Link>
               <Link
                 href="/dashboard/ingredients"
-                className={`flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+                className={`rounded-md p-2 transition-colors ${
                   pathname.startsWith('/dashboard/ingredients')
                     ? 'bg-[#3d6b1f] text-white'
                     : 'text-white hover:text-[#d4a574]'
                 }`}
+                title="Ingredients"
+                aria-label="Ingredients"
               >
-                <Leaf className="h-4 w-4" />
-                Ingredients
+                <Leaf className="h-5 w-5" />
               </Link>
               <Link
                 href="/dashboard/settings"
-                className={`flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+                className={`rounded-md p-2 transition-colors ${
                   pathname.startsWith('/dashboard/settings')
                     ? 'bg-[#3d6b1f] text-white'
                     : 'text-white hover:text-[#d4a574]'
                 }`}
+                title="Settings"
+                aria-label="Settings"
               >
-                <Settings className="h-4 w-4" />
-                Settings
+                <Settings className="h-5 w-5" />
               </Link>
             </div>
           </div>
