@@ -6,12 +6,16 @@ export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Get the session token directly - bypasses NextAuth's URL construction
+  // Important: Must specify secureCookie to match development vs production cookie names
   const token = await getToken({
     req: request,
     secret: process.env.NEXTAUTH_SECRET,
+    secureCookie: process.env.NODE_ENV === 'production',
   });
 
-  const isAuthenticated = !!token;
+  // Validate token has required fields to be considered authenticated
+  // This prevents issues with stale or corrupted tokens
+  const isAuthenticated = !!(token && token.id && token.email);
 
   // Public routes that don't require authentication
   const publicRoutes = ['/', '/login', '/register'];
