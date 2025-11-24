@@ -32,7 +32,7 @@ export default async function CookRecipePage({
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
+    <div className="min-h-screen bg-gradient-to-b from-[#faf8f3] to-[#f0ebe0]">
       <CookRecipeView
         id={recipe.id}
         title={recipe.title}

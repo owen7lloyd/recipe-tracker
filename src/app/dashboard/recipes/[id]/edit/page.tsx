@@ -23,10 +23,10 @@ export default async function EditRecipePage({
   const hasAccess = await requireRecipeAccess(session.user.id, id);
   if (!hasAccess) {
     return (
-      <div className="min-h-screen bg-slate-50 p-8 dark:bg-slate-900">
+      <div className="min-h-screen bg-gradient-to-b from-[#faf8f3] to-[#f0ebe0] p-8">
         <div className="mx-auto max-w-4xl">
-          <div className="rounded-lg border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-950">
-            <p className="text-slate-600 dark:text-slate-400">
+          <div className="rounded-2xl border-2 border-[#e8dcc8] bg-white p-6">
+            <p className="text-[#6b6250]">
               Recipe not found or you don't have access to it.
             </p>
           </div>
@@ -39,10 +39,10 @@ export default async function EditRecipePage({
   const recipe = await getRecipeWithIngredients(id);
   if (!recipe) {
     return (
-      <div className="min-h-screen bg-slate-50 p-8 dark:bg-slate-900">
+      <div className="min-h-screen bg-gradient-to-b from-[#faf8f3] to-[#f0ebe0] p-8">
         <div className="mx-auto max-w-4xl">
-          <div className="rounded-lg border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-950">
-            <p className="text-slate-600 dark:text-slate-400">
+          <div className="rounded-2xl border-2 border-[#e8dcc8] bg-white p-6">
+            <p className="text-[#6b6250]">
               Recipe not found.
             </p>
           </div>
@@ -75,13 +75,13 @@ export default async function EditRecipePage({
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 p-8 dark:bg-slate-900">
+    <div className="min-h-screen bg-gradient-to-b from-[#faf8f3] to-[#f0ebe0] p-8">
       <div className="mx-auto max-w-4xl">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-50">
+          <h1 className="font-merriweather text-3xl font-bold text-[#2d5016]">
             Edit Recipe
           </h1>
-          <p className="mt-2 text-slate-600 dark:text-slate-400">
+          <p className="mt-2 text-[#6b6250]">
             Update your recipe details
           </p>
         </div>
