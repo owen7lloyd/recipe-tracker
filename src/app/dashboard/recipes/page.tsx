@@ -1,4 +1,4 @@
-import { auth } from '@/lib/auth';
+import { getSession } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -13,7 +13,7 @@ export default async function RecipesPage({
 }: {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
-  const session = await auth();
+  const session = await getSession();
 
   if (!session?.user) {
     redirect('/login');
@@ -37,7 +37,8 @@ export default async function RecipesPage({
 
   const params = await searchParams;
   const search = typeof params.search === 'string' ? params.search : undefined;
-  const category = typeof params.category === 'string' ? params.category : undefined;
+  const category =
+    typeof params.category === 'string' ? params.category : undefined;
   const page = typeof params.page === 'string' ? parseInt(params.page, 10) : 1;
 
   // Fetch recipes

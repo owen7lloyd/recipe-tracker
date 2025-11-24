@@ -1,10 +1,10 @@
-import { auth } from '@/lib/auth';
+import { getSession } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { RecipeForm } from '@/components/recipes/recipe-form';
 import { getUserHouseholdId } from '@/lib/recipe/helpers';
 
 export default async function NewRecipePage() {
-  const session = await auth();
+  const session = await getSession();
 
   if (!session?.user) {
     redirect('/login');

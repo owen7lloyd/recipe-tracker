@@ -7,6 +7,8 @@ import { eq } from 'drizzle-orm';
 import { loginSchema } from '@/lib/validations/auth';
 
 export const authConfig: NextAuthConfig = {
+  // Trust the host header from Vercel - required for preview deployments
+  trustHost: true,
   providers: [
     Credentials({
       name: 'credentials',

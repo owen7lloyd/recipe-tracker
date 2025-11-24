@@ -1,4 +1,4 @@
-import { auth } from '@/lib/auth';
+import { getSession } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { households, householdInvites } from '@/lib/db/schema';
 import { eq, and, gt } from 'drizzle-orm';
@@ -10,7 +10,7 @@ interface JoinPageProps {
 }
 
 export default async function JoinPage({ params }: JoinPageProps) {
-  const session = await auth();
+  const session = await getSession();
   const { code } = await params;
 
   // Fetch invite and household info (even if not authenticated)

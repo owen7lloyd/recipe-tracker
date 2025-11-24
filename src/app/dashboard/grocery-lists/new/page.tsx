@@ -1,10 +1,10 @@
-import { auth } from '@/lib/auth';
+import { getSession } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { RecipeSelector } from '@/components/grocery-lists/recipe-selector';
 import { searchRecipes, getUserHouseholdId } from '@/lib/recipe/helpers';
 
 export default async function NewGroceryListPage() {
-  const session = await auth();
+  const session = await getSession();
 
   if (!session?.user) {
     redirect('/login');
