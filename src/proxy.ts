@@ -17,6 +17,13 @@ export async function proxy(request: NextRequest) {
   // This prevents issues with stale or corrupted tokens
   const isAuthenticated = !!(token && token.id && token.email);
 
+  // Debug logging in development
+  if (process.env.NODE_ENV === 'development') {
+    console.log(
+      `[proxy] ${pathname} - authenticated: ${isAuthenticated}, token: ${token ? 'present' : 'null'}`
+    );
+  }
+
   // Public routes that don't require authentication
   const publicRoutes = ['/', '/login', '/register'];
   const authRoutes = ['/login', '/register'];
@@ -33,6 +40,9 @@ export async function proxy(request: NextRequest) {
   if (publicRoutes.includes(pathname)) {
     // Redirect authenticated users away from auth pages
     if (isAuthenticated && authRoutes.includes(pathname)) {
+      console.log(
+        `[proxy] Redirecting authenticated user from ${pathname} to /dashboard`
+      );
       return NextResponse.redirect(new URL('/dashboard', request.url));
     }
     return NextResponse.next();
@@ -42,6 +52,9 @@ export async function proxy(request: NextRequest) {
   if (!isAuthenticated) {
     const signInUrl = new URL('/login', request.url);
     signInUrl.searchParams.set('callbackUrl', pathname);
+    console.log(
+      `[proxy] Redirecting unauthenticated user from ${pathname} to /login`
+    );
     return NextResponse.redirect(signInUrl);
   }
 
