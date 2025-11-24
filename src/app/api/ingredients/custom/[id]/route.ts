@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { customIngredients } from '@/lib/db/schema';
+import { customIngredients, users, ingredients } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
 
 const VALID_CATEGORIES = [
@@ -34,14 +34,28 @@ export async function PATCH(
 
     const { id } = await params;
 
-    // Verify the ingredient exists and belongs to the user
+    // Get user's household
+    const user = await db
+      .select({ householdId: users.householdId })
+      .from(users)
+      .where(eq(users.id, session.user.id))
+      .then((results) => results[0]);
+
+    if (!user?.householdId) {
+      return NextResponse.json(
+        { error: 'User must be part of a household' },
+        { status: 400 }
+      );
+    }
+
+    // Verify the ingredient exists and belongs to the household
     const ingredient = await db
       .select()
       .from(customIngredients)
       .where(
         and(
           eq(customIngredients.id, id),
-          eq(customIngredients.userId, session.user.id)
+          eq(customIngredients.householdId, user.householdId)
         )
       )
       .then((results) => results[0]);
@@ -70,19 +84,36 @@ export async function PATCH(
         ? (category as IngredientCategory)
         : ingredient.category;
 
-    // If name is being changed, check for duplicates
+    // If name is being changed, check for duplicates in household and default database
     if (name && name.toLowerCase() !== ingredient.name.toLowerCase()) {
+      const defaultExists = await db
+        .select()
+        .from(ingredients)
+        .then((results) =>
+          results.find((r) => r.name.toLowerCase() === name.toLowerCase())
+        );
+
+      if (defaultExists) {
+        return NextResponse.json(
+          { error: 'This ingredient already exists in the database' },
+          { status: 409 }
+        );
+      }
+
       const existing = await db
         .select()
         .from(customIngredients)
-        .where(eq(customIngredients.userId, session.user.id))
+        .where(eq(customIngredients.householdId, user.householdId))
         .then((results) =>
           results.find((r) => r.name.toLowerCase() === name.toLowerCase())
         );
 
       if (existing) {
         return NextResponse.json(
-          { error: 'An ingredient with this name already exists' },
+          {
+            error:
+              'An ingredient with this name already exists in your household',
+          },
           { status: 409 }
         );
       }
@@ -113,7 +144,7 @@ export async function PATCH(
 
 /**
  * DELETE /api/ingredients/custom/[id]
- * Delete a custom ingredient (only the owner can delete)
+ * Delete a custom ingredient (only household members can delete)
  */
 export async function DELETE(
   request: Request,
@@ -127,14 +158,28 @@ export async function DELETE(
 
     const { id } = await params;
 
-    // Verify the ingredient exists and belongs to the user
+    // Get user's household
+    const user = await db
+      .select({ householdId: users.householdId })
+      .from(users)
+      .where(eq(users.id, session.user.id))
+      .then((results) => results[0]);
+
+    if (!user?.householdId) {
+      return NextResponse.json(
+        { error: 'User must be part of a household' },
+        { status: 400 }
+      );
+    }
+
+    // Verify the ingredient exists and belongs to the household
     const ingredient = await db
       .select()
       .from(customIngredients)
       .where(
         and(
           eq(customIngredients.id, id),
-          eq(customIngredients.userId, session.user.id)
+          eq(customIngredients.householdId, user.householdId)
         )
       )
       .then((results) => results[0]);

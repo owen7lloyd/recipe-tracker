@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { customIngredients } from '@/lib/db/schema';
+import { customIngredients, users, ingredients } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 
 const VALID_CATEGORIES = [
@@ -29,6 +29,20 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    // Get user's household
+    const user = await db
+      .select({ householdId: users.householdId })
+      .from(users)
+      .where(eq(users.id, session.user.id))
+      .then((results) => results[0]);
+
+    if (!user?.householdId) {
+      return NextResponse.json(
+        { error: 'User must be part of a household' },
+        { status: 400 }
+      );
+    }
+
     const body = await request.json();
     const { name, defaultUnit, category } = body;
 
@@ -46,18 +60,36 @@ export async function POST(request: Request) {
         ? (category as IngredientCategory)
         : null;
 
-    // Check if ingredient with same name already exists for this user
+    // Check if ingredient already exists in default database
+    const defaultExists = await db
+      .select()
+      .from(ingredients)
+      .then((results) =>
+        results.find((r) => r.name.toLowerCase() === name.toLowerCase())
+      );
+
+    if (defaultExists) {
+      return NextResponse.json(
+        { error: 'This ingredient already exists in the database' },
+        { status: 409 }
+      );
+    }
+
+    // Check if ingredient with same name already exists in this household's custom ingredients
     const existing = await db
       .select()
       .from(customIngredients)
-      .where(eq(customIngredients.userId, session.user.id))
+      .where(eq(customIngredients.householdId, user.householdId))
       .then((results) =>
         results.find((r) => r.name.toLowerCase() === name.toLowerCase())
       );
 
     if (existing) {
       return NextResponse.json(
-        { error: 'An ingredient with this name already exists' },
+        {
+          error:
+            'An ingredient with this name already exists in your household',
+        },
         { status: 409 }
       );
     }
@@ -66,7 +98,8 @@ export async function POST(request: Request) {
     const [newIngredient] = await db
       .insert(customIngredients)
       .values({
-        userId: session.user.id,
+        householdId: user.householdId,
+        createdBy: session.user.id,
         name: name.trim(),
         defaultUnit: defaultUnit || null,
         category: validatedCategory,
@@ -85,7 +118,7 @@ export async function POST(request: Request) {
 
 /**
  * GET /api/ingredients/custom
- * Get all custom ingredients for the authenticated user
+ * Get all custom ingredients for the authenticated user's household
  */
 export async function GET(request: Request) {
   try {
@@ -94,12 +127,23 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const userIngredients = await db
+    // Get user's household
+    const user = await db
+      .select({ householdId: users.householdId })
+      .from(users)
+      .where(eq(users.id, session.user.id))
+      .then((results) => results[0]);
+
+    if (!user?.householdId) {
+      return NextResponse.json({ customIngredients: [] });
+    }
+
+    const householdIngredients = await db
       .select()
       .from(customIngredients)
-      .where(eq(customIngredients.userId, session.user.id));
+      .where(eq(customIngredients.householdId, user.householdId));
 
-    return NextResponse.json(userIngredients);
+    return NextResponse.json(householdIngredients);
   } catch (error) {
     console.error('Error fetching custom ingredients:', error);
     return NextResponse.json(

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { ingredients, customIngredients } from '@/lib/db/schema';
+import { ingredients, customIngredients, users } from '@/lib/db/schema';
 import { ilike, and, eq, or, sql } from 'drizzle-orm';
 
 // Valid ingredient categories
@@ -69,26 +69,42 @@ export async function GET(request: Request) {
       ? baseQuery.where(and(...conditions)).limit(limit)
       : baseQuery.limit(limit));
 
-    // Also search custom ingredients for this user
-    const customConditions = [eq(customIngredients.userId, session.user.id)];
+    // Get user's household
+    const user = await db
+      .select({ householdId: users.householdId })
+      .from(users)
+      .where(eq(users.id, session.user.id))
+      .then((results) => results[0]);
 
-    if (query) {
-      customConditions.push(ilike(customIngredients.name, `%${query}%`));
-    } else if (category) {
-      customConditions.push(eq(customIngredients.category, category));
+    // Also search custom ingredients for this household
+    let customResults: typeof defaultResults = [];
+    if (user?.householdId) {
+      const householdId = user.householdId;
+      const customConditions = [eq(customIngredients.householdId, householdId)];
+
+      if (query) {
+        customConditions.push(ilike(customIngredients.name, `%${query}%`));
+      } else if (category) {
+        customConditions.push(eq(customIngredients.category, category));
+      }
+
+      const results = await db
+        .select({
+          id: customIngredients.id,
+          name: customIngredients.name,
+          category: customIngredients.category,
+          commonUnits: sql<null>`null`,
+          isCustom: sql<boolean>`true`,
+        })
+        .from(customIngredients)
+        .where(and(...customConditions))
+        .limit(limit);
+
+      // Filter out ingredients without a category to match the type of defaultResults
+      customResults = results.filter(
+        (ing) => ing.category !== null
+      ) as typeof defaultResults;
     }
-
-    const customResults = await db
-      .select({
-        id: customIngredients.id,
-        name: customIngredients.name,
-        category: customIngredients.category,
-        commonUnits: sql<null>`null`,
-        isCustom: sql<boolean>`true`,
-      })
-      .from(customIngredients)
-      .where(and(...customConditions))
-      .limit(limit);
 
     // Combine and deduplicate results (prioritize custom ingredients if same name)
     const combinedResults = [

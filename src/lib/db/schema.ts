@@ -295,26 +295,30 @@ export const householdCategoryOrder = pgTable('household_category_order', {
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 
-// Custom ingredients table (user-created ingredients)
+// Custom ingredients table (household-created ingredients)
 export const customIngredients = pgTable(
   'custom_ingredients',
   {
     id: uuid('id').primaryKey().defaultRandom(),
-    userId: uuid('user_id')
+    householdId: uuid('household_id')
       .notNull()
-      .references(() => users.id, { onDelete: 'cascade' }),
+      .references(() => households.id, { onDelete: 'cascade' }),
     name: text('name').notNull(),
     defaultUnit: text('default_unit'),
     category: ingredientCategoryEnum('category'),
+    createdBy: uuid('created_by')
+      .notNull()
+      .references(() => users.id),
     createdAt: timestamp('created_at').defaultNow().notNull(),
     updatedAt: timestamp('updated_at').defaultNow().notNull(),
   },
   (table) => ({
-    userIdIdx: index('idx_custom_ingredients_user').on(table.userId),
-    uniqueUserIngredient: uniqueIndex('idx_custom_ingredients_user_name').on(
-      table.userId,
-      table.name
+    householdIdIdx: index('idx_custom_ingredients_household').on(
+      table.householdId
     ),
+    uniqueHouseholdIngredient: uniqueIndex(
+      'idx_custom_ingredients_household_name'
+    ).on(table.householdId, table.name),
   })
 );
 
@@ -327,7 +331,6 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   recipes: many(recipes),
   pantryItems: many(pantryItems),
   groceryLists: many(groceryLists),
-  customIngredients: many(customIngredients),
   createdInvites: many(householdInvites, {
     relationName: 'inviteCreator',
   }),
@@ -341,6 +344,7 @@ export const householdsRelations = relations(households, ({ one, many }) => ({
   recipes: many(recipes),
   pantryItems: many(pantryItems),
   groceryLists: many(groceryLists),
+  customIngredients: many(customIngredients),
   invites: many(householdInvites),
   categoryOrder: one(householdCategoryOrder, {
     fields: [households.id],
@@ -502,8 +506,12 @@ export const householdCategoryOrderRelations = relations(
 export const customIngredientsRelations = relations(
   customIngredients,
   ({ one }) => ({
-    user: one(users, {
-      fields: [customIngredients.userId],
+    household: one(households, {
+      fields: [customIngredients.householdId],
+      references: [households.id],
+    }),
+    createdByUser: one(users, {
+      fields: [customIngredients.createdBy],
       references: [users.id],
     }),
   })

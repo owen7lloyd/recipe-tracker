@@ -61,6 +61,7 @@ export function useIngredients(initialQuery?: string) {
 
 /**
  * Hook for managing custom ingredients (CRUD operations)
+ * All operations are scoped to the authenticated user's household
  */
 export function useCustomIngredients() {
   const [customIngredients, setCustomIngredients] = useState<Ingredient[]>([]);
