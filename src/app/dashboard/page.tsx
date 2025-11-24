@@ -3,6 +3,56 @@ import { redirect } from 'next/navigation';
 import { db } from '@/lib/db';
 import { users } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
+import {
+  BookOpen,
+  Carrot,
+  ShoppingCart,
+  Zap,
+  Leaf,
+  Settings,
+} from 'lucide-react';
+import { Card } from '@/components/ui/card';
+
+interface DashboardCardProps {
+  icon: React.ReactNode;
+  title: string;
+  description: string;
+  href: string;
+  color: string;
+}
+
+function DashboardCard({
+  icon,
+  title,
+  description,
+  href,
+  color,
+}: DashboardCardProps) {
+  return (
+    <Link href={href} className="group">
+      <Card className="h-full overflow-hidden transition-all duration-300 hover:-translate-y-2 hover:shadow-xl rounded-3xl cursor-pointer border-2 border-[#e8dcc8]">
+        <div className="p-8">
+          <div
+            className={`mb-4 inline-flex h-16 w-16 items-center justify-center rounded-2xl ${color}`}
+          >
+            {icon}
+          </div>
+          <h2 className="mb-2 font-merriweather text-xl font-bold text-[#2d5016]">
+            {title}
+          </h2>
+          <p className="mb-6 text-sm text-[#6b6250]">
+            {description}
+          </p>
+          <Button className="bg-gradient-to-r from-[#2d5016] to-[#3d6b1f] text-white rounded-full hover:shadow-lg hover:-translate-y-0.5 transition-all">
+            Go to {title}
+          </Button>
+        </div>
+      </Card>
+    </Link>
+  );
+}
 
 export default async function DashboardPage() {
   const session = await getSession();
@@ -19,76 +69,65 @@ export default async function DashboardPage() {
     .limit(1);
 
   return (
-    <div className="min-h-screen bg-slate-50 p-8 dark:bg-slate-900">
+    <div className="min-h-screen bg-gradient-to-b from-[#faf8f3] to-[#f0ebe0] p-8">
       <div className="mx-auto max-w-7xl">
-        <header className="mb-8">
-          <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-50">
+        <header className="mb-12">
+          <h1 className="mb-2 text-4xl font-merriweather font-bold text-[#2d5016]">
             Dashboard
           </h1>
-          <p className="mt-2 text-slate-600 dark:text-slate-400">
-            Welcome back, {session.user.name}!
+          <p className="text-lg text-[#6b6250] font-light">
+            Welcome back, {session.user.name}! Manage your recipes and pantry.
           </p>
         </header>
 
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-950">
-            <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-50">
-              Recipes
-            </h2>
-            <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
-              Manage your recipe collection
-            </p>
-          </div>
+        <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+          <DashboardCard
+            icon={<BookOpen className="h-8 w-8 text-white" />}
+            title="Recipes"
+            description="Manage your recipe collection, import from websites, and organize your favorites"
+            href="/dashboard/recipes"
+            color="bg-[#2d5016]"
+          />
 
-          <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-950">
-            <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-50">
-              Pantry
-            </h2>
-            <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
-              Track your ingredients
-            </p>
-          </div>
+          <DashboardCard
+            icon={<Carrot className="h-8 w-8 text-white" />}
+            title="Pantry"
+            description="Track your ingredients and manage your inventory"
+            href="/dashboard/pantry"
+            color="bg-[#6b8e23]"
+          />
 
-          <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-950">
-            <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-50">
-              Grocery Lists
-            </h2>
-            <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
-              Plan your shopping trips
-            </p>
-          </div>
-        </div>
+          <DashboardCard
+            icon={<ShoppingCart className="h-8 w-8 text-white" />}
+            title="Grocery Lists"
+            description="Plan your shopping trips and generate lists from recipes"
+            href="/dashboard/grocery-lists"
+            color="bg-[#d4a574]"
+          />
 
-        <div className="mt-8 rounded-lg border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-950">
-          <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-50">
-            Account Information
-          </h2>
-          <dl className="mt-4 space-y-2">
-            <div>
-              <dt className="text-sm font-medium text-slate-500 dark:text-slate-400">
-                Name
-              </dt>
-              <dd className="text-sm text-slate-900 dark:text-slate-50">
-                {session.user.name}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-sm font-medium text-slate-500 dark:text-slate-400">
-                Email
-              </dt>
-              <dd className="text-sm text-slate-900 dark:text-slate-50">
-                {session.user.email}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-sm font-medium text-slate-500 dark:text-slate-400">
-                Household ID
-              </dt>
-              <dd className="text-sm text-slate-900 dark:text-slate-50">
-                {user[0]?.householdId || 'Not assigned'}
-              </dd>
-            </div>
-          </dl>
+          <DashboardCard
+            icon={<Zap className="h-8 w-8 text-white" />}
+            title="What Can I Cook?"
+            description="Discover recipes you can make with your available ingredients"
+            href="/dashboard/recipes/available"
+            color="bg-[#2d5016]"
+          />
+
+          <DashboardCard
+            icon={<Leaf className="h-8 w-8 text-white" />}
+            title="Ingredients"
+            description="Manage and search your ingredient database"
+            href="/dashboard/ingredients"
+            color="bg-[#6b8e23]"
+          />
+
+          <DashboardCard
+            icon={<Settings className="h-8 w-8 text-white" />}
+            title="Settings"
+            description="Manage your account and household preferences"
+            href="/dashboard/settings"
+            color="bg-[#d4a574]"
+          />
         </div>
       </div>
     </div>
