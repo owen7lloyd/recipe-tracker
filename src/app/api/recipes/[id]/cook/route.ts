@@ -138,18 +138,43 @@ export async function POST(
         let quantityToDeduct = quantityNeeded;
         let conversionNote: string | undefined;
 
-        if (
-          pantryItem.unit &&
-          ingredient.unit &&
-          pantryItem.unit !== ingredient.unit
-        ) {
-          // Units don't match - attempt conversion
-          if (!areUnitsCompatible(pantryItem.unit, ingredient.unit)) {
-            // Units are incompatible (e.g., cups vs pounds)
-            // Log warning and skip this ingredient
+        // Debug logging
+        console.log(`Processing ingredient: ${ingredient.ingredientName}`, {
+          pantryQuantity: pantryItem.quantity,
+          pantryUnit: pantryItem.unit,
+          recipeQuantity: quantityNeeded,
+          recipeUnit: ingredient.unit,
+        });
+
+        // Check if units exist and differ
+        if (pantryItem.unit || ingredient.unit) {
+          // At least one unit is specified
+          if (!pantryItem.unit) {
+            // Pantry has no unit specified - cannot safely deduct
             console.warn(
               `Skipping pantry deduction for ${ingredient.ingredientName}: ` +
-                `incompatible units (recipe: ${ingredient.unit}, pantry: ${pantryItem.unit})`
+                `pantry item has no unit specified (recipe needs ${ingredient.unit})`
+            );
+
+            pantryUpdates.push({
+              ingredientId: ingredient.ingredientId,
+              ingredientName: ingredient.ingredientName,
+              before: pantryItem.quantity,
+              after: pantryItem.quantity,
+              removed: false,
+              unit: null,
+              unitMismatch: true,
+              conversionNote: `Cannot deduct: pantry item has no unit, recipe needs ${ingredient.unit}`,
+            });
+
+            continue;
+          }
+
+          if (!ingredient.unit) {
+            // Recipe ingredient has no unit - cannot safely deduct
+            console.warn(
+              `Skipping pantry deduction for ${ingredient.ingredientName}: ` +
+                `recipe ingredient has no unit (pantry tracks ${pantryItem.unit})`
             );
 
             pantryUpdates.push({
@@ -160,30 +185,68 @@ export async function POST(
               removed: false,
               unit: pantryItem.unit,
               unitMismatch: true,
-              conversionNote: `Cannot deduct: recipe uses ${ingredient.unit} but pantry tracks ${pantryItem.unit}`,
+              conversionNote: `Cannot deduct: recipe ingredient has no unit, pantry tracks ${pantryItem.unit}`,
             });
 
             continue;
           }
 
-          // Units are compatible - convert
-          const converted = convertBetweenUnits(
-            quantityNeeded,
-            ingredient.unit,
-            pantryItem.unit
-          );
+          // Both units exist - check if they differ
+          if (pantryItem.unit !== ingredient.unit) {
+            // Units don't match - attempt conversion
+            if (!areUnitsCompatible(pantryItem.unit, ingredient.unit)) {
+              // Units are incompatible (e.g., cups vs pounds)
+              // Log warning and skip this ingredient
+              console.warn(
+                `Skipping pantry deduction for ${ingredient.ingredientName}: ` +
+                  `incompatible units (recipe: ${ingredient.unit}, pantry: ${pantryItem.unit})`
+              );
 
-          if (converted === null) {
-            // Conversion failed (shouldn't happen if units are compatible)
-            console.error(
-              `Unit conversion failed for ${ingredient.ingredientName}: ` +
-                `${ingredient.unit} to ${pantryItem.unit}`
+              pantryUpdates.push({
+                ingredientId: ingredient.ingredientId,
+                ingredientName: ingredient.ingredientName,
+                before: pantryItem.quantity,
+                after: pantryItem.quantity,
+                removed: false,
+                unit: pantryItem.unit,
+                unitMismatch: true,
+                conversionNote: `Cannot deduct: recipe uses ${ingredient.unit} but pantry tracks ${pantryItem.unit}`,
+              });
+
+              continue;
+            }
+
+            // Units are compatible - convert
+            const converted = convertBetweenUnits(
+              quantityNeeded,
+              ingredient.unit,
+              pantryItem.unit
             );
-            continue;
-          }
 
-          quantityToDeduct = roundQuantity(converted);
-          conversionNote = `Converted ${quantityNeeded} ${ingredient.unit} to ${quantityToDeduct} ${pantryItem.unit}`;
+            if (converted === null) {
+              // Conversion failed (e.g., cross-system like cup to g)
+              console.warn(
+                `Skipping pantry deduction for ${ingredient.ingredientName}: ` +
+                  `cannot convert ${ingredient.unit} to ${pantryItem.unit} (Phase 2 feature)`
+              );
+
+              pantryUpdates.push({
+                ingredientId: ingredient.ingredientId,
+                ingredientName: ingredient.ingredientName,
+                before: pantryItem.quantity,
+                after: pantryItem.quantity,
+                removed: false,
+                unit: pantryItem.unit,
+                unitMismatch: true,
+                conversionNote: `Cannot deduct: ${ingredient.unit} to ${pantryItem.unit} conversion requires ingredient density data`,
+              });
+
+              continue;
+            }
+
+            quantityToDeduct = roundQuantity(converted);
+            conversionNote = `Converted ${quantityNeeded} ${ingredient.unit} to ${quantityToDeduct} ${pantryItem.unit}`;
+          }
         }
 
         const remainingQuantity = currentQuantity - quantityToDeduct;
