@@ -93,8 +93,18 @@ export async function POST(
       const pantryUpdates: PantryUpdate[] = [];
 
       for (const ingredient of scaledRecipe.ingredients) {
+        console.log('=== Processing ingredient ===', {
+          name: ingredient.ingredientName,
+          optional: ingredient.optional,
+          scaledQuantity: ingredient.scaledQuantity,
+          unit: ingredient.unit,
+        });
+
         // Skip optional ingredients
-        if (ingredient.optional) continue;
+        if (ingredient.optional) {
+          console.log(`Skipping optional: ${ingredient.ingredientName}`);
+          continue;
+        }
 
         // Check for manual adjustment
         const adjustment = validatedData.adjustments?.find(
@@ -106,14 +116,20 @@ export async function POST(
         let quantityNeeded: number;
         if (adjustment !== undefined) {
           quantityNeeded = adjustment.quantity;
+          console.log(`Using adjustment: ${quantityNeeded}`);
         } else if (ingredient.scaledQuantity !== null) {
           quantityNeeded = ingredient.scaledQuantity;
+          console.log(`Using scaled quantity: ${quantityNeeded}`);
         } else {
           // Skip non-numeric quantities (like "to taste")
+          console.log(`Skipping non-numeric quantity: ${ingredient.quantity}`);
           continue;
         }
 
-        if (quantityNeeded === 0) continue;
+        if (quantityNeeded === 0) {
+          console.log('Skipping zero quantity');
+          continue;
+        }
 
         // Find pantry item
         const [pantryItem] = await tx
@@ -127,10 +143,23 @@ export async function POST(
           )
           .limit(1);
 
-        if (!pantryItem) continue;
+        if (!pantryItem) {
+          console.log(
+            `No pantry item found for ${ingredient.ingredientName} (id: ${ingredient.ingredientId})`
+          );
+          continue;
+        }
+
+        console.log('Pantry item found:', {
+          quantity: pantryItem.quantity,
+          unit: pantryItem.unit,
+        });
 
         // Skip if no quantity tracked
-        if (!pantryItem.quantity) continue;
+        if (!pantryItem.quantity) {
+          console.log('Pantry item has no quantity tracked');
+          continue;
+        }
 
         const currentQuantity = parseFloat(pantryItem.quantity);
 
@@ -139,21 +168,24 @@ export async function POST(
         let conversionNote: string | undefined;
 
         // Debug logging
-        console.log(`Processing ingredient: ${ingredient.ingredientName}`, {
+        console.log(`[BEFORE CONVERSION] ${ingredient.ingredientName}:`, {
           pantryQuantity: pantryItem.quantity,
           pantryUnit: pantryItem.unit,
           recipeQuantity: quantityNeeded,
           recipeUnit: ingredient.unit,
+          quantityToDeduct,
         });
 
         // Check if units exist and differ
         if (pantryItem.unit || ingredient.unit) {
+          console.log(`[UNIT CHECK] At least one unit specified`);
+
           // At least one unit is specified
           if (!pantryItem.unit) {
             // Pantry has no unit specified - cannot safely deduct
             console.warn(
-              `Skipping pantry deduction for ${ingredient.ingredientName}: ` +
-                `pantry item has no unit specified (recipe needs ${ingredient.unit})`
+              `[SKIP] Pantry deduction for ${ingredient.ingredientName}: ` +
+                `pantry item has no unit (recipe: ${ingredient.unit})`
             );
 
             pantryUpdates.push({
@@ -173,8 +205,8 @@ export async function POST(
           if (!ingredient.unit) {
             // Recipe ingredient has no unit - cannot safely deduct
             console.warn(
-              `Skipping pantry deduction for ${ingredient.ingredientName}: ` +
-                `recipe ingredient has no unit (pantry tracks ${pantryItem.unit})`
+              `[SKIP] Pantry deduction for ${ingredient.ingredientName}: ` +
+                `recipe has no unit (pantry: ${pantryItem.unit})`
             );
 
             pantryUpdates.push({
@@ -185,7 +217,7 @@ export async function POST(
               removed: false,
               unit: pantryItem.unit,
               unitMismatch: true,
-              conversionNote: `Cannot deduct: recipe ingredient has no unit, pantry tracks ${pantryItem.unit}`,
+              conversionNote: `Cannot deduct: recipe has no unit, pantry tracks ${pantryItem.unit}`,
             });
 
             continue;
@@ -193,13 +225,16 @@ export async function POST(
 
           // Both units exist - check if they differ
           if (pantryItem.unit !== ingredient.unit) {
+            console.log(
+              `[UNIT MISMATCH] ${pantryItem.unit} != ${ingredient.unit}`
+            );
+
             // Units don't match - attempt conversion
             if (!areUnitsCompatible(pantryItem.unit, ingredient.unit)) {
               // Units are incompatible (e.g., cups vs pounds)
-              // Log warning and skip this ingredient
               console.warn(
-                `Skipping pantry deduction for ${ingredient.ingredientName}: ` +
-                  `incompatible units (recipe: ${ingredient.unit}, pantry: ${pantryItem.unit})`
+                `[INCOMPATIBLE] ${ingredient.ingredientName}: ` +
+                  `${ingredient.unit} vs ${pantryItem.unit}`
               );
 
               pantryUpdates.push({
@@ -210,11 +245,13 @@ export async function POST(
                 removed: false,
                 unit: pantryItem.unit,
                 unitMismatch: true,
-                conversionNote: `Cannot deduct: recipe uses ${ingredient.unit} but pantry tracks ${pantryItem.unit}`,
+                conversionNote: `Cannot deduct: ${ingredient.unit} and ${pantryItem.unit} are incompatible`,
               });
 
               continue;
             }
+
+            console.log(`[COMPATIBLE UNITS] Attempting conversion...`);
 
             // Units are compatible - convert
             const converted = convertBetweenUnits(
@@ -223,11 +260,15 @@ export async function POST(
               pantryItem.unit
             );
 
+            console.log(
+              `[CONVERSION RESULT] ${quantityNeeded} ${ingredient.unit} -> ${converted} ${pantryItem.unit}`
+            );
+
             if (converted === null) {
               // Conversion failed (e.g., cross-system like cup to g)
               console.warn(
-                `Skipping pantry deduction for ${ingredient.ingredientName}: ` +
-                  `cannot convert ${ingredient.unit} to ${pantryItem.unit} (Phase 2 feature)`
+                `[CONVERSION FAILED] ${ingredient.ingredientName}: ` +
+                  `cannot convert ${ingredient.unit} to ${pantryItem.unit}`
               );
 
               pantryUpdates.push({
@@ -238,7 +279,7 @@ export async function POST(
                 removed: false,
                 unit: pantryItem.unit,
                 unitMismatch: true,
-                conversionNote: `Cannot deduct: ${ingredient.unit} to ${pantryItem.unit} conversion requires ingredient density data`,
+                conversionNote: `Cannot deduct: ${ingredient.unit} to ${pantryItem.unit} conversion not available (requires Phase 2)`,
               });
 
               continue;
@@ -246,8 +287,20 @@ export async function POST(
 
             quantityToDeduct = roundQuantity(converted);
             conversionNote = `Converted ${quantityNeeded} ${ingredient.unit} to ${quantityToDeduct} ${pantryItem.unit}`;
+          } else {
+            console.log(
+              `[UNIT MATCH] ${ingredient.unit} == ${pantryItem.unit}, no conversion needed`
+            );
           }
+        } else {
+          console.log(`[NO UNITS] Neither pantry nor recipe has units`);
         }
+
+        console.log(`[AFTER CONVERSION] ${ingredient.ingredientName}:`, {
+          quantityToDeduct,
+          currentQuantity,
+          willRemain: currentQuantity - quantityToDeduct,
+        });
 
         const remainingQuantity = currentQuantity - quantityToDeduct;
 
