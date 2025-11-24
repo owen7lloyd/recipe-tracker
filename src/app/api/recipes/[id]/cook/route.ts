@@ -133,12 +133,13 @@ export async function POST(
         const currentQuantity = parseFloat(pantryItem.quantity);
         let quantityToDeduct = quantityNeeded;
 
-        // Handle unit conversion if units don't match
-        if (
-          pantryItem.unit &&
-          ingredient.unit &&
-          pantryItem.unit !== ingredient.unit
-        ) {
+        // Check if units exist and differ
+        const pantryHasUnit = !!pantryItem.unit;
+        const recipeHasUnit = !!ingredient.unit;
+        const unitsAreDifferent = pantryItem.unit !== ingredient.unit;
+
+        // If units don't match and both exist, attempt conversion
+        if (pantryHasUnit && recipeHasUnit && unitsAreDifferent) {
           // Check if units are convertible
           if (!canConvert(ingredient.unit, pantryItem.unit)) {
             // Units are incompatible - log warning and skip deduction
@@ -185,6 +186,24 @@ export async function POST(
           }
 
           quantityToDeduct = converted;
+        } else if (pantryHasUnit !== recipeHasUnit) {
+          // One has a unit, the other doesn't - can't reliably deduct
+          console.warn(
+            `Skipping ingredient "${ingredient.ingredientName}": ` +
+              `unit mismatch - recipe ${recipeHasUnit ? 'has' : 'lacks'} unit (${ingredient.unit}), ` +
+              `pantry ${pantryHasUnit ? 'has' : 'lacks'} unit (${pantryItem.unit})`
+          );
+
+          pantryUpdates.push({
+            ingredientId: ingredient.ingredientId,
+            ingredientName: ingredient.ingredientName,
+            before: pantryItem.quantity,
+            after: pantryItem.quantity,
+            removed: false,
+            unit: pantryItem.unit,
+            unitMismatch: true,
+          });
+          continue;
         }
 
         const remainingQuantity = currentQuantity - quantityToDeduct;
