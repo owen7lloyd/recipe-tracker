@@ -54,7 +54,19 @@ export async function GET(request: Request) {
       conditions.push(eq(ingredients.category, category));
     }
 
-    // Build and execute query for default ingredients
+    // Get user's household
+    const user = await db
+      .select({ householdId: users.householdId })
+      .from(users)
+      .where(eq(users.id, session.user.id))
+      .then((results) => results[0]);
+
+    // Search all ingredients (both default and custom for this household)
+    const defaultConditions = [
+      ...conditions,
+      sql`"ingredients"."household_id" IS NULL`,
+    ];
+
     const baseQuery = db
       .select({
         id: ingredients.id,
@@ -65,54 +77,47 @@ export async function GET(request: Request) {
       })
       .from(ingredients);
 
-    const defaultResults = await (conditions.length > 0
-      ? baseQuery.where(and(...conditions)).limit(limit)
-      : baseQuery.limit(limit));
-
-    // Get user's household
-    const user = await db
-      .select({ householdId: users.householdId })
-      .from(users)
-      .where(eq(users.id, session.user.id))
-      .then((results) => results[0]);
+    const defaultResults = await (defaultConditions.length > 0
+      ? baseQuery.where(and(...defaultConditions)).limit(limit)
+      : baseQuery
+          .where(sql`"ingredients"."household_id" IS NULL`)
+          .limit(limit));
 
     // Also search custom ingredients for this household
     let customResults: typeof defaultResults = [];
     if (user?.householdId) {
       const householdId = user.householdId;
-      const customConditions = [eq(customIngredients.householdId, householdId)];
+      const customConditions = [eq(ingredients.householdId, householdId)];
 
       if (query) {
-        customConditions.push(ilike(customIngredients.name, `%${query}%`));
-      } else if (category) {
-        customConditions.push(eq(customIngredients.category, category));
+        customConditions.push(ilike(ingredients.name, `%${query}%`));
+      }
+      if (category) {
+        customConditions.push(eq(ingredients.category, category));
       }
 
       const results = await db
         .select({
-          id: customIngredients.id,
-          name: customIngredients.name,
-          category: customIngredients.category,
-          commonUnits: sql<null>`null`,
+          id: ingredients.id,
+          name: ingredients.name,
+          category: ingredients.category,
+          commonUnits: ingredients.commonUnits,
           isCustom: sql<boolean>`true`,
         })
-        .from(customIngredients)
+        .from(ingredients)
         .where(and(...customConditions))
         .limit(limit);
 
-      // Filter out ingredients without a category to match the type of defaultResults
-      customResults = results.filter(
-        (ing) => ing.category !== null
-      ) as typeof defaultResults;
+      customResults = results;
     }
 
     // Combine and deduplicate results (prioritize custom ingredients if same name)
     const combinedResults = [
-      ...defaultResults,
-      ...customResults.filter(
-        (custom) =>
-          !defaultResults.some(
-            (d) => d.name.toLowerCase() === custom.name.toLowerCase()
+      ...customResults,
+      ...defaultResults.filter(
+        (d) =>
+          !customResults.some(
+            (c) => c.name.toLowerCase() === d.name.toLowerCase()
           )
       ),
     ].slice(0, limit);

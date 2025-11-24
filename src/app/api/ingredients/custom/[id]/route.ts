@@ -51,14 +51,10 @@ export async function PATCH(
     // Verify the ingredient exists and belongs to the household
     const ingredient = await db
       .select()
-      .from(customIngredients)
-      .where(
-        and(
-          eq(customIngredients.id, id),
-          eq(customIngredients.householdId, user.householdId)
-        )
-      )
-      .then((results) => results[0]);
+      .from(ingredients)
+      .then((results) =>
+        results.find((r) => r.id === id && r.householdId === user.householdId)
+      );
 
     if (!ingredient) {
       return NextResponse.json(
@@ -68,7 +64,7 @@ export async function PATCH(
     }
 
     const body = await request.json();
-    const { name, defaultUnit, category } = body;
+    const { name, category } = body;
 
     // Validate inputs
     if (name && (typeof name !== 'string' || name.trim() === '')) {
@@ -90,7 +86,9 @@ export async function PATCH(
         .select()
         .from(ingredients)
         .then((results) =>
-          results.find((r) => r.name.toLowerCase() === name.toLowerCase())
+          results.find(
+            (r) => r.name.toLowerCase() === name.toLowerCase() && !r.householdId
+          )
         );
 
       if (defaultExists) {
@@ -102,10 +100,13 @@ export async function PATCH(
 
       const existing = await db
         .select()
-        .from(customIngredients)
-        .where(eq(customIngredients.householdId, user.householdId))
+        .from(ingredients)
         .then((results) =>
-          results.find((r) => r.name.toLowerCase() === name.toLowerCase())
+          results.find(
+            (r) =>
+              r.name.toLowerCase() === name.toLowerCase() &&
+              r.householdId === user.householdId
+          )
         );
 
       if (existing) {
@@ -121,15 +122,12 @@ export async function PATCH(
 
     // Update the ingredient
     const [updated] = await db
-      .update(customIngredients)
+      .update(ingredients)
       .set({
         name: name ? name.trim() : ingredient.name,
-        defaultUnit:
-          defaultUnit !== undefined ? defaultUnit : ingredient.defaultUnit,
         category: validatedCategory,
-        updatedAt: new Date(),
       })
-      .where(eq(customIngredients.id, id))
+      .where(eq(ingredients.id, id))
       .returning();
 
     return NextResponse.json(updated);
@@ -175,14 +173,10 @@ export async function DELETE(
     // Verify the ingredient exists and belongs to the household
     const ingredient = await db
       .select()
-      .from(customIngredients)
-      .where(
-        and(
-          eq(customIngredients.id, id),
-          eq(customIngredients.householdId, user.householdId)
-        )
-      )
-      .then((results) => results[0]);
+      .from(ingredients)
+      .then((results) =>
+        results.find((r) => r.id === id && r.householdId === user.householdId)
+      );
 
     if (!ingredient) {
       return NextResponse.json(
@@ -192,7 +186,7 @@ export async function DELETE(
     }
 
     // Delete the ingredient
-    await db.delete(customIngredients).where(eq(customIngredients.id, id));
+    await db.delete(ingredients).where(eq(ingredients.id, id));
 
     return NextResponse.json({ success: true });
   } catch (error) {

@@ -60,12 +60,14 @@ export async function POST(request: Request) {
         ? (category as IngredientCategory)
         : null;
 
-    // Check if ingredient already exists in default database
+    // Check if ingredient already exists in default database (no householdId)
     const defaultExists = await db
       .select()
       .from(ingredients)
       .then((results) =>
-        results.find((r) => r.name.toLowerCase() === name.toLowerCase())
+        results.find(
+          (r) => r.name.toLowerCase() === name.toLowerCase() && !r.householdId
+        )
       );
 
     if (defaultExists) {
@@ -78,10 +80,13 @@ export async function POST(request: Request) {
     // Check if ingredient with same name already exists in this household's custom ingredients
     const existing = await db
       .select()
-      .from(customIngredients)
-      .where(eq(customIngredients.householdId, user.householdId))
+      .from(ingredients)
       .then((results) =>
-        results.find((r) => r.name.toLowerCase() === name.toLowerCase())
+        results.find(
+          (r) =>
+            r.name.toLowerCase() === name.toLowerCase() &&
+            r.householdId === user.householdId
+        )
       );
 
     if (existing) {
@@ -94,15 +99,14 @@ export async function POST(request: Request) {
       );
     }
 
-    // Create the custom ingredient
+    // Create the custom ingredient in the ingredients table
     const [newIngredient] = await db
-      .insert(customIngredients)
+      .insert(ingredients)
       .values({
         householdId: user.householdId,
         createdBy: session.user.id,
         name: name.trim(),
-        defaultUnit: defaultUnit || null,
-        category: validatedCategory,
+        category: validatedCategory || 'other',
       })
       .returning();
 
@@ -135,13 +139,15 @@ export async function GET(request: Request) {
       .then((results) => results[0]);
 
     if (!user?.householdId) {
-      return NextResponse.json({ customIngredients: [] });
+      return NextResponse.json([]);
     }
 
     const householdIngredients = await db
       .select()
-      .from(customIngredients)
-      .where(eq(customIngredients.householdId, user.householdId));
+      .from(ingredients)
+      .then((results) =>
+        results.filter((r) => r.householdId === user.householdId)
+      );
 
     return NextResponse.json(householdIngredients);
   } catch (error) {

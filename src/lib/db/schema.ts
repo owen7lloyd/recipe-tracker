@@ -81,14 +81,26 @@ export const ingredients = pgTable(
   'ingredients',
   {
     id: uuid('id').primaryKey().defaultRandom(),
-    name: text('name').notNull().unique(),
+    name: text('name').notNull(),
     category: ingredientCategoryEnum('category').notNull(),
     commonUnits: text('common_units').array(),
+    householdId: uuid('household_id').references(() => households.id, {
+      onDelete: 'cascade',
+    }),
+    createdBy: uuid('created_by').references(() => users.id),
     createdAt: timestamp('created_at').defaultNow().notNull(),
   },
   (table) => ({
     nameIdx: index('idx_ingredients_name').on(table.name),
     categoryIdx: index('idx_ingredients_category').on(table.category),
+    householdIdx: index('idx_ingredients_household').on(table.householdId),
+    uniqueHouseholdIngredient: uniqueIndex('idx_ingredients_household_name').on(
+      table.householdId,
+      table.name
+    ),
+    uniqueDefaultIngredient: uniqueIndex('idx_ingredients_name_default').on(
+      table.name
+    ),
   })
 );
 
