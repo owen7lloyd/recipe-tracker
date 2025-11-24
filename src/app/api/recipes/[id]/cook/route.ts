@@ -9,6 +9,8 @@ import {
   getRecipeWithIngredients,
 } from '@/lib/recipe/helpers';
 import { scaleRecipe } from '@/lib/recipe-scaling';
+import { convertBetweenUnits, roundQuantity } from '@/lib/units/converter';
+import { areUnitsCompatible } from '@/lib/units/conversions';
 
 // Schema for cook recipe request
 const cookRecipeSchema = z.object({
@@ -30,6 +32,8 @@ interface PantryUpdate {
   after: string;
   removed: boolean;
   unit: string | null;
+  unitMismatch?: boolean;
+  conversionNote?: string;
 }
 
 /**
@@ -129,7 +133,60 @@ export async function POST(
         if (!pantryItem.quantity) continue;
 
         const currentQuantity = parseFloat(pantryItem.quantity);
-        const remainingQuantity = currentQuantity - quantityNeeded;
+
+        // Handle unit conversion if needed
+        let quantityToDeduct = quantityNeeded;
+        let conversionNote: string | undefined;
+
+        if (
+          pantryItem.unit &&
+          ingredient.unit &&
+          pantryItem.unit !== ingredient.unit
+        ) {
+          // Units don't match - attempt conversion
+          if (!areUnitsCompatible(pantryItem.unit, ingredient.unit)) {
+            // Units are incompatible (e.g., cups vs pounds)
+            // Log warning and skip this ingredient
+            console.warn(
+              `Skipping pantry deduction for ${ingredient.ingredientName}: ` +
+                `incompatible units (recipe: ${ingredient.unit}, pantry: ${pantryItem.unit})`
+            );
+
+            pantryUpdates.push({
+              ingredientId: ingredient.ingredientId,
+              ingredientName: ingredient.ingredientName,
+              before: pantryItem.quantity,
+              after: pantryItem.quantity,
+              removed: false,
+              unit: pantryItem.unit,
+              unitMismatch: true,
+              conversionNote: `Cannot deduct: recipe uses ${ingredient.unit} but pantry tracks ${pantryItem.unit}`,
+            });
+
+            continue;
+          }
+
+          // Units are compatible - convert
+          const converted = convertBetweenUnits(
+            quantityNeeded,
+            ingredient.unit,
+            pantryItem.unit
+          );
+
+          if (converted === null) {
+            // Conversion failed (shouldn't happen if units are compatible)
+            console.error(
+              `Unit conversion failed for ${ingredient.ingredientName}: ` +
+                `${ingredient.unit} to ${pantryItem.unit}`
+            );
+            continue;
+          }
+
+          quantityToDeduct = roundQuantity(converted);
+          conversionNote = `Converted ${quantityNeeded} ${ingredient.unit} to ${quantityToDeduct} ${pantryItem.unit}`;
+        }
+
+        const remainingQuantity = currentQuantity - quantityToDeduct;
 
         if (remainingQuantity <= 0) {
           // Remove item from pantry
@@ -141,14 +198,16 @@ export async function POST(
             before: pantryItem.quantity,
             after: '0',
             removed: true,
-            unit: ingredient.unit,
+            unit: pantryItem.unit,
+            conversionNote,
           });
         } else {
           // Update quantity
+          const roundedRemaining = roundQuantity(remainingQuantity);
           await tx
             .update(pantryItems)
             .set({
-              quantity: remainingQuantity.toString(),
+              quantity: roundedRemaining.toString(),
               updatedAt: new Date(),
             })
             .where(eq(pantryItems.id, pantryItem.id));
@@ -157,9 +216,10 @@ export async function POST(
             ingredientId: ingredient.ingredientId,
             ingredientName: ingredient.ingredientName,
             before: pantryItem.quantity,
-            after: remainingQuantity.toString(),
+            after: roundedRemaining.toString(),
             removed: false,
-            unit: ingredient.unit,
+            unit: pantryItem.unit,
+            conversionNote,
           });
         }
       }
