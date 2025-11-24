@@ -6,18 +6,19 @@ This document provides comprehensive guidance for AI assistants working on the R
 
 1. [Project Overview](#project-overview)
 2. [Tech Stack](#tech-stack)
-3. [Project Structure](#project-structure)
-4. [Database Architecture](#database-architecture)
-5. [Authentication System](#authentication-system)
-6. [API Patterns](#api-patterns)
-7. [Component Organization](#component-organization)
-8. [Key Business Logic](#key-business-logic)
-9. [Testing Guidelines](#testing-guidelines)
-10. [Development Workflow](#development-workflow)
-11. [Deployment](#deployment)
-12. [Code Conventions](#code-conventions)
-13. [Common Patterns](#common-patterns)
-14. [Important Notes](#important-notes)
+3. [Design System](#design-system)
+4. [Project Structure](#project-structure)
+5. [Database Architecture](#database-architecture)
+6. [Authentication System](#authentication-system)
+7. [API Patterns](#api-patterns)
+8. [Component Organization](#component-organization)
+9. [Key Business Logic](#key-business-logic)
+10. [Testing Guidelines](#testing-guidelines)
+11. [Development Workflow](#development-workflow)
+12. [Deployment](#deployment)
+13. [Code Conventions](#code-conventions)
+14. [Common Patterns](#common-patterns)
+15. [Important Notes](#important-notes)
 
 ---
 
@@ -68,6 +69,86 @@ A full-stack Next.js application for household recipe management, pantry trackin
 - **Playwright** (E2E tests)
 - **ESLint + Prettier** (code quality)
 - **Husky + lint-staged** (pre-commit hooks)
+- **Framer Motion** (animations & transitions)
+
+---
+
+## Design System
+
+### Visual Theme: "Warm, Organic Garden"
+
+The application features a nature-inspired aesthetic with earthy tones, rounded forms, and a cozy, welcoming feel.
+
+### Color Palette
+
+| Color Name | Hex Value | Usage |
+|-----------|-----------|--------|
+| Primary Green | `#2d5016` | Main brand color, headers, primary buttons |
+| Secondary Green | `#6b8e23` | Badges, secondary elements |
+| Accent Gold | `#d4a574` | Hover states, accents, highlights |
+| Light Background | `#faf8f3` | Page backgrounds, light surfaces |
+| Card Background | `#ffffff` | Card backgrounds, modals |
+| Text Dark | `#2c2415` | Primary text content |
+| Text Light | `#6b6250` | Secondary text, descriptions |
+| Border Color | `#e8dcc8` | Card borders, dividers |
+
+### Typography
+
+**Display Font: Merriweather** (serif)
+- Used for all headings (h1, h2, h3, h4, h5, h6)
+- Font weights: 400 (regular), 700 (bold)
+- Letter spacing: -0.5px
+- Sizes: h1 uses `clamp(1.8rem, 5vw, 2.8rem)`, h2 uses `clamp(1.3rem, 4vw, 1.8rem)`
+
+**Body Font: Poppins** (sans-serif)
+- Used for body text, buttons, UI elements
+- Font weights: 300 (light), 500 (medium), 600 (semibold), 700 (bold)
+- Line height: 1.6 for body text
+
+### Component Styling Guidelines
+
+- **Rounded Corners**: 20px for cards (`rounded-2xl`), 50px for buttons (`rounded-full`)
+- **Shadows**: Soft shadows with `rgba(45, 80, 22, 0.15)` for organic feel
+- **Transitions**: 0.3s ease for all interactive elements
+- **Hover Effects**: Lift effect with `-translate-y-2` and enhanced shadows
+- **Focus States**: Ring with offset for accessibility
+
+### CSS Custom Properties
+
+The design system is implemented via CSS variables in `/src/app/globals.css`:
+
+```css
+:root {
+  --primary: #2d5016;
+  --secondary: #6b8e23;
+  --accent: #d4a574;
+  --light-bg: #faf8f3;
+  --card-bg: #ffffff;
+  --text-dark: #2c2415;
+  --text-light: #6b6250;
+  --border: #e8dcc8;
+}
+```
+
+### Component Updates
+
+All UI components have been updated to use the organic garden aesthetic:
+
+- **Cards**: `rounded-2xl` border, `border-[#e8dcc8]`, hover `border-[#d4a574]`
+- **Buttons**: Gradient green (`from-[#2d5016] to-[#3d6b1f]`), rounded-full, smooth transitions
+- **Inputs**: `rounded-xl` borders, `border-[#e8dcc8]`, gold focus states
+- **Badges**: Secondary green background with white text, rounded-full
+- **Dashboard Nav**: Green gradient header with organic colors
+
+### Key Files
+
+- `/src/app/globals.css` - Design system implementation and typography
+- `/src/components/ui/card.tsx` - Card component with organic styling
+- `/src/components/ui/button.tsx` - Button variants with gradients and hover effects
+- `/src/components/ui/input.tsx` - Input styling with rounded borders
+- `/src/components/landing/` - Landing page components with design system colors
+- `/src/components/dashboard/dashboard-nav.tsx` - Navigation with gradient header
+- `/src/components/recipes/recipe-card.tsx` - Recipe cards with organic styling
 
 ---
 
