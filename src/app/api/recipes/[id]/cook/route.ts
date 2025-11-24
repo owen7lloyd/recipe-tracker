@@ -45,18 +45,23 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    console.log('🍳 COOK RECIPE ENDPOINT CALLED');
+
     const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const { id } = await params;
+    console.log(`📝 Recipe ID: ${id}`);
 
     // Verify user has access to this recipe
     const hasAccess = await requireRecipeAccess(session.user.id, id);
     if (!hasAccess) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
+
+    console.log('✅ User has access to recipe');
 
     // Get user's household
     const user = await db
@@ -84,13 +89,32 @@ export async function POST(
       return NextResponse.json({ error: 'Recipe not found' }, { status: 404 });
     }
 
+    console.log(
+      `📖 Recipe: ${recipe.title}, Ingredients: ${recipe.ingredients.length}`
+    );
+
     // Scale recipe if servings specified
     const targetServings = validatedData.servings || recipe.servings;
     const scaledRecipe = scaleRecipe(recipe, targetServings);
 
+    console.log(
+      `📊 Scaled recipe to ${targetServings} servings. Ingredients to process: ${scaledRecipe.ingredients.length}`
+    );
+    console.log(
+      '📋 Ingredients:',
+      scaledRecipe.ingredients.map((i) => ({
+        name: i.ingredientName,
+        scaledQuantity: i.scaledQuantity,
+        unit: i.unit,
+        optional: i.optional,
+      }))
+    );
+
     // Process pantry updates in a transaction
     const updates = await db.transaction(async (tx) => {
       const pantryUpdates: PantryUpdate[] = [];
+
+      console.log('🔄 Starting pantry update loop...');
 
       for (const ingredient of scaledRecipe.ingredients) {
         console.log('=== Processing ingredient ===', {
@@ -348,6 +372,18 @@ export async function POST(
         servings: targetServings,
       });
 
+      console.log('📦 Pantry updates completed:');
+      for (const update of pantryUpdates) {
+        console.log(
+          `  ${update.ingredientName}: ${update.before} ${update.unit} → ${update.after} ${update.unit}`,
+          {
+            removed: update.removed,
+            unitMismatch: update.unitMismatch,
+            conversionNote: update.conversionNote,
+          }
+        );
+      }
+
       return pantryUpdates;
     });
 
@@ -356,6 +392,11 @@ export async function POST(
       message: `Cooked ${recipe.title}`,
       updates,
       servingsCooked: targetServings,
+      debug: {
+        note: 'Check conversionNote in updates for unit conversion details',
+        example:
+          'If conversionNote shows "Converted X cup to Y oz", conversion is working',
+      },
     });
   } catch (error: unknown) {
     if (error instanceof z.ZodError) {
