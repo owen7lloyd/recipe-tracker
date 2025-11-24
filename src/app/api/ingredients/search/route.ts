@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { ingredients } from '@/lib/db/schema';
-import { ilike, and, eq } from 'drizzle-orm';
+import { ingredients, customIngredients } from '@/lib/db/schema';
+import { ilike, and, eq, or, sql } from 'drizzle-orm';
 
 // Valid ingredient categories
 const VALID_CATEGORIES = [
@@ -54,21 +54,54 @@ export async function GET(request: Request) {
       conditions.push(eq(ingredients.category, category));
     }
 
-    // Build and execute query
+    // Build and execute query for default ingredients
     const baseQuery = db
       .select({
         id: ingredients.id,
         name: ingredients.name,
         category: ingredients.category,
         commonUnits: ingredients.commonUnits,
+        isCustom: sql<boolean>`false`,
       })
       .from(ingredients);
 
-    const results = await (conditions.length > 0
+    const defaultResults = await (conditions.length > 0
       ? baseQuery.where(and(...conditions)).limit(limit)
       : baseQuery.limit(limit));
 
-    return NextResponse.json(results);
+    // Also search custom ingredients for this user
+    const customConditions = [eq(customIngredients.userId, session.user.id)];
+
+    if (query) {
+      customConditions.push(ilike(customIngredients.name, `%${query}%`));
+    } else if (category) {
+      customConditions.push(eq(customIngredients.category, category));
+    }
+
+    const customResults = await db
+      .select({
+        id: customIngredients.id,
+        name: customIngredients.name,
+        category: customIngredients.category,
+        commonUnits: sql<null>`null`,
+        isCustom: sql<boolean>`true`,
+      })
+      .from(customIngredients)
+      .where(and(...customConditions))
+      .limit(limit);
+
+    // Combine and deduplicate results (prioritize custom ingredients if same name)
+    const combinedResults = [
+      ...defaultResults,
+      ...customResults.filter(
+        (custom) =>
+          !defaultResults.some(
+            (d) => d.name.toLowerCase() === custom.name.toLowerCase()
+          )
+      ),
+    ].slice(0, limit);
+
+    return NextResponse.json(combinedResults);
   } catch (error) {
     console.error('Error searching ingredients:', error);
     return NextResponse.json(

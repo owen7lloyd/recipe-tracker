@@ -8,6 +8,7 @@ import {
   boolean,
   pgEnum,
   index,
+  uniqueIndex,
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 
@@ -294,6 +295,29 @@ export const householdCategoryOrder = pgTable('household_category_order', {
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 
+// Custom ingredients table (user-created ingredients)
+export const customIngredients = pgTable(
+  'custom_ingredients',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    defaultUnit: text('default_unit'),
+    category: ingredientCategoryEnum('category'),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  },
+  (table) => ({
+    userIdIdx: index('idx_custom_ingredients_user').on(table.userId),
+    uniqueUserIngredient: uniqueIndex('idx_custom_ingredients_user_name').on(
+      table.userId,
+      table.name
+    ),
+  })
+);
+
 // Relations
 export const usersRelations = relations(users, ({ one, many }) => ({
   household: one(households, {
@@ -303,6 +327,7 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   recipes: many(recipes),
   pantryItems: many(pantryItems),
   groceryLists: many(groceryLists),
+  customIngredients: many(customIngredients),
   createdInvites: many(householdInvites, {
     relationName: 'inviteCreator',
   }),
@@ -470,6 +495,16 @@ export const householdCategoryOrderRelations = relations(
     household: one(households, {
       fields: [householdCategoryOrder.householdId],
       references: [households.id],
+    }),
+  })
+);
+
+export const customIngredientsRelations = relations(
+  customIngredients,
+  ({ one }) => ({
+    user: one(users, {
+      fields: [customIngredients.userId],
+      references: [users.id],
     }),
   })
 );
