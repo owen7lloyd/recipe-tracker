@@ -62,10 +62,10 @@ export default function AvailableRecipesPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 p-8 dark:bg-slate-900">
+      <div className="min-h-screen bg-gradient-to-b from-[#faf8f3] to-[#f0ebe0] p-8">
         <div className="mx-auto max-w-7xl">
           <div className="flex items-center justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
+            <Loader2 className="h-8 w-8 animate-spin text-[#d4a574]" />
           </div>
         </div>
       </div>
@@ -73,20 +73,20 @@ export default function AvailableRecipesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 p-8 dark:bg-slate-900">
+    <div className="min-h-screen bg-gradient-to-b from-[#faf8f3] to-[#f0ebe0] p-8">
       <div className="mx-auto max-w-7xl">
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-start justify-between">
             <div className="flex items-start gap-3">
-              <div className="rounded-lg bg-green-100 p-3 dark:bg-green-900">
-                <ChefHat className="h-6 w-6 text-green-600 dark:text-green-400" />
+              <div className="rounded-lg bg-[#6b8e23]/20 p-3">
+                <ChefHat className="h-6 w-6 text-[#2d5016]" />
               </div>
               <div>
-                <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-50">
+                <h1 className="font-merriweather text-3xl font-bold text-[#2d5016]">
                   What Can I Cook?
                 </h1>
-                <p className="mt-2 text-slate-600 dark:text-slate-400">
+                <p className="mt-2 text-[#6b6250]">
                   Recipes you can make with ingredients in your pantry
                 </p>
               </div>
@@ -113,8 +113,8 @@ export default function AvailableRecipesPage() {
 
           {/* Filters */}
           {showFilters && (
-            <div className="mt-6 rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950">
-              <h3 className="mb-4 font-semibold text-slate-900 dark:text-slate-50">
+            <div className="mt-6 rounded-2xl border-2 border-[#e8dcc8] bg-white p-4">
+              <h3 className="mb-4 font-merriweather font-semibold text-[#2d5016]">
                 Filters & Sorting
               </h3>
               <div className="grid gap-4 sm:grid-cols-2">
@@ -149,20 +149,20 @@ export default function AvailableRecipesPage() {
 
         {/* Stats */}
         <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <div className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950">
-            <div className="text-sm font-medium text-slate-600 dark:text-slate-400">
+          <div className="rounded-2xl border-2 border-[#e8dcc8] bg-white p-4">
+            <div className="text-sm font-medium text-[#6b6250]">
               Ready to Cook
             </div>
-            <div className="mt-1 text-3xl font-bold text-green-600 dark:text-green-400">
+            <div className="mt-1 text-3xl font-bold text-[#2d5016]">
               {cookableRecipes.length}
             </div>
           </div>
           {showNearMatches && (
-            <div className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950">
-              <div className="text-sm font-medium text-slate-600 dark:text-slate-400">
+            <div className="rounded-2xl border-2 border-[#e8dcc8] bg-white p-4">
+              <div className="text-sm font-medium text-[#6b6250]">
                 Near Matches
               </div>
-              <div className="mt-1 text-3xl font-bold text-yellow-600 dark:text-yellow-400">
+              <div className="mt-1 text-3xl font-bold text-[#6b8e23]">
                 {nearMatches.length}
               </div>
             </div>
@@ -172,9 +172,9 @@ export default function AvailableRecipesPage() {
         {/* Cookable Recipes Section */}
         {cookableRecipes.length > 0 ? (
           <section className="mb-12">
-            <h2 className="mb-4 text-2xl font-bold text-slate-900 dark:text-slate-50">
+            <h2 className="mb-4 text-2xl font-bold text-[#2d5016]">
               Ready to Cook
-              <span className="ml-2 text-lg font-normal text-slate-600 dark:text-slate-400">
+              <span className="ml-2 text-lg font-normal text-[#6b6250]">
                 ({cookableRecipes.length} recipe
                 {cookableRecipes.length !== 1 ? 's' : ''})
               </span>
@@ -186,12 +186,12 @@ export default function AvailableRecipesPage() {
             </div>
           </section>
         ) : (
-          <div className="mb-12 rounded-lg border border-slate-200 bg-white p-8 text-center dark:border-slate-800 dark:bg-slate-950">
-            <ChefHat className="mx-auto h-12 w-12 text-slate-300 dark:text-slate-600" />
-            <h3 className="mt-4 text-lg font-semibold text-slate-900 dark:text-slate-50">
+          <div className="mb-12 rounded-2xl border-2 border-[#e8dcc8] bg-white p-8 text-center">
+            <ChefHat className="mx-auto h-12 w-12 text-[#d4a574]" />
+            <h3 className="mt-4 text-lg font-semibold text-[#2d5016]">
               No recipes available right now
             </h3>
-            <p className="mt-2 text-slate-600 dark:text-slate-400">
+            <p className="mt-2 text-[#6b6250]">
               Try adding more ingredients to your pantry or check out
               near-matches.
             </p>
@@ -212,14 +212,14 @@ export default function AvailableRecipesPage() {
         {/* Near Matches Section */}
         {showNearMatches && nearMatches.length > 0 && (
           <section>
-            <h2 className="mb-4 text-2xl font-bold text-slate-900 dark:text-slate-50">
+            <h2 className="mb-4 text-2xl font-bold text-[#2d5016]">
               Almost There
-              <span className="ml-2 text-lg font-normal text-slate-600 dark:text-slate-400">
+              <span className="ml-2 text-lg font-normal text-[#6b6250]">
                 ({nearMatches.length} recipe
                 {nearMatches.length !== 1 ? 's' : ''})
               </span>
             </h2>
-            <p className="mb-4 text-sm text-slate-600 dark:text-slate-400">
+            <p className="mb-4 text-sm text-[#6b6250]">
               These recipes are missing a few ingredients. Add them to your
               pantry to cook these recipes!
             </p>
@@ -239,12 +239,12 @@ export default function AvailableRecipesPage() {
         {cookableRecipes.length === 0 &&
           nearMatches.length === 0 &&
           showNearMatches && (
-            <div className="rounded-lg border border-slate-200 bg-white p-8 text-center dark:border-slate-800 dark:bg-slate-950">
-              <ChefHat className="mx-auto h-12 w-12 text-slate-300 dark:text-slate-600" />
-              <h3 className="mt-4 text-lg font-semibold text-slate-900 dark:text-slate-50">
+            <div className="rounded-2xl border-2 border-[#e8dcc8] bg-white p-8 text-center">
+              <ChefHat className="mx-auto h-12 w-12 text-[#d4a574]" />
+              <h3 className="mt-4 text-lg font-semibold text-[#2d5016]">
                 No recipes found
               </h3>
-              <p className="mt-2 text-slate-600 dark:text-slate-400">
+              <p className="mt-2 text-[#6b6250]">
                 Your pantry is empty or you haven't added any recipes yet.
               </p>
               <div className="mt-6 flex justify-center gap-3">

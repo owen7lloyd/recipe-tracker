@@ -24,10 +24,10 @@ export default async function GroceryListsPage() {
 
   if (!user || !user.householdId) {
     return (
-      <div className="min-h-screen bg-slate-50 p-8 dark:bg-slate-900">
+      <div className="min-h-screen bg-gradient-to-b from-[#faf8f3] to-[#f0ebe0] p-8">
         <div className="mx-auto max-w-7xl">
-          <div className="rounded-lg border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-950">
-            <p className="text-slate-600 dark:text-slate-400">
+          <div className="rounded-2xl border-2 border-[#e8dcc8] bg-white p-6">
+            <p className="text-[#6b6250]">
               You need to be part of a household to manage grocery lists.
             </p>
           </div>
@@ -64,12 +64,12 @@ export default async function GroceryListsPage() {
   );
 
   return (
-    <div className="min-h-screen bg-slate-50 p-8 dark:bg-slate-900">
+    <div className="min-h-screen bg-gradient-to-b from-[#faf8f3] to-[#f0ebe0] p-8">
       <div className="mx-auto max-w-7xl space-y-8">
         <div className="flex items-center justify-between">
           <div className="space-y-1">
-            <h1 className="text-3xl font-bold tracking-tight">Grocery Lists</h1>
-            <p className="text-slate-600 dark:text-slate-400">
+            <h1 className="font-merriweather text-3xl font-bold text-[#2d5016]">Grocery Lists</h1>
+            <p className="text-[#6b6250]">
               Manage your shopping lists
             </p>
           </div>
@@ -84,11 +84,11 @@ export default async function GroceryListsPage() {
         {listsWithCounts.length === 0 ? (
           <Card>
             <CardContent className="flex flex-col items-center justify-center p-12">
-              <ShoppingCart className="mb-4 h-16 w-16 text-slate-300 dark:text-slate-600" />
-              <h2 className="mb-2 text-xl font-semibold">
+              <ShoppingCart className="mb-4 h-16 w-16 text-[#e8dcc8]" />
+              <h2 className="mb-2 font-merriweather text-xl font-bold text-[#2d5016]">
                 No grocery lists yet
               </h2>
-              <p className="mb-6 text-center text-slate-600 dark:text-slate-400">
+              <p className="mb-6 text-center text-[#6b6250]">
                 Create your first grocery list by selecting recipes
               </p>
               <Link href="/dashboard/grocery-lists/new">
@@ -112,7 +112,7 @@ export default async function GroceryListsPage() {
                   </CardHeader>
                   <CardContent className="space-y-3">
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-slate-600 dark:text-slate-400">
+                      <span className="text-[#6b6250]">
                         Items
                       </span>
                       <span className="font-medium">
@@ -120,9 +120,9 @@ export default async function GroceryListsPage() {
                       </span>
                     </div>
 
-                    <div className="h-2 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">
+                    <div className="h-2 w-full overflow-hidden rounded-full bg-[#e8dcc8]">
                       <div
-                        className="h-full bg-primary transition-all"
+                        className="h-full bg-[#2d5016] transition-all"
                         style={{
                           width: `${
                             list.totalItems > 0
@@ -133,7 +133,7 @@ export default async function GroceryListsPage() {
                       />
                     </div>
 
-                    <div className="flex items-center gap-2 text-xs text-slate-500">
+                    <div className="flex items-center gap-2 text-xs text-[#6b6250]">
                       <Calendar className="h-3 w-3" />
                       <span>
                         Created {new Date(list.createdAt).toLocaleDateString()}
