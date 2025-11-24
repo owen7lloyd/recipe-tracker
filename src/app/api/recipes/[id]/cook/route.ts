@@ -9,6 +9,7 @@ import {
   getRecipeWithIngredients,
 } from '@/lib/recipe/helpers';
 import { scaleRecipe } from '@/lib/recipe-scaling';
+import { convertBetweenUnits, canConvert } from '@/lib/units/converter';
 
 // Schema for cook recipe request
 const cookRecipeSchema = z.object({
@@ -30,6 +31,7 @@ interface PantryUpdate {
   after: string;
   removed: boolean;
   unit: string | null;
+  unitMismatch?: boolean; // Flagged if units don't match and couldn't be converted
 }
 
 /**
@@ -129,7 +131,63 @@ export async function POST(
         if (!pantryItem.quantity) continue;
 
         const currentQuantity = parseFloat(pantryItem.quantity);
-        const remainingQuantity = currentQuantity - quantityNeeded;
+        let quantityToDeduct = quantityNeeded;
+
+        // Handle unit conversion if units don't match
+        if (
+          pantryItem.unit &&
+          ingredient.unit &&
+          pantryItem.unit !== ingredient.unit
+        ) {
+          // Check if units are convertible
+          if (!canConvert(ingredient.unit, pantryItem.unit)) {
+            // Units are incompatible - log warning and skip deduction
+            console.warn(
+              `Skipping ingredient "${ingredient.ingredientName}": ` +
+                `recipe uses ${ingredient.unit} but pantry has ${pantryItem.unit} (incompatible units)`
+            );
+
+            pantryUpdates.push({
+              ingredientId: ingredient.ingredientId,
+              ingredientName: ingredient.ingredientName,
+              before: pantryItem.quantity,
+              after: pantryItem.quantity,
+              removed: false,
+              unit: pantryItem.unit,
+              unitMismatch: true,
+            });
+            continue;
+          }
+
+          // Convert recipe quantity to pantry unit
+          const converted = convertBetweenUnits(
+            quantityNeeded,
+            ingredient.unit,
+            pantryItem.unit
+          );
+
+          if (converted === null) {
+            // Conversion failed - skip deduction
+            console.warn(
+              `Failed to convert "${ingredient.ingredientName}" from ${ingredient.unit} to ${pantryItem.unit}`
+            );
+
+            pantryUpdates.push({
+              ingredientId: ingredient.ingredientId,
+              ingredientName: ingredient.ingredientName,
+              before: pantryItem.quantity,
+              after: pantryItem.quantity,
+              removed: false,
+              unit: pantryItem.unit,
+              unitMismatch: true,
+            });
+            continue;
+          }
+
+          quantityToDeduct = converted;
+        }
+
+        const remainingQuantity = currentQuantity - quantityToDeduct;
 
         if (remainingQuantity <= 0) {
           // Remove item from pantry
@@ -141,7 +199,7 @@ export async function POST(
             before: pantryItem.quantity,
             after: '0',
             removed: true,
-            unit: ingredient.unit,
+            unit: pantryItem.unit,
           });
         } else {
           // Update quantity
@@ -159,7 +217,7 @@ export async function POST(
             before: pantryItem.quantity,
             after: remainingQuantity.toString(),
             removed: false,
-            unit: ingredient.unit,
+            unit: pantryItem.unit,
           });
         }
       }
