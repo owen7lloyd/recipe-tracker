@@ -53,32 +53,58 @@ export function canConvert(
 ): boolean {
   // If either unit is null, cannot convert
   if (!unit1 || !unit2) {
+    console.log(`[CANCONVERT] Null units: unit1=${unit1}, unit2=${unit2}`);
     return false;
   }
 
   const normalized1 = normalizeUnit(unit1);
   const normalized2 = normalizeUnit(unit2);
 
+  console.log(
+    `[CANCONVERT] Checking: ${unit1} (${normalized1}) ↔ ${unit2} (${normalized2})`
+  );
+
   // Same unit - trivial conversion
   if (normalized1 === normalized2) {
+    console.log(`[CANCONVERT] Units are identical, can convert: true`);
     return true;
   }
 
   const info1 = UNIT_CONVERSIONS[normalized1];
   const info2 = UNIT_CONVERSIONS[normalized2];
 
+  console.log(`[CANCONVERT] Unit lookup:`, {
+    unit1: normalized1,
+    found1: !!info1,
+    baseUnit1: info1?.baseUnit,
+    unit2: normalized2,
+    found2: !!info2,
+    baseUnit2: info2?.baseUnit,
+  });
+
   // Either unit not recognized
   if (!info1 || !info2) {
+    console.log(
+      `[CANCONVERT] Unit not found in conversions: info1=${!!info1}, info2=${!!info2}`
+    );
     return false;
   }
 
   // Cannot convert if no base unit (packaging, special measures)
   if (info1.baseUnit === null || info2.baseUnit === null) {
+    console.log(
+      `[CANCONVERT] Non-convertible units (no base): ${info1.baseUnit} vs ${info2.baseUnit}`
+    );
     return false;
   }
 
   // Can convert if they have the same base unit (both ml, both g, both count)
-  return info1.baseUnit === info2.baseUnit;
+  const canConvertResult = info1.baseUnit === info2.baseUnit;
+  console.log(
+    `[CANCONVERT] Base units match: ${info1.baseUnit} === ${info2.baseUnit} = ${canConvertResult}`
+  );
+
+  return canConvertResult;
 }
 
 /**
@@ -102,36 +128,75 @@ export function convertBetweenUnits(
 ): number | null {
   // Validate inputs
   if (quantity < 0 || !isFinite(quantity)) {
+    console.log(`[CONVERT] Invalid quantity: ${quantity}`);
     return null;
   }
 
   if (!fromUnit || !toUnit) {
+    console.log(
+      `[CONVERT] Missing units: fromUnit=${fromUnit}, toUnit=${toUnit}`
+    );
     return null;
   }
+
+  console.log(
+    `[CONVERT] Starting conversion: ${quantity} ${fromUnit} → ${toUnit}`
+  );
 
   const normalizedFrom = normalizeUnit(fromUnit);
   const normalizedTo = normalizeUnit(toUnit);
 
+  console.log(
+    `[CONVERT] Normalized units: ${fromUnit} → ${normalizedFrom}, ${toUnit} → ${normalizedTo}`
+  );
+
   // Same unit - no conversion needed
   if (normalizedFrom === normalizedTo) {
+    console.log(
+      `[CONVERT] Units are identical, returning quantity as-is: ${quantity}`
+    );
     return quantity;
   }
 
   const fromInfo = UNIT_CONVERSIONS[normalizedFrom];
   const toInfo = UNIT_CONVERSIONS[normalizedTo];
 
+  console.log(`[CONVERT] Unit info:`, {
+    from: {
+      normalized: normalizedFrom,
+      found: !!fromInfo,
+      baseUnit: fromInfo?.baseUnit,
+      toBaseUnit: fromInfo?.toBaseUnit,
+    },
+    to: {
+      normalized: normalizedTo,
+      found: !!toInfo,
+      baseUnit: toInfo?.baseUnit,
+      toBaseUnit: toInfo?.toBaseUnit,
+    },
+  });
+
   // Either unit not recognized
   if (!fromInfo || !toInfo) {
+    console.log(
+      `[CONVERT] Unit not recognized: fromInfo=${!!fromInfo}, toInfo=${!!toInfo}`
+    );
     return null;
   }
 
   // Cannot convert if no base unit
   if (fromInfo.baseUnit === null || toInfo.baseUnit === null) {
+    console.log(
+      `[CONVERT] Cannot convert non-convertible units (no base unit): from=${fromInfo.baseUnit}, to=${toInfo.baseUnit}`
+    );
     return null;
   }
 
   // Cannot convert if base units don't match
   if (fromInfo.baseUnit !== toInfo.baseUnit) {
+    console.log(
+      `[CONVERT] Base units don't match: ${fromInfo.baseUnit} vs ${toInfo.baseUnit}`
+    );
     return null;
   }
 
@@ -140,8 +205,24 @@ export function convertBetweenUnits(
   const valueInBaseUnit = quantity * fromInfo.toBaseUnit;
   const convertedValue = valueInBaseUnit / toInfo.toBaseUnit;
 
+  console.log(`[CONVERT] Conversion math:`, {
+    quantity,
+    fromUnit: normalizedFrom,
+    toBaseUnit: fromInfo.toBaseUnit,
+    valueInBaseUnit,
+    toUnit: normalizedTo,
+    toConversionFactor: toInfo.toBaseUnit,
+    convertedValue,
+  });
+
   // Round to reasonable precision (avoid floating point errors)
-  return Math.round(convertedValue * 100000) / 100000;
+  const result = Math.round(convertedValue * 100000) / 100000;
+
+  console.log(
+    `[CONVERT] Final result: ${quantity} ${normalizedFrom} = ${result} ${normalizedTo}`
+  );
+
+  return result;
 }
 
 /**

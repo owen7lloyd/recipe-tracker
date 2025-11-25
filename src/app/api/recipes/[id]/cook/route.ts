@@ -130,6 +130,19 @@ export async function POST(
         // Skip if no quantity tracked
         if (!pantryItem.quantity) continue;
 
+        console.log(
+          `\n[COOK] Processing ingredient: ${ingredient.ingredientName}`,
+          {
+            ingredientId: ingredient.ingredientId,
+            recipeQuantity: quantityNeeded,
+            recipeUnit: ingredient.unit,
+            recipeUnitType: typeof ingredient.unit,
+            pantryQuantity: pantryItem.quantity,
+            pantryUnit: pantryItem.unit,
+            pantryUnitType: typeof pantryItem.unit,
+          }
+        );
+
         const currentQuantity = parseFloat(pantryItem.quantity);
         let quantityToDeduct = quantityNeeded;
 
@@ -138,10 +151,25 @@ export async function POST(
         const recipeHasUnit = !!ingredient.unit;
         const unitsAreDifferent = pantryItem.unit !== ingredient.unit;
 
+        console.log(`[COOK] Unit analysis:`, {
+          pantryHasUnit,
+          recipeHasUnit,
+          unitsAreDifferent,
+          pantryUnit: pantryItem.unit,
+          recipeUnit: ingredient.unit,
+        });
+
         // If units don't match and both exist, attempt conversion
         if (pantryHasUnit && recipeHasUnit && unitsAreDifferent) {
+          console.log(`[COOK] Units differ - attempting conversion...`);
+
           // Check if units are convertible
-          if (!canConvert(ingredient.unit, pantryItem.unit)) {
+          const isConvertible = canConvert(ingredient.unit, pantryItem.unit);
+          console.log(
+            `[COOK] canConvert(${ingredient.unit}, ${pantryItem.unit}) = ${isConvertible}`
+          );
+
+          if (!isConvertible) {
             // Units are incompatible - log warning and skip deduction
             console.warn(
               `Skipping ingredient "${ingredient.ingredientName}": ` +
@@ -161,10 +189,18 @@ export async function POST(
           }
 
           // Convert recipe quantity to pantry unit
+          console.log(
+            `[COOK] Converting ${quantityNeeded} ${ingredient.unit} to ${pantryItem.unit}...`
+          );
+
           const converted = convertBetweenUnits(
             quantityNeeded,
             ingredient.unit,
             pantryItem.unit
+          );
+
+          console.log(
+            `[COOK] Conversion result: ${quantityNeeded} ${ingredient.unit} = ${converted} ${pantryItem.unit}`
           );
 
           if (converted === null) {
@@ -186,6 +222,7 @@ export async function POST(
           }
 
           quantityToDeduct = converted;
+          console.log(`[COOK] Using converted quantity: ${quantityToDeduct}`);
         } else if (pantryHasUnit !== recipeHasUnit) {
           // One has a unit, the other doesn't - can't reliably deduct
           console.warn(
@@ -204,13 +241,27 @@ export async function POST(
             unitMismatch: true,
           });
           continue;
+        } else {
+          console.log(
+            `[COOK] Units match or both missing - using quantity directly: ${quantityToDeduct}`
+          );
         }
 
+        console.log(
+          `[COOK] Calculation: ${currentQuantity} - ${quantityToDeduct} = ?`
+        );
+
         const remainingQuantity = currentQuantity - quantityToDeduct;
+
+        console.log(`[COOK] Remaining quantity: ${remainingQuantity}`);
 
         if (remainingQuantity <= 0) {
           // Remove item from pantry
           await tx.delete(pantryItems).where(eq(pantryItems.id, pantryItem.id));
+
+          console.log(
+            `[COOK] Item removed from pantry (remaining: ${remainingQuantity})`
+          );
 
           pantryUpdates.push({
             ingredientId: ingredient.ingredientId,
@@ -229,6 +280,10 @@ export async function POST(
               updatedAt: new Date(),
             })
             .where(eq(pantryItems.id, pantryItem.id));
+
+          console.log(
+            `[COOK] Item updated in pantry: ${pantryItem.quantity} ${pantryItem.unit} → ${remainingQuantity} ${pantryItem.unit}`
+          );
 
           pantryUpdates.push({
             ingredientId: ingredient.ingredientId,
