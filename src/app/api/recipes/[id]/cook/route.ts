@@ -9,6 +9,7 @@ import {
   getRecipeWithIngredients,
 } from '@/lib/recipe/helpers';
 import { scaleRecipe } from '@/lib/recipe-scaling';
+import { convertBetweenUnits, canConvert } from '@/lib/units/converter';
 
 // Schema for cook recipe request
 const cookRecipeSchema = z.object({
@@ -30,6 +31,7 @@ interface PantryUpdate {
   after: string;
   removed: boolean;
   unit: string | null;
+  unitMismatch?: boolean; // Flagged if units don't match and couldn't be converted
 }
 
 /**
@@ -128,12 +130,139 @@ export async function POST(
         // Skip if no quantity tracked
         if (!pantryItem.quantity) continue;
 
+        console.log(
+          `\n[COOK] Processing ingredient: ${ingredient.ingredientName}`,
+          {
+            ingredientId: ingredient.ingredientId,
+            recipeQuantity: quantityNeeded,
+            recipeUnit: ingredient.unit,
+            recipeUnitType: typeof ingredient.unit,
+            pantryQuantity: pantryItem.quantity,
+            pantryUnit: pantryItem.unit,
+            pantryUnitType: typeof pantryItem.unit,
+          }
+        );
+
         const currentQuantity = parseFloat(pantryItem.quantity);
-        const remainingQuantity = currentQuantity - quantityNeeded;
+        let quantityToDeduct = quantityNeeded;
+
+        // Check if units exist and differ
+        const pantryHasUnit = !!pantryItem.unit;
+        const recipeHasUnit = !!ingredient.unit;
+        const unitsAreDifferent = pantryItem.unit !== ingredient.unit;
+
+        console.log(`[COOK] Unit analysis:`, {
+          pantryHasUnit,
+          recipeHasUnit,
+          unitsAreDifferent,
+          pantryUnit: pantryItem.unit,
+          recipeUnit: ingredient.unit,
+        });
+
+        // If units don't match and both exist, attempt conversion
+        if (pantryHasUnit && recipeHasUnit && unitsAreDifferent) {
+          console.log(`[COOK] Units differ - attempting conversion...`);
+
+          // Check if units are convertible
+          const isConvertible = canConvert(ingredient.unit, pantryItem.unit);
+          console.log(
+            `[COOK] canConvert(${ingredient.unit}, ${pantryItem.unit}) = ${isConvertible}`
+          );
+
+          if (!isConvertible) {
+            // Units are incompatible - log warning and skip deduction
+            console.warn(
+              `Skipping ingredient "${ingredient.ingredientName}": ` +
+                `recipe uses ${ingredient.unit} but pantry has ${pantryItem.unit} (incompatible units)`
+            );
+
+            pantryUpdates.push({
+              ingredientId: ingredient.ingredientId,
+              ingredientName: ingredient.ingredientName,
+              before: pantryItem.quantity,
+              after: pantryItem.quantity,
+              removed: false,
+              unit: pantryItem.unit,
+              unitMismatch: true,
+            });
+            continue;
+          }
+
+          // Convert recipe quantity to pantry unit
+          console.log(
+            `[COOK] Converting ${quantityNeeded} ${ingredient.unit} to ${pantryItem.unit}...`
+          );
+
+          const converted = convertBetweenUnits(
+            quantityNeeded,
+            ingredient.unit,
+            pantryItem.unit,
+            ingredient.ingredientName
+          );
+
+          console.log(
+            `[COOK] Conversion result: ${quantityNeeded} ${ingredient.unit} = ${converted} ${pantryItem.unit}`
+          );
+
+          if (converted === null) {
+            // Conversion failed - skip deduction
+            console.warn(
+              `Failed to convert "${ingredient.ingredientName}" from ${ingredient.unit} to ${pantryItem.unit}`
+            );
+
+            pantryUpdates.push({
+              ingredientId: ingredient.ingredientId,
+              ingredientName: ingredient.ingredientName,
+              before: pantryItem.quantity,
+              after: pantryItem.quantity,
+              removed: false,
+              unit: pantryItem.unit,
+              unitMismatch: true,
+            });
+            continue;
+          }
+
+          quantityToDeduct = converted;
+          console.log(`[COOK] Using converted quantity: ${quantityToDeduct}`);
+        } else if (pantryHasUnit !== recipeHasUnit) {
+          // One has a unit, the other doesn't - can't reliably deduct
+          console.warn(
+            `Skipping ingredient "${ingredient.ingredientName}": ` +
+              `unit mismatch - recipe ${recipeHasUnit ? 'has' : 'lacks'} unit (${ingredient.unit}), ` +
+              `pantry ${pantryHasUnit ? 'has' : 'lacks'} unit (${pantryItem.unit})`
+          );
+
+          pantryUpdates.push({
+            ingredientId: ingredient.ingredientId,
+            ingredientName: ingredient.ingredientName,
+            before: pantryItem.quantity,
+            after: pantryItem.quantity,
+            removed: false,
+            unit: pantryItem.unit,
+            unitMismatch: true,
+          });
+          continue;
+        } else {
+          console.log(
+            `[COOK] Units match or both missing - using quantity directly: ${quantityToDeduct}`
+          );
+        }
+
+        console.log(
+          `[COOK] Calculation: ${currentQuantity} - ${quantityToDeduct} = ?`
+        );
+
+        const remainingQuantity = currentQuantity - quantityToDeduct;
+
+        console.log(`[COOK] Remaining quantity: ${remainingQuantity}`);
 
         if (remainingQuantity <= 0) {
           // Remove item from pantry
           await tx.delete(pantryItems).where(eq(pantryItems.id, pantryItem.id));
+
+          console.log(
+            `[COOK] Item removed from pantry (remaining: ${remainingQuantity})`
+          );
 
           pantryUpdates.push({
             ingredientId: ingredient.ingredientId,
@@ -141,7 +270,7 @@ export async function POST(
             before: pantryItem.quantity,
             after: '0',
             removed: true,
-            unit: ingredient.unit,
+            unit: pantryItem.unit,
           });
         } else {
           // Update quantity
@@ -153,13 +282,17 @@ export async function POST(
             })
             .where(eq(pantryItems.id, pantryItem.id));
 
+          console.log(
+            `[COOK] Item updated in pantry: ${pantryItem.quantity} ${pantryItem.unit} → ${remainingQuantity} ${pantryItem.unit}`
+          );
+
           pantryUpdates.push({
             ingredientId: ingredient.ingredientId,
             ingredientName: ingredient.ingredientName,
             before: pantryItem.quantity,
             after: remainingQuantity.toString(),
             removed: false,
-            unit: ingredient.unit,
+            unit: pantryItem.unit,
           });
         }
       }
