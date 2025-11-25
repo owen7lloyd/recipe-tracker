@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { ChevronDown, ChevronUp } from 'lucide-react';
 import {
   COOKING_UNITS,
   getSuggestedUnits,
@@ -60,7 +59,7 @@ export function SmartUnitSelector({
   );
 
   return (
-    <div className={`flex gap-1 ${className}`}>
+    <div className={`flex gap-2 ${className}`}>
       <select
         id={id}
         value={value}
@@ -154,19 +153,14 @@ export function SmartUnitSelector({
         )}
       </select>
 
-      {/* Toggle button to show all/fewer units - horizontal layout */}
+      {/* Toggle button with text label */}
       {!disabled && (
         <button
           type="button"
           onClick={() => setShowAll(!showAll)}
-          className="flex h-10 items-center justify-center rounded-md border border-slate-200 bg-white px-2 text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200"
-          title={shouldShowAll ? 'Show fewer units' : 'Show all units'}
+          className="flex h-10 shrink-0 items-center justify-center rounded-md border border-slate-200 bg-white px-3 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200"
         >
-          {shouldShowAll ? (
-            <ChevronUp className="h-4 w-4" />
-          ) : (
-            <ChevronDown className="h-4 w-4" />
-          )}
+          {shouldShowAll ? 'Suggested' : 'All Units'}
         </button>
       )}
     </div>
