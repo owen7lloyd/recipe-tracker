@@ -4,9 +4,8 @@ import { useState } from 'react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Select } from '@/components/ui/select';
+import { SmartUnitSelector } from '@/components/ui/smart-unit-selector';
 import { Trash2, Edit2, Check, X } from 'lucide-react';
-import { COOKING_UNITS } from '@/lib/constants/units';
 
 interface Ingredient {
   id: string;
@@ -108,18 +107,12 @@ export function GroceryListItem({
                 step="0.01"
                 placeholder="qty"
               />
-              <Select
+              <SmartUnitSelector
                 value={editUnit}
-                onChange={(e) => setEditUnit(e.target.value)}
+                onChange={setEditUnit}
+                ingredientCategory={item.ingredient.category}
                 className="w-40"
-              >
-                <option value="">Select unit...</option>
-                {COOKING_UNITS.map((u) => (
-                  <option key={u.value} value={u.value}>
-                    {u.label}
-                  </option>
-                ))}
-              </Select>
+              />
               <Input
                 type="text"
                 value={editStore}
