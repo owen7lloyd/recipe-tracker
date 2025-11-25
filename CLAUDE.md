@@ -31,6 +31,7 @@ A full-stack Next.js application for household recipe management, pantry trackin
 - **Recipe Management**: Create, edit, import recipes from websites
 - **Pantry Tracking**: Track ingredient inventory
 - **Smart Matching**: "What Can I Cook?" feature matches recipes to available ingredients
+- **Ingredient Search**: Search recipes by selecting multiple ingredients with "any/all" modes and ingredient exclusion
 - **Grocery Lists**: Auto-generate shopping lists from recipes, subtract pantry items
 - **Household Sharing**: Multi-user households with invite system
 - **Real-time Sync**: Live updates for grocery lists (optional Supabase integration)
@@ -172,6 +173,7 @@ All UI components have been updated to use the organic garden aesthetic:
         /register               # User registration
       /recipes                  # Recipe CRUD + features
         /[id]                   # Single recipe operations
+        /search                 # Search by ingredients
         /available              # "What Can I Cook?"
         /import                 # Web scraping
       /pantry                   # Pantry management
@@ -186,6 +188,7 @@ All UI components have been updated to use the organic garden aesthetic:
       /recipes
         /[id]/edit              # Edit recipe
         /[id]/cook              # Cooking mode
+        /search                 # Search by ingredients page
         /available              # "What Can I Cook?" page
       /pantry
       /grocery-lists
@@ -591,6 +594,7 @@ return createErrorResponse(
 - `GET /api/recipes` - List with filters (search, category, tags, ingredients)
 - `POST /api/recipes` - Create
 - `GET/PUT/DELETE /api/recipes/[id]` - Single recipe operations
+- `GET /api/recipes/search` - Search by ingredients (any/all modes, exclusion, sorting)
 - `GET /api/recipes/available` - "What Can I Cook?" feature
 - `POST /api/recipes/import` - Import from URL
 - `POST /api/recipes/[id]/cook` - Mark as cooked
@@ -658,6 +662,8 @@ pnpm dlx shadcn@latest add <component-name>
 - `recipe-card.tsx` - Card view for list display
 - `recipe-detail.tsx` - Full recipe view with notes history
 - `ingredient-input.tsx` - Autocomplete ingredient selector
+- `ingredient-picker.tsx` - Multi-select ingredient picker for search
+- `ingredient-search-page.tsx` - Search recipes by ingredients page
 - `cook-recipe-view.tsx` - Step-by-step cooking mode with timers and notes
 - `serving-scaler.tsx` - Adjust servings with live updates
 - `recipe-timer.tsx` - Interactive timer component with notifications
@@ -759,6 +765,32 @@ Matches recipes against pantry inventory:
 
 - `includePartialMatches: boolean` - Include recipes missing some ingredients
 - `minMatchPercentage: number` - Minimum % match for partial matches
+
+### Recipe Search by Ingredients (`/src/lib/recipe/helpers.ts`)
+
+**Function:** `searchRecipesByIngredients(householdId, ingredientIds, options)`
+
+Search recipes by selecting multiple ingredients with advanced filtering:
+
+1. Query recipes containing selected ingredients
+2. Calculate match count for each recipe
+3. Filter by match mode:
+   - `any`: Recipes with at least one ingredient (OR)
+   - `all`: Recipes with all selected ingredients (AND)
+4. Exclude recipes containing excluded ingredients
+5. Calculate match percentage (matched ingredients / total ingredients)
+6. Sort by relevance, rating, cook time, or prep time
+7. Apply pagination
+
+**Options:**
+- `matchMode: 'any' | 'all'` - Match any or all ingredients (default: 'any')
+- `excludeIngredients: string[]` - Ingredient IDs to exclude
+- `limit: number` - Results per page (default: 20, max: 100)
+- `offset: number` - Pagination offset (default: 0)
+- `sortBy: 'relevance' | 'rating' | 'cookTime' | 'prepTime'` - Sort order (default: 'relevance')
+
+**Returns:**
+- Array of recipes with `matchCount`, `totalIngredients`, and `matchPercentage` fields
 
 ### Recipe Scaling (`/src/lib/recipe-scaling.ts`)
 
@@ -1494,6 +1526,7 @@ Database Schema:       /src/lib/db/schema.ts
 Auth Config:           /src/lib/auth/config.ts
 Custom getSession:     /src/lib/auth/index.ts
 API Helpers:           /src/lib/api/utils.ts
+Recipe Helpers:        /src/lib/recipe/helpers.ts (includes search)
 Recipe Matching:       /src/lib/recipe-matching.ts
 Grocery Generator:     /src/lib/grocery-list-generator.ts
 Ingredient Parser:     /src/lib/recipe-scraper/ingredient-parser.ts
