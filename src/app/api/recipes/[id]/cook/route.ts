@@ -196,7 +196,8 @@ export async function POST(
           const converted = convertBetweenUnits(
             quantityNeeded,
             ingredient.unit,
-            pantryItem.unit
+            pantryItem.unit,
+            ingredient.ingredientName
           );
 
           console.log(

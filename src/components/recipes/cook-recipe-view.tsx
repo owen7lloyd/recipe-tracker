@@ -224,7 +224,8 @@ export function CookRecipeView(recipe: CookRecipeViewProps) {
           const converted = convertBetweenUnits(
             quantityNeeded,
             ing.unit,
-            pantryItem.unit
+            pantryItem.unit,
+            ing.ingredientName
           );
 
           if (converted !== null) {

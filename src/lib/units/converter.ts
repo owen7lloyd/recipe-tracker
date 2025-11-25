@@ -4,12 +4,28 @@
  */
 
 import { UNIT_CONVERSIONS, UNIT_ALIASES } from './conversions';
+import {
+  convertVolumToWeight,
+  convertWeightToVolume,
+  isVolumeUnit,
+  isWeightUnit,
+} from './density-conversions';
 
 export interface ConversionResult {
   success: boolean;
   value: number | null;
   error?: string;
 }
+
+// Re-export density conversion functions
+export {
+  getDensityForIngredient,
+  convertVolumToWeight,
+  convertWeightToVolume,
+  isVolumeUnit,
+  isWeightUnit,
+  INGREDIENT_DENSITIES,
+} from './density-conversions';
 
 /**
  * Normalize a unit string by:
@@ -111,20 +127,27 @@ export function canConvert(
  * Convert a quantity from one unit to another
  * Returns the converted value or null if conversion is not possible
  *
+ * Supports:
+ * - Direct conversions (same base unit: ml→cup, g→kg, etc.)
+ * - Density-based conversions (volume→weight: cup→g for flour, ml→oz for oil, etc.)
+ *
  * Example:
  *   convertBetweenUnits(1, 'cup', 'ml') => 236.588
  *   convertBetweenUnits(2, 'lb', 'g') => 907.184
- *   convertBetweenUnits(1, 'cup', 'lb') => null (incompatible units)
+ *   convertBetweenUnits(2, 'cup', 'g', 'flour') => 250 (uses flour density)
+ *   convertBetweenUnits(1, 'cup', 'lb') => null (no density data for unknown ingredient)
  *
  * @param quantity - The amount to convert
  * @param fromUnit - Unit to convert from
  * @param toUnit - Unit to convert to
+ * @param ingredientName - Optional: ingredient name for density-based conversions
  * @returns Converted quantity or null if conversion not possible
  */
 export function convertBetweenUnits(
   quantity: number,
   fromUnit: string | null,
-  toUnit: string | null
+  toUnit: string | null,
+  ingredientName: string | null = null
 ): number | null {
   // Validate inputs
   if (quantity < 0 || !isFinite(quantity)) {
@@ -192,10 +215,59 @@ export function convertBetweenUnits(
     return null;
   }
 
-  // Cannot convert if base units don't match
+  // Cannot convert if base units don't match - try density-based conversion
   if (fromInfo.baseUnit !== toInfo.baseUnit) {
     console.log(
       `[CONVERT] Base units don't match: ${fromInfo.baseUnit} vs ${toInfo.baseUnit}`
+    );
+
+    // Try density-based conversion if ingredient name provided
+    if (ingredientName) {
+      console.log(
+        `[CONVERT] Attempting density-based conversion for "${ingredientName}"`
+      );
+
+      // Check if converting from volume to weight
+      if (isVolumeUnit(normalizedFrom) && isWeightUnit(normalizedTo)) {
+        console.log(`[CONVERT] Volume → Weight conversion`);
+        const result = convertVolumToWeight(
+          quantity,
+          normalizedFrom,
+          normalizedTo,
+          ingredientName
+        );
+        if (result !== null) {
+          console.log(
+            `[CONVERT] Density conversion successful: ${quantity} ${normalizedFrom} = ${result} ${normalizedTo}`
+          );
+          return Math.round(result * 100000) / 100000;
+        }
+      }
+
+      // Check if converting from weight to volume
+      if (isWeightUnit(normalizedFrom) && isVolumeUnit(normalizedTo)) {
+        console.log(`[CONVERT] Weight → Volume conversion`);
+        const result = convertWeightToVolume(
+          quantity,
+          normalizedFrom,
+          normalizedTo,
+          ingredientName
+        );
+        if (result !== null) {
+          console.log(
+            `[CONVERT] Density conversion successful: ${quantity} ${normalizedFrom} = ${result} ${normalizedTo}`
+          );
+          return Math.round(result * 100000) / 100000;
+        }
+      }
+
+      console.log(
+        `[CONVERT] Density-based conversion failed or not applicable`
+      );
+    }
+
+    console.log(
+      `[CONVERT] Cannot convert incompatible units without ingredient data`
     );
     return null;
   }
