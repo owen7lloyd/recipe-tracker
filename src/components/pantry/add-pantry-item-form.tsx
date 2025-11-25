@@ -4,12 +4,11 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select } from '@/components/ui/select';
+import { SmartUnitSelector } from '@/components/ui/smart-unit-selector';
 import { IngredientAutocomplete } from './ingredient-autocomplete';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Plus, Loader2 } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
-import { COOKING_UNITS } from '@/lib/constants/units';
 
 interface Ingredient {
   id: string;
@@ -136,18 +135,12 @@ export function AddPantryItemForm({ onItemAdded }: AddPantryItemFormProps) {
 
             <div className="space-y-2">
               <Label htmlFor="unit">Unit (optional)</Label>
-              <Select
+              <SmartUnitSelector
                 id="unit"
                 value={unit}
-                onChange={(e) => setUnit(e.target.value)}
-              >
-                <option value="">Select unit...</option>
-                {COOKING_UNITS.map((u) => (
-                  <option key={u.value} value={u.value}>
-                    {u.label}
-                  </option>
-                ))}
-              </Select>
+                onChange={setUnit}
+                ingredientCategory={selectedIngredient?.category}
+              />
             </div>
           </div>
 

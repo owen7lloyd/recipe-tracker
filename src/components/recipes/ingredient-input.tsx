@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { X, GripVertical, Plus } from 'lucide-react';
-import { COOKING_UNITS } from '@/lib/constants/units';
+import { SmartUnitSelector } from '@/components/ui/smart-unit-selector';
 import { useToast } from '@/components/ui/use-toast';
 import { CreateCustomIngredientModal } from '@/components/ingredients/create-custom-ingredient-modal';
 
@@ -127,15 +127,6 @@ export function IngredientInput({
     handleSelectIngredient(ingredient);
   };
 
-  // Use ingredient's common units if available, otherwise use all cooking units
-  const unitOptions =
-    (selectedIngredient?.commonUnits ?? []).length > 0
-      ? (selectedIngredient?.commonUnits ?? []).map((unit) => ({
-          value: unit,
-          label: COOKING_UNITS.find((u) => u.value === unit)?.label || unit,
-        }))
-      : COOKING_UNITS;
-
   // Check if ingredient is valid (has an ID)
   const isValid = value.ingredientId && value.ingredientId !== '';
 
@@ -226,19 +217,12 @@ export function IngredientInput({
       </div>
 
       <div className="col-span-6 md:col-span-2">
-        <select
+        <SmartUnitSelector
           value={value.unit || ''}
-          onChange={(e) => onChange({ ...value, unit: e.target.value || null })}
+          onChange={(newUnit) => onChange({ ...value, unit: newUnit || null })}
+          ingredientCategory={selectedIngredient?.category}
           disabled={disabled}
-          className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-800 dark:bg-slate-950 dark:ring-offset-slate-950 dark:placeholder:text-slate-400 dark:focus-visible:ring-slate-300"
-        >
-          <option value="">Unit</option>
-          {unitOptions.map((unit) => (
-            <option key={unit.value} value={unit.value}>
-              {unit.label}
-            </option>
-          ))}
-        </select>
+        />
       </div>
 
       <div className="col-span-10 md:col-span-3">
