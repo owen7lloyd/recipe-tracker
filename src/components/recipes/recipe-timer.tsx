@@ -6,6 +6,17 @@ import { Play, Pause, RotateCcw, Plus, Bell, BellOff } from 'lucide-react';
 import { formatTimerDisplay } from '@/lib/recipe-timer';
 import { cn } from '@/lib/utils';
 
+export interface TimerState {
+  duration: number;
+  remaining: number;
+  isActive: boolean;
+  isPaused: boolean;
+  isComplete: boolean;
+  soundEnabled: boolean;
+  startTime: number | null;
+  pausedTime: number;
+}
+
 export interface RecipeTimerProps {
   duration: number; // in seconds
   label?: string;
@@ -15,6 +26,9 @@ export interface RecipeTimerProps {
   isRange?: boolean;
   minDuration?: number;
   maxDuration?: number;
+  timerId?: string; // Unique identifier for controlled state
+  timerState?: TimerState; // External state (controlled)
+  onStateChange?: (timerId: string, state: TimerState) => void; // Callback for state changes
 }
 
 export function RecipeTimer({
@@ -26,18 +40,36 @@ export function RecipeTimer({
   isRange = false,
   minDuration,
   maxDuration,
+  timerId,
+  timerState: externalState,
+  onStateChange,
 }: RecipeTimerProps) {
-  const [duration, setDuration] = useState(initialDuration);
-  const [remaining, setRemaining] = useState(initialDuration);
-  const [isActive, setIsActive] = useState(autoStart);
-  const [isPaused, setIsPaused] = useState(false);
-  const [isComplete, setIsComplete] = useState(false);
-  const [soundEnabled, setSoundEnabled] = useState(true);
+  // Use external state if provided (controlled), otherwise use internal state (uncontrolled)
+  const isControlled = !!timerId && !!externalState && !!onStateChange;
+
+  const [internalState, setInternalState] = useState<TimerState>({
+    duration: initialDuration,
+    remaining: initialDuration,
+    isActive: autoStart,
+    isPaused: false,
+    isComplete: false,
+    soundEnabled: true,
+    startTime: null,
+    pausedTime: initialDuration,
+  });
+
+  const state = isControlled ? externalState : internalState;
+  const setState = isControlled
+    ? (newState: TimerState | ((prev: TimerState) => TimerState)) => {
+        const updatedState = typeof newState === 'function' ? newState(state) : newState;
+        onStateChange(timerId, updatedState);
+      }
+    : setInternalState;
+
+  const { duration, remaining, isActive, isPaused, isComplete, soundEnabled, startTime, pausedTime } = state;
 
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const startTimeRef = useRef<number | null>(null);
-  const pausedTimeRef = useRef<number>(initialDuration);
 
   // Initialize audio element (we'll use a simple beep sound via Web Audio API)
   useEffect(() => {
@@ -50,8 +82,7 @@ export function RecipeTimer({
 
   // Handle timer completion
   const handleComplete = useCallback(() => {
-    setIsComplete(true);
-    setIsActive(false);
+    setState(prev => ({ ...prev, isComplete: true, isActive: false }));
 
     // Play notification sound if enabled
     if (soundEnabled) {
@@ -70,20 +101,21 @@ export function RecipeTimer({
     if (onComplete) {
       onComplete();
     }
-  }, [soundEnabled, label, stepNumber, onComplete]);
+  }, [soundEnabled, label, stepNumber, onComplete, setState]);
 
   // Timer countdown logic
   useEffect(() => {
     if (isActive && !isPaused && remaining > 0) {
-      if (!startTimeRef.current) {
-        startTimeRef.current = Date.now();
+      const currentStartTime = startTime || Date.now();
+      if (!startTime) {
+        setState(prev => ({ ...prev, startTime: currentStartTime }));
       }
 
       intervalRef.current = setInterval(() => {
-        const elapsed = Math.floor((Date.now() - (startTimeRef.current || 0)) / 1000);
-        const newRemaining = Math.max(0, pausedTimeRef.current - elapsed);
+        const elapsed = Math.floor((Date.now() - currentStartTime) / 1000);
+        const newRemaining = Math.max(0, pausedTime - elapsed);
 
-        setRemaining(newRemaining);
+        setState(prev => ({ ...prev, remaining: newRemaining }));
 
         if (newRemaining <= 0) {
           if (intervalRef.current) {
@@ -99,7 +131,7 @@ export function RecipeTimer({
         }
       };
     }
-  }, [isActive, isPaused, remaining, handleComplete]);
+  }, [isActive, isPaused, remaining, handleComplete, startTime, pausedTime, setState]);
 
   // Play notification sound using Web Audio API
   const playNotificationSound = () => {
@@ -125,48 +157,72 @@ export function RecipeTimer({
   };
 
   const handleStart = () => {
-    setIsActive(true);
-    setIsPaused(false);
-    setIsComplete(false);
-    startTimeRef.current = Date.now();
-    pausedTimeRef.current = remaining;
+    const now = Date.now();
+    setState(prev => ({
+      ...prev,
+      isActive: true,
+      isPaused: false,
+      isComplete: false,
+      startTime: now,
+      pausedTime: prev.remaining,
+    }));
   };
 
   const handlePause = () => {
-    setIsPaused(true);
-    setIsActive(false);
-    pausedTimeRef.current = remaining;
-    startTimeRef.current = null;
+    setState(prev => ({
+      ...prev,
+      isPaused: true,
+      isActive: false,
+      pausedTime: prev.remaining,
+      startTime: null,
+    }));
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
     }
   };
 
   const handleReset = () => {
-    setIsActive(false);
-    setIsPaused(false);
-    setIsComplete(false);
-    setRemaining(duration);
-    pausedTimeRef.current = duration;
-    startTimeRef.current = null;
+    setState(prev => ({
+      ...prev,
+      isActive: false,
+      isPaused: false,
+      isComplete: false,
+      remaining: prev.duration,
+      pausedTime: prev.duration,
+      startTime: null,
+    }));
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
     }
   };
 
   const handleAddTime = (seconds: number) => {
-    const newRemaining = remaining + seconds;
-    const newDuration = duration + seconds;
-    setRemaining(newRemaining);
-    setDuration(newDuration);
-    pausedTimeRef.current = newRemaining;
+    setState(prev => ({
+      ...prev,
+      remaining: prev.remaining + seconds,
+      duration: prev.duration + seconds,
+      pausedTime: prev.remaining + seconds,
+    }));
   };
 
   const handleSetDuration = (newDuration: number) => {
-    setDuration(newDuration);
-    setRemaining(newDuration);
-    pausedTimeRef.current = newDuration;
-    handleReset();
+    setState(prev => ({
+      ...prev,
+      duration: newDuration,
+      remaining: newDuration,
+      pausedTime: newDuration,
+      isActive: false,
+      isPaused: false,
+      isComplete: false,
+      startTime: null,
+    }));
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+    }
+  };
+
+  const handleToggleSound = () => {
+    setState(prev => ({ ...prev, soundEnabled: !prev.soundEnabled }));
   };
 
   const requestNotificationPermission = async () => {
@@ -281,7 +337,7 @@ export function RecipeTimer({
 
         <Button
           size="sm"
-          onClick={() => setSoundEnabled(!soundEnabled)}
+          onClick={handleToggleSound}
           variant="ghost"
           title={soundEnabled ? 'Disable sound' : 'Enable sound'}
         >

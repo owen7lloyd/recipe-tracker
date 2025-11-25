@@ -31,6 +31,7 @@ import {
 } from '@/components/ui/dialog';
 import type { ScaledRecipe, ScaledIngredient } from '@/lib/recipe-scaling';
 import { detectAllTimers, type StepTimer } from '@/lib/recipe-timer';
+import { type TimerState } from './recipe-timer';
 
 interface Ingredient {
   id: string;
@@ -101,8 +102,35 @@ export function CookRecipeView(recipe: CookRecipeViewProps) {
   const [stepTimers, setStepTimers] = useState<StepTimer[]>([]);
   const [notes, setNotes] = useState<RecipeNote[]>([]);
   const [isLoadingNotes, setIsLoadingNotes] = useState(true);
-  const [showNotesForStep, setShowNotesForStep] = useState<number | null>(null);
-  const [showTimersForStep, setShowTimersForStep] = useState<number | null>(null);
+  const [activeStepPanel, setActiveStepPanel] = useState<number | null>(null);
+  const [activePanelTab, setActivePanelTab] = useState<'timers' | 'notes'>('timers');
+
+  // Timer state management (persists across collapse/expand)
+  const [timerStates, setTimerStates] = useState<Map<string, TimerState>>(new Map());
+
+  // Get or initialize timer state
+  const getTimerState = (timerId: string, initialDuration: number): TimerState => {
+    if (!timerStates.has(timerId)) {
+      const initialState: TimerState = {
+        duration: initialDuration,
+        remaining: initialDuration,
+        isActive: false,
+        isPaused: false,
+        isComplete: false,
+        soundEnabled: true,
+        startTime: null,
+        pausedTime: initialDuration,
+      };
+      setTimerStates(prev => new Map(prev).set(timerId, initialState));
+      return initialState;
+    }
+    return timerStates.get(timerId)!;
+  };
+
+  // Update timer state
+  const updateTimerState = (timerId: string, newState: TimerState) => {
+    setTimerStates(prev => new Map(prev).set(timerId, newState));
+  };
 
   // Fetch pantry items
   useEffect(() => {
@@ -394,9 +422,9 @@ export function CookRecipeView(recipe: CookRecipeViewProps) {
         </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid gap-6 lg:grid-cols-12">
         {/* Main cooking area */}
-        <div className="space-y-6 lg:col-span-2">
+        <div className={`space-y-6 transition-all ${activeStepPanel !== null ? 'lg:col-span-7' : 'lg:col-span-9'}`}>
           {/* Serving scaler */}
           <Card>
             <CardHeader>
@@ -424,14 +452,15 @@ export function CookRecipeView(recipe: CookRecipeViewProps) {
                   const stepTimer = stepTimers.find((st) => st.stepNumber === index);
                   const hasTimers = stepTimer && stepTimer.timers.length > 0;
                   const stepNotes = notes.filter((note) => note.stepNumber === index);
-                  const showTimers = showTimersForStep === index;
-                  const showNotes = showNotesForStep === index;
+                  const isActive = activeStepPanel === index;
 
                   return (
                     <li
                       key={index}
                       className={`rounded-lg border-2 p-4 transition-all ${
-                        isCompleted
+                        isActive
+                          ? 'border-[#d4a574] bg-amber-50 dark:bg-amber-950/10'
+                          : isCompleted
                           ? 'border-green-500 bg-green-50 dark:bg-green-950/20'
                           : 'border-slate-200 hover:border-slate-300 dark:border-slate-800 dark:hover:border-slate-700'
                       }`}
@@ -462,58 +491,42 @@ export function CookRecipeView(recipe: CookRecipeViewProps) {
                       </div>
 
                       {/* Timer and Note buttons */}
-                      <div className="mt-3 flex gap-2">
-                        {hasTimers && (
+                      {(hasTimers || true) && (
+                        <div className="mt-3 flex gap-2">
+                          {hasTimers && (
+                            <Button
+                              size="sm"
+                              variant={isActive && activePanelTab === 'timers' ? 'default' : 'outline'}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (isActive && activePanelTab === 'timers') {
+                                  setActiveStepPanel(null);
+                                } else {
+                                  setActiveStepPanel(index);
+                                  setActivePanelTab('timers');
+                                }
+                              }}
+                            >
+                              <Timer className="mr-2 h-4 w-4" />
+                              {stepTimer.timers.length} Timer{stepTimer.timers.length > 1 ? 's' : ''}
+                            </Button>
+                          )}
                           <Button
                             size="sm"
-                            variant="outline"
-                            onClick={() => setShowTimersForStep(showTimers ? null : index)}
+                            variant={isActive && activePanelTab === 'notes' ? 'default' : 'outline'}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (isActive && activePanelTab === 'notes') {
+                                setActiveStepPanel(null);
+                              } else {
+                                setActiveStepPanel(index);
+                                setActivePanelTab('notes');
+                              }
+                            }}
                           >
-                            <Timer className="mr-2 h-4 w-4" />
-                            {stepTimer.timers.length} Timer{stepTimer.timers.length > 1 ? 's' : ''}
+                            <StickyNote className="mr-2 h-4 w-4" />
+                            Notes {stepNotes.length > 0 && `(${stepNotes.length})`}
                           </Button>
-                        )}
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => setShowNotesForStep(showNotes ? null : index)}
-                        >
-                          <StickyNote className="mr-2 h-4 w-4" />
-                          Notes {stepNotes.length > 0 && `(${stepNotes.length})`}
-                        </Button>
-                      </div>
-
-                      {/* Timers */}
-                      {showTimers && hasTimers && (
-                        <div className="mt-4 space-y-3 border-t border-slate-200 pt-4 dark:border-slate-700">
-                          <div className="text-xs font-medium text-slate-600 dark:text-slate-400">
-                            Detected Timers:
-                          </div>
-                          {stepTimer.timers.map((timer, timerIndex) => (
-                            <RecipeTimer
-                              key={timerIndex}
-                              duration={timer.duration}
-                              label={timer.label}
-                              stepNumber={index}
-                              isRange={timer.isRange}
-                              minDuration={timer.minDuration}
-                              maxDuration={timer.maxDuration}
-                            />
-                          ))}
-                        </div>
-                      )}
-
-                      {/* Notes */}
-                      {showNotes && (
-                        <div className="mt-4 border-t border-slate-200 pt-4 dark:border-slate-700">
-                          <RecipeNoteInput
-                            recipeId={recipe.id}
-                            stepNumber={index}
-                            existingNotes={notes}
-                            onNoteAdded={fetchNotes}
-                            onNoteUpdated={fetchNotes}
-                            onNoteDeleted={fetchNotes}
-                          />
                         </div>
                       )}
                     </li>
@@ -524,8 +537,73 @@ export function CookRecipeView(recipe: CookRecipeViewProps) {
           </Card>
         </div>
 
+        {/* Side Panel - Timers and Notes */}
+        {activeStepPanel !== null && (
+          <div className="space-y-6 lg:col-span-5">
+            <Card className="sticky top-4">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle>Step {activeStepPanel + 1}</CardTitle>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setActiveStepPanel(null)}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {activePanelTab === 'timers' && (() => {
+                  const stepTimer = stepTimers.find((st) => st.stepNumber === activeStepPanel);
+                  if (!stepTimer || stepTimer.timers.length === 0) {
+                    return (
+                      <p className="text-center text-sm text-slate-500">
+                        No timers detected for this step
+                      </p>
+                    );
+                  }
+                  return (
+                    <div className="space-y-4">
+                      {stepTimer.timers.map((timer, timerIndex) => {
+                        const timerId = `step-${activeStepPanel}-timer-${timerIndex}`;
+                        const timerState = getTimerState(timerId, timer.duration);
+                        return (
+                          <RecipeTimer
+                            key={timerId}
+                            timerId={timerId}
+                            duration={timer.duration}
+                            label={timer.label}
+                            stepNumber={activeStepPanel}
+                            isRange={timer.isRange}
+                            minDuration={timer.minDuration}
+                            maxDuration={timer.maxDuration}
+                            timerState={timerState}
+                            onStateChange={updateTimerState}
+                          />
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
+
+                {activePanelTab === 'notes' && (
+                  <RecipeNoteInput
+                    recipeId={recipe.id}
+                    stepNumber={activeStepPanel}
+                    existingNotes={notes}
+                    onNoteAdded={fetchNotes}
+                    onNoteUpdated={fetchNotes}
+                    onNoteDeleted={fetchNotes}
+                  />
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
         {/* Sidebar - Ingredients */}
-        <div className="space-y-6">
+        <div className={`space-y-6 ${activeStepPanel !== null ? 'lg:col-span-12 lg:mt-6' : 'lg:col-span-3'}`}>
           <Card>
             <CardHeader>
               <CardTitle>Ingredients</CardTitle>
