@@ -25,6 +25,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { convertBetweenUnits } from '@/lib/units/converter';
 import type { ScaledRecipe, ScaledIngredient } from '@/lib/recipe-scaling';
 
 interface Ingredient {
@@ -206,14 +207,45 @@ export function CookRecipeView(recipe: CookRecipeViewProps) {
         const currentQty = pantryItem?.quantity
           ? parseFloat(pantryItem.quantity)
           : null;
+
+        // Convert quantity needed to pantry unit if units differ
+        let quantityToDeduct = quantityNeeded;
+        let unitsMatch =
+          !ing.unit || !pantryItem?.unit || ing.unit === pantryItem.unit;
+        let unitMismatch = false;
+
+        if (
+          quantityNeeded !== null &&
+          ing.unit &&
+          pantryItem?.unit &&
+          ing.unit !== pantryItem.unit
+        ) {
+          // Attempt to convert recipe unit to pantry unit
+          const converted = convertBetweenUnits(
+            quantityNeeded,
+            ing.unit,
+            pantryItem.unit
+          );
+
+          if (converted !== null) {
+            quantityToDeduct = converted;
+            unitsMatch = true;
+          } else {
+            // Conversion failed - mark as unit mismatch
+            unitMismatch = true;
+            quantityToDeduct = quantityNeeded; // Use original for now
+          }
+        }
+
         const remainingQty =
-          currentQty !== null && quantityNeeded !== null
-            ? Math.max(0, currentQty - quantityNeeded)
+          currentQty !== null && quantityToDeduct !== null && !unitMismatch
+            ? Math.max(0, currentQty - quantityToDeduct)
             : null;
         const insufficient =
           currentQty !== null &&
-          quantityNeeded !== null &&
-          currentQty < quantityNeeded;
+          quantityToDeduct !== null &&
+          !unitMismatch &&
+          currentQty < quantityToDeduct;
 
         return {
           ...ing,
@@ -225,6 +257,7 @@ export function CookRecipeView(recipe: CookRecipeViewProps) {
           willBeRemoved: remainingQty === 0,
           notInPantry: !pantryItem,
           notTracked: pantryItem && !pantryItem.quantity,
+          unitMismatch,
         };
       });
   };
@@ -559,11 +592,22 @@ export function CookRecipeView(recipe: CookRecipeViewProps) {
                       <p className="text-slate-500">Quantity not tracked</p>
                     ) : ing.quantityNeeded === null ? (
                       <p className="text-slate-500">Non-numeric quantity</p>
+                    ) : ing.unitMismatch ? (
+                      <p className="text-amber-600 dark:text-amber-500">
+                        Unit mismatch ({ing.unit} vs{' '}
+                        {pantry.find(
+                          (p) => p.ingredient.id === ing.ingredientId
+                        )?.unit || '?'}
+                        ) - will skip
+                      </p>
                     ) : (
                       <div className="mt-1 flex items-center justify-between">
                         <span className="text-slate-600 dark:text-slate-400">
                           {ing.currentQty?.toFixed(2)} →{' '}
-                          {ing.remainingQty?.toFixed(2)} {ing.unit}
+                          {ing.remainingQty?.toFixed(2)}{' '}
+                          {pantry.find(
+                            (p) => p.ingredient.id === ing.ingredientId
+                          )?.unit || ing.unit}
                         </span>
                         {ing.willBeRemoved && (
                           <Badge variant="destructive" className="text-xs">
