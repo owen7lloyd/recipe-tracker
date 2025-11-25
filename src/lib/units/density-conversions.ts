@@ -7,88 +7,316 @@
  * - USDA Food Data Central
  * - King Arthur Baking Company
  * - Common baking reference tables
+ * - Cooking conversions tables
  */
+
+// Category-based default densities for fallback
+const CATEGORY_DENSITIES: Record<string, number> = {
+  // Produce (vegetables/fruits) - mostly water ~0.9-1.0
+  produce: 0.95,
+  // Meats - slightly denser than water
+  meat: 1.05,
+  seafood: 1.03,
+  // Dairy
+  dairy: 1.02,
+  // Pantry staples
+  pantry: 0.75,
+  // Frozen items
+  frozen: 0.95,
+  // Bakery
+  bakery: 0.85,
+  // Other
+  other: 0.9,
+};
 
 // Common ingredient densities (grams per milliliter)
 export const INGREDIENT_DENSITIES: Record<string, number> = {
-  // Flours
+  // ===== FLOURS =====
   'all-purpose flour': 0.125,
   'bread flour': 0.135,
   'cake flour': 0.11,
   'whole wheat flour': 0.12,
+  'almond flour': 0.1,
+  'chickpea flour': 0.11,
+  'rice flour': 0.12,
+  'oat flour': 0.1,
+  'rye flour': 0.13,
+  'spelt flour': 0.13,
+  'buckwheat flour': 0.12,
   flour: 0.125,
 
-  // Sugars
+  // ===== SUGARS & SWEETENERS =====
   'granulated sugar': 0.8,
   'brown sugar': 0.85,
   'powdered sugar': 0.5,
+  'muscovado sugar': 0.85,
+  'demerara sugar': 0.8,
+  'caster sugar': 0.8,
   sugar: 0.8,
+  'agave nectar': 1.4,
+  'agave syrup': 1.4,
 
-  // Liquids (approximately 1.0 for water-based)
+  // ===== LIQUIDS & OILS =====
   water: 1.0,
   milk: 1.03,
+  'whole milk': 1.03,
+  '2% milk': 1.02,
+  'skim milk': 1.035,
+  'almond milk': 1.0,
+  'oat milk': 1.0,
+  'coconut milk': 0.97,
   buttermilk: 1.03,
   'heavy cream': 1.0,
   'sour cream': 1.0,
   yogurt: 1.0,
+  'greek yogurt': 1.05,
   oil: 0.92,
   'olive oil': 0.92,
   'vegetable oil': 0.92,
-  butter: 0.96, // melted
+  'canola oil': 0.92,
+  'coconut oil': 0.92,
+  'sesame oil': 0.92,
+  'avocado oil': 0.92,
+  'peanut oil': 0.92,
+  butter: 0.96,
+  'browned butter': 0.96,
   honey: 1.42,
   'maple syrup': 1.38,
   molasses: 1.45,
+  'blackstrap molasses': 1.45,
+  'corn syrup': 1.38,
+  'brown rice syrup': 1.35,
   vinegar: 1.0,
+  'apple cider vinegar': 1.0,
+  'balsamic vinegar': 1.05,
+  'white vinegar': 1.0,
+  'rice vinegar': 1.0,
+  'wine vinegar': 1.0,
   'lemon juice': 1.0,
-  egg: 1.03, // liquid eggs
+  'lime juice': 1.0,
+  'orange juice': 1.04,
+  'tomato juice': 1.04,
+  egg: 1.03,
+  'egg white': 1.03,
+  'egg yolk': 1.08,
 
-  // Cocoa and chocolate
+  // ===== COCOA & CHOCOLATE =====
   'cocoa powder': 0.4,
   'baking cocoa': 0.4,
+  'dutch cocoa': 0.45,
   'chocolate chips': 0.6,
+  'dark chocolate chips': 0.6,
+  'white chocolate chips': 0.6,
 
-  // Baking soda/powder
+  // ===== BAKING STAPLES =====
   'baking soda': 0.83,
   'baking powder': 0.9,
   yeast: 0.5,
+  'active dry yeast': 0.5,
+  'instant yeast': 0.5,
+  cornstarch: 0.6,
+  'arrowroot powder': 0.7,
+  'tapioca starch': 0.6,
+  'potato starch': 0.6,
 
-  // Salt and spices
+  // ===== SALT & SEASONINGS =====
   salt: 1.2,
   'sea salt': 1.2,
+  'kosher salt': 1.1,
+  'table salt': 1.2,
   'black pepper': 0.6,
+  'white pepper': 0.6,
+  'cayenne pepper': 0.55,
+  'chili powder': 0.65,
+  paprika: 0.65,
   cinnamon: 0.5,
   'vanilla extract': 0.98,
+  'almond extract': 0.99,
+  'peppermint extract': 0.99,
+  'lemon extract': 0.98,
+  'garlic powder': 1.0,
+  'onion powder': 1.0,
+  'curry powder': 0.7,
+  'ginger powder': 0.7,
+  cumin: 0.7,
+  turmeric: 0.7,
+  cardamom: 0.75,
+  nutmeg: 0.6,
+  cloves: 1.0,
+  allspice: 0.7,
+  'anise seeds': 0.75,
+  'caraway seeds': 0.65,
+  'celery seeds': 0.75,
+  'fennel seeds': 0.65,
+  'mustard seeds': 0.9,
+  'sesame seeds': 0.75,
+  'poppy seeds': 0.9,
+  basil: 0.3,
+  oregano: 0.35,
+  thyme: 0.35,
+  rosemary: 0.35,
+  mint: 0.2,
+  parsley: 0.2,
+  chives: 0.2,
 
-  // Nuts and seeds
+  // ===== NUTS & NUT BUTTERS =====
   'peanut butter': 1.0,
   'almond butter': 1.0,
-  'sesame seeds': 0.75,
-  'pumpkin seeds': 0.7,
+  'cashew butter': 1.0,
+  tahini: 1.08,
+  almonds: 0.6,
+  peanuts: 0.6,
+  cashews: 0.55,
+  walnuts: 0.5,
+  pecans: 0.5,
+  'macadamia nuts': 0.55,
+  'pine nuts': 0.6,
+  hazelnuts: 0.5,
+  'brazil nuts': 0.55,
 
-  // Common ingredients
+  // ===== GRAINS & STARCHES =====
   oats: 0.13,
   'rolled oats': 0.13,
-  cornstarch: 0.6,
-  'corn syrup': 1.38,
+  'steel cut oats': 0.13,
+  rice: 0.8,
+  'brown rice': 0.8,
+  'white rice': 0.8,
+  'basmati rice': 0.8,
+  'jasmine rice': 0.8,
+  'arborio rice': 0.8,
+  quinoa: 0.8,
+  couscous: 0.6,
+  polenta: 0.6,
+  cornmeal: 0.65,
+  barley: 0.75,
+  'wheat berries': 0.8,
+  lentils: 0.8,
+  'dried pasta': 0.45,
+  noodles: 0.45,
+  'lasagna noodles': 0.45,
+  spaghetti: 0.45,
+  penne: 0.45,
+  macaroni: 0.45,
+
+  // ===== PRODUCE (FRESH) =====
+  carrot: 0.95,
+  onion: 0.95,
+  garlic: 0.95,
+  potato: 1.08,
+  'sweet potato': 1.0,
+  tomato: 0.95,
+  broccoli: 0.92,
+  cauliflower: 0.92,
+  spinach: 0.92,
+  lettuce: 0.92,
+  kale: 0.92,
+  cabbage: 0.95,
+  'bell pepper': 0.92,
+  cucumber: 0.95,
+  zucchini: 0.95,
+  apple: 0.92,
+  banana: 0.95,
+  blueberry: 0.97,
+  strawberry: 0.92,
+  raspberry: 0.92,
+  lemon: 0.95,
+  lime: 0.95,
+  orange: 0.95,
+  avocado: 0.92,
+  celery: 0.95,
+  asparagus: 0.92,
+  'green beans': 0.92,
+  mushroom: 0.92,
+  eggplant: 0.92,
+  pumpkin: 0.92,
+  squash: 0.92,
+
+  // ===== BEANS & LEGUMES =====
+  chickpeas: 0.8,
+  'black beans': 0.8,
+  'kidney beans': 0.8,
+  'pinto beans': 0.8,
+  'white beans': 0.8,
+  'split peas': 0.8,
+
+  // ===== MEAT & SEAFOOD =====
+  chicken: 1.05,
+  beef: 1.05,
+  pork: 1.05,
+  lamb: 1.05,
+  fish: 1.03,
+  salmon: 1.03,
+  tuna: 1.03,
+  shrimp: 1.05,
+  'ground meat': 1.05,
+  sausage: 1.05,
+  bacon: 1.05,
+
+  // ===== DAIRY PRODUCTS =====
+  cheese: 1.0,
+  'cheddar cheese': 1.0,
+  'mozzarella cheese': 1.0,
+  'parmesan cheese': 1.05,
+  'cream cheese': 1.05,
+  ricotta: 1.05,
+  'cottage cheese': 1.03,
+
+  // ===== PREPARED ITEMS =====
+  jam: 1.2,
+  jelly: 1.2,
+  pesto: 1.1,
+  hummus: 1.05,
+  'tomato sauce': 1.04,
+  'soy sauce': 1.08,
+  'worcestershire sauce': 1.05,
 };
 
 /**
+ * Result from density lookup
+ */
+export interface DensityLookupResult {
+  density: number;
+  isExactMatch: boolean;
+  isPartialMatch: boolean;
+  isDefaultMatch: boolean;
+  sourceKey?: string;
+}
+
+/**
  * Get density for an ingredient by name
- * Tries exact match first, then partial matches
+ * Tries exact match first, then partial matches, then category defaults
  *
  * @param ingredientName - Name of the ingredient
- * @returns Density in g/ml, or null if not found
+ * @param category - Optional category for fallback density
+ * @returns DensityLookupResult with density and match type, or null if no match and no category
  */
 export function getDensityForIngredient(
-  ingredientName: string | null
-): number | null {
-  if (!ingredientName) return null;
+  ingredientName: string | null,
+  category?: string
+): DensityLookupResult | null {
+  if (!ingredientName) {
+    if (category && CATEGORY_DENSITIES[category]) {
+      return {
+        density: CATEGORY_DENSITIES[category],
+        isExactMatch: false,
+        isPartialMatch: false,
+        isDefaultMatch: true,
+      };
+    }
+    return null;
+  }
 
   const normalized = ingredientName.toLowerCase().trim();
 
   // Try exact match first
   if (INGREDIENT_DENSITIES[normalized]) {
-    return INGREDIENT_DENSITIES[normalized];
+    return {
+      density: INGREDIENT_DENSITIES[normalized],
+      isExactMatch: true,
+      isPartialMatch: false,
+      isDefaultMatch: false,
+      sourceKey: normalized,
+    };
   }
 
   // Try to find a partial match
@@ -98,11 +326,46 @@ export function getDensityForIngredient(
       key.includes(normalized) ||
       normalized.startsWith(key)
     ) {
-      return density;
+      return {
+        density,
+        isExactMatch: false,
+        isPartialMatch: true,
+        isDefaultMatch: false,
+        sourceKey: key,
+      };
     }
   }
 
-  return null;
+  // Fall back to category density if available
+  if (category && CATEGORY_DENSITIES[category]) {
+    return {
+      density: CATEGORY_DENSITIES[category],
+      isExactMatch: false,
+      isPartialMatch: false,
+      isDefaultMatch: true,
+    };
+  }
+
+  // Final fallback to generic "other" density
+  return {
+    density: CATEGORY_DENSITIES['other'],
+    isExactMatch: false,
+    isPartialMatch: false,
+    isDefaultMatch: true,
+  };
+}
+
+/**
+ * Result from volume-to-weight conversion
+ */
+export interface ConversionResult {
+  value: number;
+  densityUsed: {
+    density: number;
+    isExactMatch: boolean;
+    isPartialMatch: boolean;
+    isDefaultMatch: boolean;
+  };
 }
 
 /**
@@ -112,23 +375,28 @@ export function getDensityForIngredient(
  * @param fromUnit - Unit to convert from (volume unit like ml, cup)
  * @param toUnit - Unit to convert to (weight unit like g, oz)
  * @param ingredientName - Name of ingredient (for density lookup)
- * @returns Converted quantity or null if conversion not possible
+ * @param category - Optional category for fallback density
+ * @returns ConversionResult with converted value and density info, or null if conversion not possible
  */
 export function convertVolumToWeight(
   quantity: number,
   fromUnit: string,
   toUnit: string,
-  ingredientName: string | null
-): number | null {
+  ingredientName: string | null,
+  category?: string
+): ConversionResult | null {
   // Get density for this ingredient
-  const density = getDensityForIngredient(ingredientName);
-  if (density === null) {
+  const lookupResult = getDensityForIngredient(ingredientName, category);
+  if (lookupResult === null) {
     console.log(`[DENSITY] No density data available for "${ingredientName}"`);
     return null;
   }
 
+  const { density, isExactMatch, isPartialMatch, isDefaultMatch } =
+    lookupResult;
+
   console.log(
-    `[DENSITY] Using density ${density} g/ml for "${ingredientName}"`
+    `[DENSITY] Using density ${density} g/ml for "${ingredientName}" (exact: ${isExactMatch}, partial: ${isPartialMatch}, default: ${isDefaultMatch})`
   );
 
   // First convert volume to ml
@@ -158,7 +426,15 @@ export function convertVolumToWeight(
     `[DENSITY] Final result: ${quantity} ${fromUnit} = ${result} ${toUnit}`
   );
 
-  return result;
+  return {
+    value: result,
+    densityUsed: {
+      density,
+      isExactMatch,
+      isPartialMatch,
+      isDefaultMatch,
+    },
+  };
 }
 
 /**
@@ -168,23 +444,28 @@ export function convertVolumToWeight(
  * @param fromUnit - Unit to convert from (weight unit like g, oz)
  * @param toUnit - Unit to convert to (volume unit like ml, cup)
  * @param ingredientName - Name of ingredient (for density lookup)
- * @returns Converted quantity or null if conversion not possible
+ * @param category - Optional category for fallback density
+ * @returns ConversionResult with converted value and density info, or null if conversion not possible
  */
 export function convertWeightToVolume(
   quantity: number,
   fromUnit: string,
   toUnit: string,
-  ingredientName: string | null
-): number | null {
+  ingredientName: string | null,
+  category?: string
+): ConversionResult | null {
   // Get density for this ingredient
-  const density = getDensityForIngredient(ingredientName);
-  if (density === null) {
+  const lookupResult = getDensityForIngredient(ingredientName, category);
+  if (lookupResult === null) {
     console.log(`[DENSITY] No density data available for "${ingredientName}"`);
     return null;
   }
 
+  const { density, isExactMatch, isPartialMatch, isDefaultMatch } =
+    lookupResult;
+
   console.log(
-    `[DENSITY] Using density ${density} g/ml for "${ingredientName}"`
+    `[DENSITY] Using density ${density} g/ml for "${ingredientName}" (exact: ${isExactMatch}, partial: ${isPartialMatch}, default: ${isDefaultMatch})`
   );
 
   // First convert weight to grams
@@ -214,7 +495,15 @@ export function convertWeightToVolume(
     `[DENSITY] Final result: ${quantity} ${fromUnit} = ${result} ${toUnit}`
   );
 
-  return result;
+  return {
+    value: result,
+    densityUsed: {
+      density,
+      isExactMatch,
+      isPartialMatch,
+      isDefaultMatch,
+    },
+  };
 }
 
 /**

@@ -11,13 +11,19 @@ import {
   isWeightUnit,
 } from './density-conversions';
 
-export interface ConversionResult {
+export interface UnitConversionResult {
   success: boolean;
   value: number | null;
   error?: string;
+  densityUsed?: {
+    density: number;
+    isExactMatch: boolean;
+    isPartialMatch: boolean;
+    isDefaultMatch: boolean;
+  };
 }
 
-// Re-export density conversion functions
+// Re-export density conversion types and functions
 export {
   getDensityForIngredient,
   convertVolumToWeight,
@@ -25,6 +31,8 @@ export {
   isVolumeUnit,
   isWeightUnit,
   INGREDIENT_DENSITIES,
+  type DensityLookupResult,
+  type ConversionResult as DensityConversionResult,
 } from './density-conversions';
 
 /**
@@ -238,9 +246,9 @@ export function convertBetweenUnits(
         );
         if (result !== null) {
           console.log(
-            `[CONVERT] Density conversion successful: ${quantity} ${normalizedFrom} = ${result} ${normalizedTo}`
+            `[CONVERT] Density conversion successful: ${quantity} ${normalizedFrom} = ${result.value} ${normalizedTo}`
           );
-          return Math.round(result * 100000) / 100000;
+          return Math.round(result.value * 100000) / 100000;
         }
       }
 
@@ -255,9 +263,9 @@ export function convertBetweenUnits(
         );
         if (result !== null) {
           console.log(
-            `[CONVERT] Density conversion successful: ${quantity} ${normalizedFrom} = ${result} ${normalizedTo}`
+            `[CONVERT] Density conversion successful: ${quantity} ${normalizedFrom} = ${result.value} ${normalizedTo}`
           );
-          return Math.round(result * 100000) / 100000;
+          return Math.round(result.value * 100000) / 100000;
         }
       }
 

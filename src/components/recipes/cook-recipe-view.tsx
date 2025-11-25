@@ -213,6 +213,7 @@ export function CookRecipeView(recipe: CookRecipeViewProps) {
         let unitsMatch =
           !ing.unit || !pantryItem?.unit || ing.unit === pantryItem.unit;
         let unitMismatch = false;
+        let densityConverted = false;
 
         if (
           quantityNeeded !== null &&
@@ -231,6 +232,8 @@ export function CookRecipeView(recipe: CookRecipeViewProps) {
           if (converted !== null) {
             quantityToDeduct = converted;
             unitsMatch = true;
+            // Mark that density conversion was used (units were different but conversion succeeded)
+            densityConverted = true;
           } else {
             // Conversion failed - mark as unit mismatch
             unitMismatch = true;
@@ -259,6 +262,7 @@ export function CookRecipeView(recipe: CookRecipeViewProps) {
           notInPantry: !pantryItem,
           notTracked: pantryItem && !pantryItem.quantity,
           unitMismatch,
+          densityConverted,
         };
       });
   };
@@ -602,18 +606,27 @@ export function CookRecipeView(recipe: CookRecipeViewProps) {
                         ) - will skip
                       </p>
                     ) : (
-                      <div className="mt-1 flex items-center justify-between">
-                        <span className="text-slate-600 dark:text-slate-400">
-                          {ing.currentQty?.toFixed(2)} →{' '}
-                          {ing.remainingQty?.toFixed(2)}{' '}
-                          {pantry.find(
-                            (p) => p.ingredient.id === ing.ingredientId
-                          )?.unit || ing.unit}
-                        </span>
-                        {ing.willBeRemoved && (
-                          <Badge variant="destructive" className="text-xs">
-                            Remove
-                          </Badge>
+                      <div className="mt-1 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-slate-600 dark:text-slate-400">
+                            {ing.currentQty?.toFixed(2)} →{' '}
+                            {ing.remainingQty?.toFixed(2)}{' '}
+                            {pantry.find(
+                              (p) => p.ingredient.id === ing.ingredientId
+                            )?.unit || ing.unit}
+                          </span>
+                          {ing.willBeRemoved && (
+                            <Badge variant="destructive" className="text-xs">
+                              Remove
+                            </Badge>
+                          )}
+                        </div>
+                        {ing.densityConverted && (
+                          <div className="flex items-center gap-1 rounded bg-blue-50 p-1.5 text-xs dark:bg-blue-950">
+                            <span className="text-blue-700 dark:text-blue-300">
+                              ℹ️ Unit conversion used (density-based)
+                            </span>
+                          </div>
                         )}
                       </div>
                     )}
