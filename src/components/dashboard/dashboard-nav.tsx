@@ -12,6 +12,7 @@ import {
   Zap,
   Leaf,
   Settings,
+  Search,
 } from 'lucide-react';
 
 interface DashboardNavProps {
@@ -46,7 +47,8 @@ export function DashboardNav({ user }: DashboardNavProps) {
                 href="/dashboard/recipes"
                 className={`rounded-md p-2 transition-colors ${
                   pathname.startsWith('/dashboard/recipes') &&
-                  pathname !== '/dashboard/recipes/available'
+                  pathname !== '/dashboard/recipes/available' &&
+                  pathname !== '/dashboard/recipes/search'
                     ? 'bg-[#3d6b1f] text-white'
                     : 'text-white hover:text-[#d4a574]'
                 }`}
@@ -54,6 +56,18 @@ export function DashboardNav({ user }: DashboardNavProps) {
                 aria-label="Recipes"
               >
                 <BookOpen className="h-5 w-5" />
+              </Link>
+              <Link
+                href="/dashboard/recipes/search"
+                className={`rounded-md p-2 transition-colors ${
+                  pathname === '/dashboard/recipes/search'
+                    ? 'bg-[#3d6b1f] text-white'
+                    : 'text-white hover:text-[#d4a574]'
+                }`}
+                title="Search by Ingredients"
+                aria-label="Search by Ingredients"
+              >
+                <Search className="h-5 w-5" />
               </Link>
               <Link
                 href="/dashboard/recipes/available"

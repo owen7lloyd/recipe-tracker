@@ -240,3 +240,179 @@ export async function deleteRecipe(recipeId: string): Promise<boolean> {
 
   return result.length > 0;
 }
+
+/**
+ * Search recipes by ingredients with advanced filtering
+ */
+export interface RecipeSearchOptions {
+  matchMode?: 'any' | 'all'; // 'any' = OR, 'all' = AND
+  excludeIngredients?: string[];
+  limit?: number;
+  offset?: number;
+  sortBy?: 'relevance' | 'rating' | 'cookTime' | 'prepTime';
+}
+
+export interface RecipeSearchResult {
+  id: string;
+  householdId: string;
+  title: string;
+  description: string | null;
+  imageUrl: string | null;
+  sourceUrl: string | null;
+  category: string;
+  tags: string[] | null;
+  prepTimeMinutes: number | null;
+  cookTimeMinutes: number | null;
+  servings: number;
+  rating: number | null;
+  instructions: string[];
+  createdBy: string;
+  createdAt: Date;
+  updatedAt: Date;
+  matchCount: number;
+  totalIngredients: number;
+  matchPercentage: number;
+}
+
+export async function searchRecipesByIngredients(
+  householdId: string,
+  ingredientIds: string[],
+  options: RecipeSearchOptions = {}
+): Promise<RecipeSearchResult[]> {
+  const {
+    matchMode = 'any',
+    excludeIngredients = [],
+    limit = 20,
+    offset = 0,
+    sortBy = 'relevance',
+  } = options;
+
+  // Return empty if no ingredients specified
+  if (ingredientIds.length === 0) {
+    return [];
+  }
+
+  // Build the base query with match count
+  let query = db
+    .select({
+      id: recipes.id,
+      householdId: recipes.householdId,
+      title: recipes.title,
+      description: recipes.description,
+      imageUrl: recipes.imageUrl,
+      sourceUrl: recipes.sourceUrl,
+      category: recipes.category,
+      tags: recipes.tags,
+      prepTimeMinutes: recipes.prepTimeMinutes,
+      cookTimeMinutes: recipes.cookTimeMinutes,
+      servings: recipes.servings,
+      rating: recipes.rating,
+      instructions: recipes.instructions,
+      createdBy: recipes.createdBy,
+      createdAt: recipes.createdAt,
+      updatedAt: recipes.updatedAt,
+      matchCount: sql<number>`COUNT(DISTINCT CASE WHEN ${recipeIngredients.ingredientId} = ANY(ARRAY[${sql.join(ingredientIds.map((id) => sql`${id}`), sql`, `)}]::uuid[]) THEN ${recipeIngredients.ingredientId} END)`,
+    })
+    .from(recipes)
+    .innerJoin(recipeIngredients, eq(recipes.id, recipeIngredients.recipeId))
+    .where(
+      and(
+        eq(recipes.householdId, householdId),
+        inArray(recipeIngredients.ingredientId, ingredientIds)
+      )
+    )
+    .groupBy(recipes.id);
+
+  // Filter by match mode
+  if (matchMode === 'all') {
+    // Only include recipes that have ALL specified ingredients
+    query = query.having(
+      sql`COUNT(DISTINCT CASE WHEN ${recipeIngredients.ingredientId} = ANY(ARRAY[${sql.join(ingredientIds.map((id) => sql`${id}`), sql`, `)}]::uuid[]) THEN ${recipeIngredients.ingredientId} END) >= ${ingredientIds.length}`
+    ) as any;
+  }
+
+  // Apply sorting
+  switch (sortBy) {
+    case 'rating':
+      query = query.orderBy(
+        desc(recipes.rating),
+        desc(sql`COUNT(DISTINCT CASE WHEN ${recipeIngredients.ingredientId} = ANY(ARRAY[${sql.join(ingredientIds.map((id) => sql`${id}`), sql`, `)}]::uuid[]) THEN ${recipeIngredients.ingredientId} END)`)
+      ) as any;
+      break;
+    case 'cookTime':
+      query = query.orderBy(
+        asc(recipes.cookTimeMinutes),
+        desc(sql`COUNT(DISTINCT CASE WHEN ${recipeIngredients.ingredientId} = ANY(ARRAY[${sql.join(ingredientIds.map((id) => sql`${id}`), sql`, `)}]::uuid[]) THEN ${recipeIngredients.ingredientId} END)`)
+      ) as any;
+      break;
+    case 'prepTime':
+      query = query.orderBy(
+        asc(recipes.prepTimeMinutes),
+        desc(sql`COUNT(DISTINCT CASE WHEN ${recipeIngredients.ingredientId} = ANY(ARRAY[${sql.join(ingredientIds.map((id) => sql`${id}`), sql`, `)}]::uuid[]) THEN ${recipeIngredients.ingredientId} END)`)
+      ) as any;
+      break;
+    case 'relevance':
+    default:
+      // Sort by match count (most matches first)
+      query = query.orderBy(
+        desc(sql`COUNT(DISTINCT CASE WHEN ${recipeIngredients.ingredientId} = ANY(ARRAY[${sql.join(ingredientIds.map((id) => sql`${id}`), sql`, `)}]::uuid[]) THEN ${recipeIngredients.ingredientId} END)`)
+      ) as any;
+      break;
+  }
+
+  // Apply pagination
+  query = query.limit(limit).offset(offset) as any;
+
+  // Execute query
+  const results = await query;
+
+  // If excluding ingredients, filter those out
+  let filteredResults = results;
+  if (excludeIngredients.length > 0) {
+    // Get recipes that contain excluded ingredients
+    const recipesWithExcluded = await db
+      .select({ recipeId: recipeIngredients.recipeId })
+      .from(recipeIngredients)
+      .where(
+        and(
+          inArray(
+            recipeIngredients.recipeId,
+            results.map((r) => r.id)
+          ),
+          inArray(recipeIngredients.ingredientId, excludeIngredients)
+        )
+      )
+      .groupBy(recipeIngredients.recipeId);
+
+    const excludedRecipeIds = new Set(
+      recipesWithExcluded.map((r) => r.recipeId)
+    );
+    filteredResults = results.filter((r) => !excludedRecipeIds.has(r.id));
+  }
+
+  // Calculate total ingredients and match percentage for each recipe
+  const withMatchPercentage = await Promise.all(
+    filteredResults.map(async (result) => {
+      const [totalCount] = await db
+        .select({ count: sql<number>`COUNT(*)` })
+        .from(recipeIngredients)
+        .where(eq(recipeIngredients.recipeId, result.id));
+
+      const totalIngredients = Number(totalCount?.count ?? 0);
+      const matchCount = Number(result.matchCount ?? 0);
+      const matchPercentage =
+        totalIngredients > 0
+          ? Math.round((matchCount / totalIngredients) * 100)
+          : 0;
+
+      return {
+        ...result,
+        matchCount,
+        totalIngredients,
+        matchPercentage,
+      };
+    })
+  );
+
+  return withMatchPercentage;
+}
