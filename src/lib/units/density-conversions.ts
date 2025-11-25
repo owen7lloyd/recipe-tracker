@@ -388,43 +388,28 @@ export function convertVolumToWeight(
   // Get density for this ingredient
   const lookupResult = getDensityForIngredient(ingredientName, category);
   if (lookupResult === null) {
-    console.log(`[DENSITY] No density data available for "${ingredientName}"`);
     return null;
   }
 
   const { density, isExactMatch, isPartialMatch, isDefaultMatch } =
     lookupResult;
 
-  console.log(
-    `[DENSITY] Using density ${density} g/ml for "${ingredientName}" (exact: ${isExactMatch}, partial: ${isPartialMatch}, default: ${isDefaultMatch})`
-  );
-
   // First convert volume to ml
   const volumeToMl = getVolumeToMlConversion(fromUnit);
   if (volumeToMl === null) {
-    console.log(`[DENSITY] ${fromUnit} is not a volume unit`);
     return null;
   }
 
   const quantityInMl = quantity * volumeToMl;
   const quantityInGrams = quantityInMl * density;
 
-  console.log(
-    `[DENSITY] Conversion: ${quantity} ${fromUnit} → ${quantityInMl} ml → ${quantityInGrams} g`
-  );
-
   // Now convert grams to target weight unit
   const gramsToTarget = getGramsToWeightConversion(toUnit);
   if (gramsToTarget === null) {
-    console.log(`[DENSITY] ${toUnit} is not a weight unit`);
     return null;
   }
 
   const result = quantityInGrams * gramsToTarget;
-
-  console.log(
-    `[DENSITY] Final result: ${quantity} ${fromUnit} = ${result} ${toUnit}`
-  );
 
   return {
     value: result,
@@ -457,43 +442,28 @@ export function convertWeightToVolume(
   // Get density for this ingredient
   const lookupResult = getDensityForIngredient(ingredientName, category);
   if (lookupResult === null) {
-    console.log(`[DENSITY] No density data available for "${ingredientName}"`);
     return null;
   }
 
   const { density, isExactMatch, isPartialMatch, isDefaultMatch } =
     lookupResult;
 
-  console.log(
-    `[DENSITY] Using density ${density} g/ml for "${ingredientName}" (exact: ${isExactMatch}, partial: ${isPartialMatch}, default: ${isDefaultMatch})`
-  );
-
   // First convert weight to grams
   const weightToGrams = getWeightToGramsConversion(fromUnit);
   if (weightToGrams === null) {
-    console.log(`[DENSITY] ${fromUnit} is not a weight unit`);
     return null;
   }
 
   const quantityInGrams = quantity * weightToGrams;
   const quantityInMl = quantityInGrams / density;
 
-  console.log(
-    `[DENSITY] Conversion: ${quantity} ${fromUnit} → ${quantityInGrams} g → ${quantityInMl} ml`
-  );
-
   // Now convert ml to target volume unit
   const mlToTarget = getMlToVolumeConversion(toUnit);
   if (mlToTarget === null) {
-    console.log(`[DENSITY] ${toUnit} is not a volume unit`);
     return null;
   }
 
   const result = quantityInMl * mlToTarget;
-
-  console.log(
-    `[DENSITY] Final result: ${quantity} ${fromUnit} = ${result} ${toUnit}`
-  );
 
   return {
     value: result,
