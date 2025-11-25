@@ -123,7 +123,7 @@ export function RatingPromptModal({
                   onClick={() => setRating(star)}
                   onMouseEnter={() => setHoveredRating(star)}
                   onMouseLeave={() => setHoveredRating(0)}
-                  className="transition-transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-[#d4a574] focus:ring-offset-2 rounded-full"
+                  className="transition-transform hover:scale-110 focus:outline-none"
                   type="button"
                   disabled={isSubmitting}
                 >
@@ -139,13 +139,19 @@ export function RatingPromptModal({
               ))}
             </div>
 
-            {/* Rating Display */}
-            {(rating > 0 || hoveredRating > 0) && (
+            {/* Rating Display - fixed height to prevent jumping */}
+            <div className="h-6 flex items-center justify-center">
               <p className="text-center text-sm text-[#6b6250]">
-                {ratingEmojis[(hoveredRating || rating) - 1]}{' '}
-                {ratingLabels[(hoveredRating || rating) - 1]}
+                {(rating > 0 || hoveredRating > 0) ? (
+                  <>
+                    {ratingEmojis[(hoveredRating || rating) - 1]}{' '}
+                    {ratingLabels[(hoveredRating || rating) - 1]}
+                  </>
+                ) : (
+                  <span className="text-gray-400">Select a rating</span>
+                )}
               </p>
-            )}
+            </div>
           </div>
 
           {/* Comment Field */}

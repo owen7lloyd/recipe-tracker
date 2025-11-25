@@ -12,9 +12,12 @@ const ratingSchema = z.object({
 
 export async function POST(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Await params as it's now a Promise in Next.js 15
+    const { id } = await params;
+
     // 1. Authentication
     const session = await auth();
     if (!session?.user?.id) {
@@ -39,7 +42,7 @@ export async function POST(
       .select()
       .from(recipes)
       .where(
-        and(eq(recipes.id, params.id), eq(recipes.householdId, householdId))
+        and(eq(recipes.id, id), eq(recipes.householdId, householdId))
       )
       .limit(1);
 
@@ -56,7 +59,7 @@ export async function POST(
       .from(recipeRatings)
       .where(
         and(
-          eq(recipeRatings.recipeId, params.id),
+          eq(recipeRatings.recipeId, id),
           eq(recipeRatings.userId, session.user.id)
         )
       )
@@ -76,7 +79,7 @@ export async function POST(
     } else {
       // Create new rating
       await db.insert(recipeRatings).values({
-        recipeId: params.id,
+        recipeId: id,
         userId: session.user.id,
         householdId,
         rating,
@@ -92,7 +95,7 @@ export async function POST(
         count: sql<number>`COUNT(*)::int`,
       })
       .from(recipeRatings)
-      .where(eq(recipeRatings.recipeId, params.id));
+      .where(eq(recipeRatings.recipeId, id));
 
     const avgRating = ratingStats?.avgRating ?? null;
     const ratingCount = ratingStats?.count ?? 0;
@@ -105,7 +108,7 @@ export async function POST(
         ratingCount,
         updatedAt: new Date(),
       })
-      .where(eq(recipes.id, params.id));
+      .where(eq(recipes.id, id));
 
     // 8. Return response
     return NextResponse.json({
@@ -133,9 +136,12 @@ export async function POST(
 // GET endpoint to fetch user's rating for a recipe
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Await params as it's now a Promise in Next.js 15
+    const { id } = await params;
+
     // 1. Authentication
     const session = await auth();
     if (!session?.user?.id) {
@@ -157,7 +163,7 @@ export async function GET(
       .from(recipeRatings)
       .where(
         and(
-          eq(recipeRatings.recipeId, params.id),
+          eq(recipeRatings.recipeId, id),
           eq(recipeRatings.userId, session.user.id)
         )
       )
