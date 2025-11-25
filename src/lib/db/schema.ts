@@ -234,6 +234,36 @@ export const recipeHistory = pgTable(
   })
 );
 
+// Recipe notes table (for notes added during cooking)
+export const recipeNotes = pgTable(
+  'recipe_notes',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    recipeId: uuid('recipe_id')
+      .notNull()
+      .references(() => recipes.id, { onDelete: 'cascade' }),
+    noteText: text('note_text').notNull(),
+    stepNumber: integer('step_number'),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+    sessionId: uuid('session_id').references(() => recipeHistory.id, {
+      onDelete: 'set null',
+    }),
+  },
+  (table) => ({
+    userRecipeIdx: index('idx_recipe_notes_user_recipe').on(
+      table.userId,
+      table.recipeId
+    ),
+    recipeIdx: index('idx_recipe_notes_recipe').on(table.recipeId),
+    sessionIdx: index('idx_recipe_notes_session').on(table.sessionId),
+    stepIdx: index('idx_recipe_notes_step').on(table.recipeId, table.stepNumber),
+  })
+);
+
 // Grocery lists table
 export const groceryLists = pgTable(
   'grocery_lists',
@@ -343,6 +373,7 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   recipes: many(recipes),
   pantryItems: many(pantryItems),
   groceryLists: many(groceryLists),
+  recipeNotes: many(recipeNotes),
   createdInvites: many(householdInvites, {
     relationName: 'inviteCreator',
   }),
@@ -398,6 +429,8 @@ export const recipesRelations = relations(recipes, ({ one, many }) => ({
     references: [users.id],
   }),
   ingredients: many(recipeIngredients),
+  notes: many(recipeNotes),
+  history: many(recipeHistory),
 }));
 
 export const ingredientsRelations = relations(ingredients, ({ many }) => ({
@@ -490,7 +523,7 @@ export const ingredientSubstitutionsRelations = relations(
   })
 );
 
-export const recipeHistoryRelations = relations(recipeHistory, ({ one }) => ({
+export const recipeHistoryRelations = relations(recipeHistory, ({ one, many }) => ({
   recipe: one(recipes, {
     fields: [recipeHistory.recipeId],
     references: [recipes.id],
@@ -502,6 +535,22 @@ export const recipeHistoryRelations = relations(recipeHistory, ({ one }) => ({
   cookedByUser: one(users, {
     fields: [recipeHistory.cookedBy],
     references: [users.id],
+  }),
+  notes: many(recipeNotes),
+}));
+
+export const recipeNotesRelations = relations(recipeNotes, ({ one }) => ({
+  user: one(users, {
+    fields: [recipeNotes.userId],
+    references: [users.id],
+  }),
+  recipe: one(recipes, {
+    fields: [recipeNotes.recipeId],
+    references: [recipes.id],
+  }),
+  session: one(recipeHistory, {
+    fields: [recipeNotes.sessionId],
+    references: [recipeHistory.id],
   }),
 }));
 

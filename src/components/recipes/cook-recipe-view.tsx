@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ServingScaler } from './serving-scaler';
+import { RecipeTimer } from './recipe-timer';
+import { RecipeNoteInput, type RecipeNote } from './recipe-note';
 import {
   ChefHat,
   Check,
@@ -15,6 +17,8 @@ import {
   Loader2,
   CheckCircle2,
   Clock,
+  Timer,
+  StickyNote,
 } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import {
@@ -26,6 +30,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import type { ScaledRecipe, ScaledIngredient } from '@/lib/recipe-scaling';
+import { detectAllTimers, type StepTimer } from '@/lib/recipe-timer';
 
 interface Ingredient {
   id: string;
@@ -92,6 +97,13 @@ export function CookRecipeView(recipe: CookRecipeViewProps) {
   const [showFinishDialog, setShowFinishDialog] = useState(false);
   const [isCooking, setIsCooking] = useState(false);
 
+  // Timer and notes state
+  const [stepTimers, setStepTimers] = useState<StepTimer[]>([]);
+  const [notes, setNotes] = useState<RecipeNote[]>([]);
+  const [isLoadingNotes, setIsLoadingNotes] = useState(true);
+  const [showNotesForStep, setShowNotesForStep] = useState<number | null>(null);
+  const [showTimersForStep, setShowTimersForStep] = useState<number | null>(null);
+
   // Fetch pantry items
   useEffect(() => {
     fetchPantry();
@@ -105,6 +117,17 @@ export function CookRecipeView(recipe: CookRecipeViewProps) {
       setScaledRecipe(null);
     }
   }, [servings, recipe.servings, recipe.id]);
+
+  // Detect timers in recipe instructions
+  useEffect(() => {
+    const detectedTimers = detectAllTimers(recipe.instructions);
+    setStepTimers(detectedTimers);
+  }, [recipe.instructions]);
+
+  // Fetch notes for this recipe
+  useEffect(() => {
+    fetchNotes();
+  }, [recipe.id]);
 
   const fetchPantry = async () => {
     try {
@@ -145,6 +168,25 @@ export function CookRecipeView(recipe: CookRecipeViewProps) {
       setScaledRecipe(null);
     } finally {
       setIsScaling(false);
+    }
+  };
+
+  const fetchNotes = async () => {
+    try {
+      setIsLoadingNotes(true);
+      const response = await fetch(`/api/recipes/${recipe.id}/notes`);
+      if (!response.ok) throw new Error('Failed to fetch notes');
+      const data = await response.json();
+      setNotes(data.notes || []);
+    } catch (error) {
+      console.error('Error fetching notes:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load notes',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoadingNotes(false);
     }
   };
 
@@ -379,38 +421,101 @@ export function CookRecipeView(recipe: CookRecipeViewProps) {
               <ol className="space-y-4">
                 {recipe.instructions.map((instruction, index) => {
                   const isCompleted = completedSteps.has(index);
+                  const stepTimer = stepTimers.find((st) => st.stepNumber === index);
+                  const hasTimers = stepTimer && stepTimer.timers.length > 0;
+                  const stepNotes = notes.filter((note) => note.stepNumber === index);
+                  const showTimers = showTimersForStep === index;
+                  const showNotes = showNotesForStep === index;
+
                   return (
                     <li
                       key={index}
-                      className={`flex cursor-pointer gap-4 rounded-lg border-2 p-4 transition-all ${
+                      className={`rounded-lg border-2 p-4 transition-all ${
                         isCompleted
                           ? 'border-green-500 bg-green-50 dark:bg-green-950/20'
                           : 'border-slate-200 hover:border-slate-300 dark:border-slate-800 dark:hover:border-slate-700'
                       }`}
-                      onClick={() => toggleStep(index)}
                     >
-                      <div
-                        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full font-semibold transition-all ${
-                          isCompleted
-                            ? 'bg-green-600 text-white'
-                            : 'bg-slate-900 text-white dark:bg-slate-50 dark:text-slate-900'
-                        }`}
-                      >
-                        {isCompleted ? (
-                          <Check className="h-5 w-5" />
-                        ) : (
-                          index + 1
-                        )}
+                      <div className="flex cursor-pointer gap-4" onClick={() => toggleStep(index)}>
+                        <div
+                          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full font-semibold transition-all ${
+                            isCompleted
+                              ? 'bg-green-600 text-white'
+                              : 'bg-slate-900 text-white dark:bg-slate-50 dark:text-slate-900'
+                          }`}
+                        >
+                          {isCompleted ? (
+                            <Check className="h-5 w-5" />
+                          ) : (
+                            index + 1
+                          )}
+                        </div>
+                        <p
+                          className={`flex-1 pt-2 text-sm leading-relaxed ${
+                            isCompleted
+                              ? 'text-slate-500 line-through dark:text-slate-500'
+                              : 'text-slate-900 dark:text-slate-100'
+                          }`}
+                        >
+                          {instruction}
+                        </p>
                       </div>
-                      <p
-                        className={`flex-1 pt-2 text-sm leading-relaxed ${
-                          isCompleted
-                            ? 'text-slate-500 line-through dark:text-slate-500'
-                            : 'text-slate-900 dark:text-slate-100'
-                        }`}
-                      >
-                        {instruction}
-                      </p>
+
+                      {/* Timer and Note buttons */}
+                      <div className="mt-3 flex gap-2">
+                        {hasTimers && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setShowTimersForStep(showTimers ? null : index)}
+                          >
+                            <Timer className="mr-2 h-4 w-4" />
+                            {stepTimer.timers.length} Timer{stepTimer.timers.length > 1 ? 's' : ''}
+                          </Button>
+                        )}
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setShowNotesForStep(showNotes ? null : index)}
+                        >
+                          <StickyNote className="mr-2 h-4 w-4" />
+                          Notes {stepNotes.length > 0 && `(${stepNotes.length})`}
+                        </Button>
+                      </div>
+
+                      {/* Timers */}
+                      {showTimers && hasTimers && (
+                        <div className="mt-4 space-y-3 border-t border-slate-200 pt-4 dark:border-slate-700">
+                          <div className="text-xs font-medium text-slate-600 dark:text-slate-400">
+                            Detected Timers:
+                          </div>
+                          {stepTimer.timers.map((timer, timerIndex) => (
+                            <RecipeTimer
+                              key={timerIndex}
+                              duration={timer.duration}
+                              label={timer.label}
+                              stepNumber={index}
+                              isRange={timer.isRange}
+                              minDuration={timer.minDuration}
+                              maxDuration={timer.maxDuration}
+                            />
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Notes */}
+                      {showNotes && (
+                        <div className="mt-4 border-t border-slate-200 pt-4 dark:border-slate-700">
+                          <RecipeNoteInput
+                            recipeId={recipe.id}
+                            stepNumber={index}
+                            existingNotes={notes}
+                            onNoteAdded={fetchNotes}
+                            onNoteUpdated={fetchNotes}
+                            onNoteDeleted={fetchNotes}
+                          />
+                        </div>
+                      )}
                     </li>
                   );
                 })}

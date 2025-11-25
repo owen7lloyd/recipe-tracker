@@ -15,6 +15,7 @@ import {
   ExternalLink,
   Loader2,
   ChefHat,
+  StickyNote,
 } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import {
@@ -26,7 +27,9 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { ServingScaler } from './serving-scaler';
+import { RecipeNoteInput, type RecipeNote } from './recipe-note';
 import type { ScaledRecipe } from '@/lib/recipe-scaling';
+import { formatDistanceToNow } from 'date-fns';
 
 interface Ingredient {
   id: string;
@@ -67,6 +70,9 @@ export function RecipeDetail(recipe: RecipeDetailProps) {
     RecipeDetailProps | ScaledRecipe
   >(recipe);
   const [isScaling, setIsScaling] = useState(false);
+  const [notes, setNotes] = useState<RecipeNote[]>([]);
+  const [isLoadingNotes, setIsLoadingNotes] = useState(true);
+  const [showNotes, setShowNotes] = useState(false);
 
   const totalTime =
     (recipe.prepTimeMinutes || 0) + (recipe.cookTimeMinutes || 0) || null;
@@ -110,8 +116,38 @@ export function RecipeDetail(recipe: RecipeDetailProps) {
     fetchScaledRecipe();
   }, [currentServings, recipe]);
 
+  // Fetch notes
+  useEffect(() => {
+    const fetchNotes = async () => {
+      try {
+        setIsLoadingNotes(true);
+        const response = await fetch(`/api/recipes/${recipe.id}/notes`);
+        if (!response.ok) throw new Error('Failed to fetch notes');
+        const data = await response.json();
+        setNotes(data.notes || []);
+      } catch (error) {
+        console.error('Error fetching notes:', error);
+      } finally {
+        setIsLoadingNotes(false);
+      }
+    };
+
+    fetchNotes();
+  }, [recipe.id]);
+
   const handleScaleChange = (newServings: number) => {
     setCurrentServings(newServings);
+  };
+
+  const refetchNotes = async () => {
+    try {
+      const response = await fetch(`/api/recipes/${recipe.id}/notes`);
+      if (!response.ok) throw new Error('Failed to fetch notes');
+      const data = await response.json();
+      setNotes(data.notes || []);
+    } catch (error) {
+      console.error('Error fetching notes:', error);
+    }
   };
 
   const handleDelete = async () => {
@@ -370,6 +406,66 @@ export function RecipeDetail(recipe: RecipeDetailProps) {
           </CardContent>
         </Card>
       </div>
+
+      {/* Recipe Notes */}
+      {notes.length > 0 && (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2">
+                <StickyNote className="h-5 w-5" />
+                Your Notes ({notes.length})
+              </CardTitle>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowNotes(!showNotes)}
+              >
+                {showNotes ? 'Hide' : 'Show'}
+              </Button>
+            </div>
+          </CardHeader>
+          {showNotes && (
+            <CardContent>
+              <div className="space-y-4">
+                {isLoadingNotes ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-6 w-6 animate-spin text-slate-400" />
+                  </div>
+                ) : notes.length === 0 ? (
+                  <p className="text-center text-sm text-slate-500">
+                    No notes yet. Add notes while cooking to remember adjustments
+                    and improvements.
+                  </p>
+                ) : (
+                  notes.map((note) => (
+                    <div
+                      key={note.id}
+                      className="rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-900 dark:bg-amber-950/20"
+                    >
+                      <p className="mb-2 text-sm text-slate-700 dark:text-slate-300">
+                        {note.noteText}
+                      </p>
+                      <div className="flex items-center gap-2 text-xs text-slate-500">
+                        <span>
+                          {formatDistanceToNow(new Date(note.createdAt), {
+                            addSuffix: true,
+                          })}
+                        </span>
+                        {note.stepNumber !== null && (
+                          <Badge variant="secondary" className="text-xs">
+                            Step {note.stepNumber + 1}
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </CardContent>
+          )}
+        </Card>
+      )}
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
