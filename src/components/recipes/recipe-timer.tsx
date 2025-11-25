@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
-import { Play, Pause, RotateCcw, Plus, Bell, BellOff } from 'lucide-react';
+import { Play, Pause, RotateCcw, Plus, Minus, Bell, BellOff } from 'lucide-react';
 import { formatTimerDisplay } from '@/lib/recipe-timer';
 import { cn } from '@/lib/utils';
 
@@ -197,12 +197,18 @@ export function RecipeTimer({
   };
 
   const handleAddTime = (seconds: number) => {
-    setState(prev => ({
-      ...prev,
-      remaining: prev.remaining + seconds,
-      duration: prev.duration + seconds,
-      pausedTime: prev.remaining + seconds,
-    }));
+    setState(prev => {
+      // Prevent reducing time below 0
+      const newRemaining = Math.max(0, prev.remaining + seconds);
+      const newDuration = Math.max(0, prev.duration + seconds);
+
+      return {
+        ...prev,
+        remaining: newRemaining,
+        duration: newDuration,
+        pausedTime: newRemaining,
+      };
+    });
   };
 
   const handleSetDuration = (newDuration: number) => {
@@ -313,6 +319,28 @@ export function RecipeTimer({
         <Button size="sm" onClick={handleReset} variant="outline">
           <RotateCcw className="mr-1 h-4 w-4" />
           Reset
+        </Button>
+
+        <Button
+          size="sm"
+          onClick={() => handleAddTime(-60)}
+          variant="outline"
+          title="Subtract 1 minute"
+          disabled={remaining < 60}
+        >
+          <Minus className="mr-1 h-4 w-4" />
+          1m
+        </Button>
+
+        <Button
+          size="sm"
+          onClick={() => handleAddTime(-300)}
+          variant="outline"
+          title="Subtract 5 minutes"
+          disabled={remaining < 300}
+        >
+          <Minus className="mr-1 h-4 w-4" />
+          5m
         </Button>
 
         <Button

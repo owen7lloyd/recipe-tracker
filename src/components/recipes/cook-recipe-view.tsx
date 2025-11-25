@@ -102,8 +102,7 @@ export function CookRecipeView(recipe: CookRecipeViewProps) {
   const [stepTimers, setStepTimers] = useState<StepTimer[]>([]);
   const [notes, setNotes] = useState<RecipeNote[]>([]);
   const [isLoadingNotes, setIsLoadingNotes] = useState(true);
-  const [activeStepPanel, setActiveStepPanel] = useState<number | null>(null);
-  const [activePanelTab, setActivePanelTab] = useState<'timers' | 'notes'>('timers');
+  const [expandedSteps, setExpandedSteps] = useState<Set<number>>(new Set());
 
   // Timer state management (persists across collapse/expand)
   const [timerStates, setTimerStates] = useState<Map<string, TimerState>>(new Map());
@@ -422,25 +421,9 @@ export function CookRecipeView(recipe: CookRecipeViewProps) {
         </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-12">
-        {/* Main cooking area */}
-        <div className={`space-y-6 transition-all ${activeStepPanel !== null ? 'lg:col-span-7' : 'lg:col-span-9'}`}>
-          {/* Serving scaler */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Servings</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ServingScaler
-                originalServings={recipe.servings}
-                currentServings={servings}
-                onScaleChange={setServings}
-                disabled={isScaling}
-              />
-            </CardContent>
-          </Card>
-
-          {/* Instructions */}
+      <div className="grid gap-6 lg:grid-cols-3">
+        {/* Main cooking area - Instructions */}
+        <div className="space-y-6 lg:col-span-2">
           <Card>
             <CardHeader>
               <CardTitle>Instructions</CardTitle>
@@ -452,13 +435,13 @@ export function CookRecipeView(recipe: CookRecipeViewProps) {
                   const stepTimer = stepTimers.find((st) => st.stepNumber === index);
                   const hasTimers = stepTimer && stepTimer.timers.length > 0;
                   const stepNotes = notes.filter((note) => note.stepNumber === index);
-                  const isActive = activeStepPanel === index;
+                  const isExpanded = expandedSteps.has(index);
 
                   return (
                     <li
                       key={index}
                       className={`rounded-lg border-2 p-4 transition-all ${
-                        isActive
+                        isExpanded
                           ? 'border-[#d4a574] bg-amber-50 dark:bg-amber-950/10'
                           : isCompleted
                           ? 'border-green-500 bg-green-50 dark:bg-green-950/20'
@@ -490,43 +473,93 @@ export function CookRecipeView(recipe: CookRecipeViewProps) {
                         </p>
                       </div>
 
-                      {/* Timer and Note buttons */}
+                      {/* Expand/Collapse button */}
                       {(hasTimers || true) && (
-                        <div className="mt-3 flex gap-2">
-                          {hasTimers && (
-                            <Button
-                              size="sm"
-                              variant={isActive && activePanelTab === 'timers' ? 'default' : 'outline'}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                if (isActive && activePanelTab === 'timers') {
-                                  setActiveStepPanel(null);
-                                } else {
-                                  setActiveStepPanel(index);
-                                  setActivePanelTab('timers');
-                                }
-                              }}
-                            >
-                              <Timer className="mr-2 h-4 w-4" />
-                              {stepTimer.timers.length} Timer{stepTimer.timers.length > 1 ? 's' : ''}
-                            </Button>
-                          )}
+                        <div className="mt-3">
                           <Button
                             size="sm"
-                            variant={isActive && activePanelTab === 'notes' ? 'default' : 'outline'}
+                            variant={isExpanded ? 'default' : 'outline'}
                             onClick={(e) => {
                               e.stopPropagation();
-                              if (isActive && activePanelTab === 'notes') {
-                                setActiveStepPanel(null);
+                              const newExpanded = new Set(expandedSteps);
+                              if (isExpanded) {
+                                newExpanded.delete(index);
                               } else {
-                                setActiveStepPanel(index);
-                                setActivePanelTab('notes');
+                                newExpanded.add(index);
                               }
+                              setExpandedSteps(newExpanded);
                             }}
                           >
-                            <StickyNote className="mr-2 h-4 w-4" />
-                            Notes {stepNotes.length > 0 && `(${stepNotes.length})`}
+                            {isExpanded ? (
+                              <>
+                                <X className="mr-2 h-4 w-4" />
+                                Hide Details
+                              </>
+                            ) : (
+                              <>
+                                {hasTimers && (
+                                  <>
+                                    <Timer className="mr-2 h-4 w-4" />
+                                    {stepTimer.timers.length} Timer{stepTimer.timers.length > 1 ? 's' : ''}
+                                    {' • '}
+                                  </>
+                                )}
+                                <StickyNote className="mr-2 h-4 w-4" />
+                                Notes {stepNotes.length > 0 && `(${stepNotes.length})`}
+                              </>
+                            )}
                           </Button>
+                        </div>
+                      )}
+
+                      {/* Expanded section - Timers and Notes side by side */}
+                      {isExpanded && (
+                        <div className="mt-4 grid gap-4 border-t border-slate-200 pt-4 dark:border-slate-700 lg:grid-cols-2">
+                          {/* Timers column */}
+                          <div>
+                            <h4 className="mb-3 text-sm font-semibold text-slate-900 dark:text-slate-100">
+                              Timers
+                            </h4>
+                            {hasTimers ? (
+                              <div className="space-y-3">
+                                {stepTimer.timers.map((timer, timerIndex) => {
+                                  const timerId = `step-${index}-timer-${timerIndex}`;
+                                  const timerState = getTimerState(timerId, timer.duration);
+                                  return (
+                                    <RecipeTimer
+                                      key={timerId}
+                                      timerId={timerId}
+                                      duration={timer.duration}
+                                      label={timer.label}
+                                      stepNumber={index}
+                                      isRange={timer.isRange}
+                                      minDuration={timer.minDuration}
+                                      maxDuration={timer.maxDuration}
+                                      timerState={timerState}
+                                      onStateChange={updateTimerState}
+                                    />
+                                  );
+                                })}
+                              </div>
+                            ) : (
+                              <p className="text-sm text-slate-500">No timers detected</p>
+                            )}
+                          </div>
+
+                          {/* Notes column */}
+                          <div>
+                            <h4 className="mb-3 text-sm font-semibold text-slate-900 dark:text-slate-100">
+                              Notes
+                            </h4>
+                            <RecipeNoteInput
+                              recipeId={recipe.id}
+                              stepNumber={index}
+                              existingNotes={notes}
+                              onNoteAdded={fetchNotes}
+                              onNoteUpdated={fetchNotes}
+                              onNoteDeleted={fetchNotes}
+                            />
+                          </div>
                         </div>
                       )}
                     </li>
@@ -537,226 +570,172 @@ export function CookRecipeView(recipe: CookRecipeViewProps) {
           </Card>
         </div>
 
-        {/* Side Panel - Timers and Notes */}
-        {activeStepPanel !== null && (
-          <div className="space-y-6 lg:col-span-5">
-            <Card className="sticky top-4">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle>Step {activeStepPanel + 1}</CardTitle>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setActiveStepPanel(null)}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {activePanelTab === 'timers' && (() => {
-                  const stepTimer = stepTimers.find((st) => st.stepNumber === activeStepPanel);
-                  if (!stepTimer || stepTimer.timers.length === 0) {
-                    return (
-                      <p className="text-center text-sm text-slate-500">
-                        No timers detected for this step
-                      </p>
-                    );
-                  }
-                  return (
-                    <div className="space-y-4">
-                      {stepTimer.timers.map((timer, timerIndex) => {
-                        const timerId = `step-${activeStepPanel}-timer-${timerIndex}`;
-                        const timerState = getTimerState(timerId, timer.duration);
-                        return (
-                          <RecipeTimer
-                            key={timerId}
-                            timerId={timerId}
-                            duration={timer.duration}
-                            label={timer.label}
-                            stepNumber={activeStepPanel}
-                            isRange={timer.isRange}
-                            minDuration={timer.minDuration}
-                            maxDuration={timer.maxDuration}
-                            timerState={timerState}
-                            onStateChange={updateTimerState}
-                          />
-                        );
-                      })}
-                    </div>
-                  );
-                })()}
-
-                {activePanelTab === 'notes' && (
-                  <RecipeNoteInput
-                    recipeId={recipe.id}
-                    stepNumber={activeStepPanel}
-                    existingNotes={notes}
-                    onNoteAdded={fetchNotes}
-                    onNoteUpdated={fetchNotes}
-                    onNoteDeleted={fetchNotes}
-                  />
-                )}
-              </CardContent>
-            </Card>
-          </div>
-        )}
-
-        {/* Sidebar - Ingredients */}
-        <div className={`space-y-6 ${activeStepPanel !== null ? 'lg:col-span-12 lg:mt-6' : 'lg:col-span-3'}`}>
-          <Card>
+        {/* Unified Sidebar - Servings, Ingredients, and Pantry */}
+        <div className="lg:col-span-1">
+          <Card className="sticky top-4">
             <CardHeader>
-              <CardTitle>Ingredients</CardTitle>
+              <CardTitle>Cooking Details</CardTitle>
             </CardHeader>
-            <CardContent>
-              {isLoadingPantry || isScaling ? (
-                <div className="flex items-center justify-center py-8">
-                  <Loader2 className="h-6 w-6 animate-spin text-slate-400" />
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {activeRecipe.ingredients.map((ing) => {
-                    const displayQty =
-                      'displayQuantity' in ing &&
-                      (ing as ScaledIngredient).displayQuantity
-                        ? (ing as ScaledIngredient).displayQuantity
-                        : ing.quantity;
+            <CardContent className="space-y-6">
+              {/* Servings subsection */}
+              <div>
+                <h3 className="mb-2 text-sm font-semibold text-slate-900 dark:text-slate-100">
+                  Servings
+                </h3>
+                <ServingScaler
+                  originalServings={recipe.servings}
+                  currentServings={servings}
+                  onScaleChange={setServings}
+                  disabled={isScaling}
+                />
+              </div>
 
-                    const adjustment = ingredientAdjustments.get(
-                      ing.ingredientId
-                    );
-                    const finalQty: string =
-                      adjustment !== undefined
-                        ? adjustment.toFixed(2).replace(/\.?0+$/, '')
-                        : String(displayQty || '');
+              {/* Ingredients subsection */}
+              <div className="border-t border-slate-200 pt-4 dark:border-slate-700">
+                <h3 className="mb-3 text-sm font-semibold text-slate-900 dark:text-slate-100">
+                  Ingredients
+                </h3>
+                {isLoadingPantry || isScaling ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-6 w-6 animate-spin text-slate-400" />
+                  </div>
+                ) : (
+                  <div className="max-h-[300px] space-y-2 overflow-y-auto">
+                    {activeRecipe.ingredients.map((ing) => {
+                      const displayQty =
+                        'displayQuantity' in ing &&
+                        (ing as ScaledIngredient).displayQuantity
+                          ? (ing as ScaledIngredient).displayQuantity
+                          : ing.quantity;
 
-                    return (
-                      <div
-                        key={ing.id}
-                        className="flex items-start justify-between gap-2 rounded-lg border border-slate-200 p-3 dark:border-slate-800"
-                      >
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-medium">
-                            {ing.ingredientName || 'Unknown ingredient'}
-                          </p>
-                          <div className="text-xs text-slate-600 dark:text-slate-400">
-                            {finalQty}
-                            {ing.unit ? ` ${ing.unit}` : ''}
-                            {adjustment !== undefined && (
-                              <Badge
-                                variant="secondary"
-                                className="ml-2 text-xs"
-                              >
-                                Adjusted
-                              </Badge>
+                      const adjustment = ingredientAdjustments.get(
+                        ing.ingredientId
+                      );
+                      const finalQty: string =
+                        adjustment !== undefined
+                          ? adjustment.toFixed(2).replace(/\.?0+$/, '')
+                          : String(displayQty || '');
+
+                      return (
+                        <div
+                          key={ing.id}
+                          className="rounded-lg border border-slate-200 p-2 text-xs dark:border-slate-800"
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate font-medium">
+                                {ing.ingredientName || 'Unknown ingredient'}
+                              </p>
+                              <div className="text-slate-600 dark:text-slate-400">
+                                {finalQty}
+                                {ing.unit ? ` ${ing.unit}` : ''}
+                              </div>
+                              {ing.notes && (
+                                <p className="mt-1 text-slate-500">
+                                  {ing.notes}
+                                </p>
+                              )}
+                            </div>
+
+                            {/* Quantity adjustment controls */}
+                            {displayQty && !ing.optional && (
+                              <div className="flex items-center gap-1">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-6 w-6 p-0"
+                                  onClick={() => {
+                                    const current =
+                                      adjustment !== undefined
+                                        ? adjustment
+                                        : parseFloat(displayQty || '0');
+                                    adjustIngredientQuantity(
+                                      ing.ingredientId,
+                                      Math.max(0, current - 0.5)
+                                    );
+                                  }}
+                                >
+                                  -
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-6 w-6 p-0"
+                                  onClick={() => {
+                                    const current =
+                                      adjustment !== undefined
+                                        ? adjustment
+                                        : parseFloat(displayQty || '0');
+                                    adjustIngredientQuantity(
+                                      ing.ingredientId,
+                                      current + 0.5
+                                    );
+                                  }}
+                                >
+                                  +
+                                </Button>
+                              </div>
                             )}
                           </div>
-                          {ing.notes && (
-                            <p className="mt-1 text-xs text-slate-500">
-                              {ing.notes}
-                            </p>
-                          )}
                         </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
 
-                        {/* Quantity adjustment controls */}
-                        {displayQty && !ing.optional && (
-                          <div className="flex items-center gap-1">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="h-7 w-7 p-0"
-                              onClick={() => {
-                                const current =
-                                  adjustment !== undefined
-                                    ? adjustment
-                                    : parseFloat(displayQty || '0');
-                                adjustIngredientQuantity(
-                                  ing.ingredientId,
-                                  Math.max(0, current - 0.5)
-                                );
-                              }}
-                            >
-                              -
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="h-7 w-7 p-0"
-                              onClick={() => {
-                                const current =
-                                  adjustment !== undefined
-                                    ? adjustment
-                                    : parseFloat(displayQty || '0');
-                                adjustIngredientQuantity(
-                                  ing.ingredientId,
-                                  current + 0.5
-                                );
-                              }}
-                            >
-                              +
-                            </Button>
-                          </div>
+              {/* Pantry Impact subsection */}
+              <div className="border-t border-slate-200 pt-4 dark:border-slate-700">
+                <h3 className="mb-3 text-sm font-semibold text-slate-900 dark:text-slate-100">
+                  Pantry Impact
+                </h3>
+                {(hasInsufficient || hasNotInPantry) && (
+                  <div className="mb-3 rounded-lg border border-amber-200 bg-amber-50 p-2 dark:border-amber-900 dark:bg-amber-950">
+                    <div className="flex gap-2">
+                      <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0 text-amber-600 dark:text-amber-500" />
+                      <div className="text-xs text-amber-900 dark:text-amber-100">
+                        {hasInsufficient && (
+                          <p>Some items have insufficient quantities.</p>
+                        )}
+                        {hasNotInPantry && (
+                          <p>Some items not in pantry will be skipped.</p>
                         )}
                       </div>
-                    );
-                  })}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Pantry impact preview */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Pantry Impact</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {(hasInsufficient || hasNotInPantry) && (
-                <div className="mb-3 rounded-lg border border-amber-200 bg-amber-50 p-3 dark:border-amber-900 dark:bg-amber-950">
-                  <div className="flex gap-2">
-                    <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-500" />
-                    <div className="text-sm text-amber-900 dark:text-amber-100">
-                      {hasInsufficient && (
-                        <p>Some items have insufficient quantities.</p>
-                      )}
-                      {hasNotInPantry && (
-                        <p>Some items not in pantry will be skipped.</p>
-                      )}
                     </div>
                   </div>
-                </div>
-              )}
+                )}
 
-              <div className="max-h-[400px] space-y-2 overflow-y-auto">
-                {deductions.map((ing) => (
-                  <div
-                    key={ing.id}
-                    className="rounded border border-slate-200 p-2 text-xs dark:border-slate-800"
-                  >
-                    <p className="truncate font-medium">{ing.ingredientName}</p>
-                    {ing.notInPantry ? (
-                      <p className="text-amber-600 dark:text-amber-500">
-                        Not in pantry - will skip
-                      </p>
-                    ) : ing.notTracked ? (
-                      <p className="text-slate-500">Quantity not tracked</p>
-                    ) : ing.quantityNeeded === null ? (
-                      <p className="text-slate-500">Non-numeric quantity</p>
-                    ) : (
-                      <div className="mt-1 flex items-center justify-between">
-                        <span className="text-slate-600 dark:text-slate-400">
-                          {ing.currentQty?.toFixed(2)} →{' '}
-                          {ing.remainingQty?.toFixed(2)} {ing.unit}
-                        </span>
-                        {ing.willBeRemoved && (
-                          <Badge variant="destructive" className="text-xs">
-                            Remove
-                          </Badge>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                ))}
+                <div className="max-h-[250px] space-y-2 overflow-y-auto">
+                  {deductions.map((ing) => (
+                    <div
+                      key={ing.id}
+                      className="rounded border border-slate-200 p-2 text-xs dark:border-slate-800"
+                    >
+                      <p className="truncate font-medium">{ing.ingredientName}</p>
+                      {ing.notInPantry ? (
+                        <p className="text-amber-600 dark:text-amber-500">
+                          Not in pantry - will skip
+                        </p>
+                      ) : ing.notTracked ? (
+                        <p className="text-slate-500">Quantity not tracked</p>
+                      ) : ing.quantityNeeded === null ? (
+                        <p className="text-slate-500">Non-numeric quantity</p>
+                      ) : (
+                        <div className="mt-1 flex items-center justify-between">
+                          <span className="text-slate-600 dark:text-slate-400">
+                            {ing.currentQty?.toFixed(2)} →{' '}
+                            {ing.remainingQty?.toFixed(2)} {ing.unit}
+                          </span>
+                          {ing.willBeRemoved && (
+                            <Badge variant="destructive" className="text-xs">
+                              Remove
+                            </Badge>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
               </div>
             </CardContent>
           </Card>
