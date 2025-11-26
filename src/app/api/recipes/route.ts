@@ -32,7 +32,13 @@ export async function GET(request: Request) {
     const ingredientIds = ingredientsParam
       ? ingredientsParam.split(',').filter(Boolean)
       : undefined;
-    const sortBy = (searchParams.get('sortBy') as string) || 'newest';
+    const sortByParam = searchParams.get('sortBy');
+    const sortBy = (
+      sortByParam &&
+      ['newest', 'oldest', 'rating', 'prepTime'].includes(sortByParam)
+        ? sortByParam
+        : 'newest'
+    ) as 'newest' | 'oldest' | 'rating' | 'prepTime';
     const page = parseInt(searchParams.get('page') || '1', 10);
     const limit = parseInt(searchParams.get('limit') || '20', 10);
 
