@@ -41,16 +41,11 @@ export async function POST(
     const [recipe] = await db
       .select()
       .from(recipes)
-      .where(
-        and(eq(recipes.id, id), eq(recipes.householdId, householdId))
-      )
+      .where(and(eq(recipes.id, id), eq(recipes.householdId, householdId)))
       .limit(1);
 
     if (!recipe) {
-      return NextResponse.json(
-        { error: 'Recipe not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Recipe not found' }, { status: 404 });
     }
 
     // 5. Check if user has already rated
@@ -121,7 +116,7 @@ export async function POST(
     // 9. Error handling
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: 'Validation failed', details: error.errors },
+        { error: 'Validation failed', details: error.issues },
         { status: 400 }
       );
     }
