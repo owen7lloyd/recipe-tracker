@@ -98,27 +98,28 @@ export function GroceryListItem({
 
         {isEditing ? (
           <div className="mt-2 flex flex-col gap-2">
-            <div className="flex items-center gap-2">
+            <div className="grid grid-cols-12 gap-2">
               <Input
                 type="number"
                 value={editQuantity}
                 onChange={(e) => setEditQuantity(parseFloat(e.target.value))}
-                className="w-24"
+                className="col-span-3"
                 step="0.01"
                 placeholder="qty"
               />
-              <SmartUnitSelector
-                value={editUnit}
-                onChange={setEditUnit}
-                ingredientCategory={item.ingredient.category}
-                className="w-40"
-              />
+              <div className="col-span-5">
+                <SmartUnitSelector
+                  value={editUnit}
+                  onChange={setEditUnit}
+                  ingredientCategory={item.ingredient.category}
+                />
+              </div>
               <Input
                 type="text"
                 value={editStore}
                 onChange={(e) => setEditStore(e.target.value)}
-                className="w-40"
-                placeholder="store (optional)"
+                className="col-span-4"
+                placeholder="store"
               />
             </div>
             <div className="flex gap-1">
