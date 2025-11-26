@@ -34,6 +34,8 @@ A full-stack Next.js application for household recipe management, pantry trackin
 - **Household Sharing**: Multi-user households with invite system
 - **Real-time Sync**: Live updates for grocery lists (optional Supabase integration)
 - **Public Sharing**: Share grocery lists via time-limited tokens
+- **Recipe Step Timers**: Automatic detection and interactive timers for cooking steps
+- **Recipe Notes**: Add notes during cooking to track modifications and improvements
 
 ### Architecture Principles
 - **Multi-tenancy**: All data scoped to households
@@ -222,6 +224,7 @@ All UI components have been updated to use the organic garden aesthetic:
     /hooks                      # Custom React hooks
     recipe-matching.ts          # "What Can I Cook?" logic
     recipe-scaling.ts           # Scale servings
+    recipe-timer.ts             # Timer detection & formatting
     grocery-list-generator.ts   # Generate lists from recipes
     substitution-service.ts     # Ingredient substitutions
     utils.ts                    # Utility functions (cn, etc.)
@@ -350,6 +353,18 @@ householdId: uuid (FK -> households.id, CASCADE)
 cookedBy: uuid (FK -> users.id)
 servings: integer
 cookedAt: timestamp (default now)
+```
+
+#### **recipeNotes**
+```typescript
+id: uuid (PK)
+userId: uuid (FK -> users.id, CASCADE)
+recipeId: uuid (FK -> recipes.id, CASCADE)
+noteText: text - note content
+stepNumber: integer (nullable) - optional link to recipe step (0-indexed)
+createdAt: timestamp (default now)
+updatedAt: timestamp (default now)
+sessionId: uuid (FK -> recipeHistory.id, SET NULL) - optional link to cooking session
 ```
 
 #### **groceryLists**
@@ -558,6 +573,10 @@ return createErrorResponse(
 - `POST /api/recipes/import` - Import from URL
 - `POST /api/recipes/[id]/cook` - Mark as cooked
 - `POST /api/recipes/[id]/scale` - Scale servings
+- `GET /api/recipes/[id]/notes` - Get all notes for recipe
+- `POST /api/recipes/[id]/notes` - Create note
+- `PATCH /api/notes/[id]` - Update note
+- `DELETE /api/notes/[id]` - Delete note
 
 #### Pantry
 - `GET /api/pantry` - List all items
@@ -599,10 +618,12 @@ pnpm dlx shadcn@latest add <component-name>
 - `recipe-form.tsx` - Create/edit form with validation
 - `recipe-list.tsx` - Paginated list with filters
 - `recipe-card.tsx` - Card view for list display
-- `recipe-detail.tsx` - Full recipe view
+- `recipe-detail.tsx` - Full recipe view with notes history
 - `ingredient-input.tsx` - Autocomplete ingredient selector
-- `cook-recipe-view.tsx` - Step-by-step cooking mode
+- `cook-recipe-view.tsx` - Step-by-step cooking mode with timers and notes
 - `serving-scaler.tsx` - Adjust servings with live updates
+- `recipe-timer.tsx` - Interactive timer component with notifications
+- `recipe-note.tsx` - Note input/display component for cooking sessions
 
 #### Pantry (`/src/components/pantry/`)
 - `pantry-list.tsx` - List with edit/delete
@@ -759,6 +780,71 @@ Import recipes from websites:
 - `schema-org.ts` - JSON-LD Recipe schema parsing
 - `html-parser.ts` - HTML fallback extraction
 - `ingredient-matcher.ts` - Match scraped text to DB ingredients
+
+### Recipe Timer Detection (`/src/lib/recipe-timer.ts`)
+
+**Function:** `detectAllTimers(instructions: string[])`
+
+Automatically detects time durations in recipe steps:
+
+```typescript
+Input:  ["Bake for 25 minutes", "Simmer for 1-2 hours"]
+Output: [
+  {
+    stepNumber: 0,
+    timers: [{
+      duration: 1500, // seconds
+      unit: "minutes",
+      originalText: "25 minutes",
+      isRange: false
+    }]
+  },
+  {
+    stepNumber: 1,
+    timers: [{
+      duration: 5400, // average of 1-2 hours
+      unit: "hours",
+      isRange: true,
+      minDuration: 3600,
+      maxDuration: 7200
+    }]
+  }
+]
+```
+
+**Supported Patterns:**
+- Single times: "25 minutes", "1 hour", "30 secs"
+- Ranges: "15-20 minutes", "1-2 hours", "3 to 5 mins"
+- Compound: "1h 30m", "2h30m"
+- Clock format: "1:30", "0:45"
+
+**Helper Functions:**
+- `formatTimerDisplay(seconds)` - Format as MM:SS or HH:MM:SS
+- `formatDuration(seconds)` - Human-readable (e.g., "1h 30m")
+- `parseTimeString(timeString)` - Parse user input back to seconds
+
+### Recipe Notes
+
+Recipe notes allow users to capture observations, modifications, and improvements while cooking.
+
+**API Endpoints:**
+- `POST /api/recipes/:recipeId/notes` - Create note
+- `GET /api/recipes/:recipeId/notes` - Get all notes for recipe
+- `PATCH /api/notes/:noteId` - Update note
+- `DELETE /api/notes/:noteId` - Delete note
+
+**Features:**
+- Step-specific notes (linked to recipe step index)
+- General recipe notes (no step association)
+- Session tracking (linked to cooking session via `sessionId`)
+- Quick note templates for common observations
+- Edit and delete capabilities
+- Display in cook mode and recipe detail page
+
+**Components:**
+- `RecipeNoteInput` - Form for adding/editing notes
+- Displays historical notes with timestamps
+- Filters notes by step or session
 
 ---
 

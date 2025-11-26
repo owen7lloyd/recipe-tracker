@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ServingScaler } from './serving-scaler';
+import { RecipeTimer } from './recipe-timer';
+import { RecipeNoteInput, type RecipeNote } from './recipe-note';
 import {
   ChefHat,
   Check,
@@ -15,6 +17,8 @@ import {
   Loader2,
   CheckCircle2,
   Clock,
+  Timer,
+  StickyNote,
 } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import {
@@ -27,6 +31,8 @@ import {
 } from '@/components/ui/dialog';
 import { convertBetweenUnits } from '@/lib/units/converter';
 import type { ScaledRecipe, ScaledIngredient } from '@/lib/recipe-scaling';
+import { detectAllTimers, type StepTimer } from '@/lib/recipe-timer';
+import { type TimerState } from './recipe-timer';
 
 interface Ingredient {
   id: string;
@@ -93,6 +99,39 @@ export function CookRecipeView(recipe: CookRecipeViewProps) {
   const [showFinishDialog, setShowFinishDialog] = useState(false);
   const [isCooking, setIsCooking] = useState(false);
 
+  // Timer and notes state
+  const [stepTimers, setStepTimers] = useState<StepTimer[]>([]);
+  const [notes, setNotes] = useState<RecipeNote[]>([]);
+  const [isLoadingNotes, setIsLoadingNotes] = useState(true);
+  const [expandedSteps, setExpandedSteps] = useState<Set<number>>(new Set());
+
+  // Timer state management (persists across collapse/expand)
+  const [timerStates, setTimerStates] = useState<Map<string, TimerState>>(new Map());
+
+  // Get or initialize timer state
+  const getTimerState = (timerId: string, initialDuration: number): TimerState => {
+    if (!timerStates.has(timerId)) {
+      const initialState: TimerState = {
+        duration: initialDuration,
+        remaining: initialDuration,
+        isActive: false,
+        isPaused: false,
+        isComplete: false,
+        soundEnabled: true,
+        startTime: null,
+        pausedTime: initialDuration,
+      };
+      setTimerStates(prev => new Map(prev).set(timerId, initialState));
+      return initialState;
+    }
+    return timerStates.get(timerId)!;
+  };
+
+  // Update timer state
+  const updateTimerState = (timerId: string, newState: TimerState) => {
+    setTimerStates(prev => new Map(prev).set(timerId, newState));
+  };
+
   // Fetch pantry items
   useEffect(() => {
     fetchPantry();
@@ -106,6 +145,17 @@ export function CookRecipeView(recipe: CookRecipeViewProps) {
       setScaledRecipe(null);
     }
   }, [servings, recipe.servings, recipe.id]);
+
+  // Detect timers in recipe instructions
+  useEffect(() => {
+    const detectedTimers = detectAllTimers(recipe.instructions);
+    setStepTimers(detectedTimers);
+  }, [recipe.instructions]);
+
+  // Fetch notes for this recipe
+  useEffect(() => {
+    fetchNotes();
+  }, [recipe.id]);
 
   const fetchPantry = async () => {
     try {
@@ -146,6 +196,25 @@ export function CookRecipeView(recipe: CookRecipeViewProps) {
       setScaledRecipe(null);
     } finally {
       setIsScaling(false);
+    }
+  };
+
+  const fetchNotes = async () => {
+    try {
+      setIsLoadingNotes(true);
+      const response = await fetch(`/api/recipes/${recipe.id}/notes`);
+      if (!response.ok) throw new Error('Failed to fetch notes');
+      const data = await response.json();
+      setNotes(data.notes || []);
+    } catch (error) {
+      console.error('Error fetching notes:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load notes',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoadingNotes(false);
     }
   };
 
@@ -391,24 +460,8 @@ export function CookRecipeView(recipe: CookRecipeViewProps) {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
-        {/* Main cooking area */}
+        {/* Main cooking area - Instructions */}
         <div className="space-y-6 lg:col-span-2">
-          {/* Serving scaler */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Servings</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ServingScaler
-                originalServings={recipe.servings}
-                currentServings={servings}
-                onScaleChange={setServings}
-                disabled={isScaling}
-              />
-            </CardContent>
-          </Card>
-
-          {/* Instructions */}
           <Card>
             <CardHeader>
               <CardTitle>Instructions</CardTitle>
@@ -417,38 +470,136 @@ export function CookRecipeView(recipe: CookRecipeViewProps) {
               <ol className="space-y-4">
                 {recipe.instructions.map((instruction, index) => {
                   const isCompleted = completedSteps.has(index);
+                  const stepTimer = stepTimers.find((st) => st.stepNumber === index);
+                  const hasTimers = stepTimer && stepTimer.timers.length > 0;
+                  const stepNotes = notes.filter((note) => note.stepNumber === index);
+                  const isExpanded = expandedSteps.has(index);
+
                   return (
                     <li
                       key={index}
-                      className={`flex cursor-pointer gap-4 rounded-lg border-2 p-4 transition-all ${
-                        isCompleted
+                      className={`rounded-lg border-2 p-4 transition-all ${
+                        isExpanded
+                          ? 'border-[#d4a574] bg-amber-50 dark:bg-amber-950/10'
+                          : isCompleted
                           ? 'border-green-500 bg-green-50 dark:bg-green-950/20'
                           : 'border-slate-200 hover:border-slate-300 dark:border-slate-800 dark:hover:border-slate-700'
                       }`}
-                      onClick={() => toggleStep(index)}
                     >
-                      <div
-                        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full font-semibold transition-all ${
-                          isCompleted
-                            ? 'bg-green-600 text-white'
-                            : 'bg-slate-900 text-white dark:bg-slate-50 dark:text-slate-900'
-                        }`}
-                      >
-                        {isCompleted ? (
-                          <Check className="h-5 w-5" />
-                        ) : (
-                          index + 1
-                        )}
+                      <div className="flex cursor-pointer gap-4" onClick={() => toggleStep(index)}>
+                        <div
+                          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full font-semibold transition-all ${
+                            isCompleted
+                              ? 'bg-green-600 text-white'
+                              : 'bg-slate-900 text-white dark:bg-slate-50 dark:text-slate-900'
+                          }`}
+                        >
+                          {isCompleted ? (
+                            <Check className="h-5 w-5" />
+                          ) : (
+                            index + 1
+                          )}
+                        </div>
+                        <p
+                          className={`flex-1 pt-2 text-sm leading-relaxed ${
+                            isCompleted
+                              ? 'text-slate-500 line-through dark:text-slate-500'
+                              : 'text-slate-900 dark:text-slate-100'
+                          }`}
+                        >
+                          {instruction}
+                        </p>
                       </div>
-                      <p
-                        className={`flex-1 pt-2 text-sm leading-relaxed ${
-                          isCompleted
-                            ? 'text-slate-500 line-through dark:text-slate-500'
-                            : 'text-slate-900 dark:text-slate-100'
-                        }`}
-                      >
-                        {instruction}
-                      </p>
+
+                      {/* Expand/Collapse button */}
+                      {(hasTimers || true) && (
+                        <div className="mt-3">
+                          <Button
+                            size="sm"
+                            variant={isExpanded ? 'default' : 'outline'}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const newExpanded = new Set(expandedSteps);
+                              if (isExpanded) {
+                                newExpanded.delete(index);
+                              } else {
+                                newExpanded.add(index);
+                              }
+                              setExpandedSteps(newExpanded);
+                            }}
+                          >
+                            {isExpanded ? (
+                              <>
+                                <X className="mr-2 h-4 w-4" />
+                                Hide Details
+                              </>
+                            ) : (
+                              <>
+                                {hasTimers && (
+                                  <>
+                                    <Timer className="mr-2 h-4 w-4" />
+                                    {stepTimer.timers.length} Timer{stepTimer.timers.length > 1 ? 's' : ''}
+                                    {' • '}
+                                  </>
+                                )}
+                                <StickyNote className="mr-2 h-4 w-4" />
+                                Notes {stepNotes.length > 0 && `(${stepNotes.length})`}
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                      )}
+
+                      {/* Expanded section - Timers and Notes side by side */}
+                      {isExpanded && (
+                        <div className="mt-4 grid gap-4 border-t border-slate-200 pt-4 dark:border-slate-700 lg:grid-cols-2">
+                          {/* Timers column */}
+                          <div>
+                            <h4 className="mb-3 text-sm font-semibold text-slate-900 dark:text-slate-100">
+                              Timers
+                            </h4>
+                            {hasTimers ? (
+                              <div className="space-y-3">
+                                {stepTimer.timers.map((timer, timerIndex) => {
+                                  const timerId = `step-${index}-timer-${timerIndex}`;
+                                  const timerState = getTimerState(timerId, timer.duration);
+                                  return (
+                                    <RecipeTimer
+                                      key={timerId}
+                                      timerId={timerId}
+                                      duration={timer.duration}
+                                      label={timer.label}
+                                      stepNumber={index}
+                                      isRange={timer.isRange}
+                                      minDuration={timer.minDuration}
+                                      maxDuration={timer.maxDuration}
+                                      timerState={timerState}
+                                      onStateChange={updateTimerState}
+                                    />
+                                  );
+                                })}
+                              </div>
+                            ) : (
+                              <p className="text-sm text-slate-500">No timers detected</p>
+                            )}
+                          </div>
+
+                          {/* Notes column */}
+                          <div>
+                            <h4 className="mb-3 text-sm font-semibold text-slate-900 dark:text-slate-100">
+                              Notes
+                            </h4>
+                            <RecipeNoteInput
+                              recipeId={recipe.id}
+                              stepNumber={index}
+                              existingNotes={notes}
+                              onNoteAdded={fetchNotes}
+                              onNoteUpdated={fetchNotes}
+                              onNoteDeleted={fetchNotes}
+                            />
+                          </div>
+                        </div>
+                      )}
                     </li>
                   );
                 })}
@@ -457,130 +608,140 @@ export function CookRecipeView(recipe: CookRecipeViewProps) {
           </Card>
         </div>
 
-        {/* Sidebar - Ingredients */}
-        <div className="space-y-6">
-          <Card>
+        {/* Unified Sidebar - Servings, Ingredients, and Pantry */}
+        <div className="lg:col-span-1">
+          <Card className="sticky top-4">
             <CardHeader>
-              <CardTitle>Ingredients</CardTitle>
+              <CardTitle>Cooking Details</CardTitle>
             </CardHeader>
-            <CardContent>
-              {isLoadingPantry || isScaling ? (
-                <div className="flex items-center justify-center py-8">
-                  <Loader2 className="h-6 w-6 animate-spin text-slate-400" />
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {activeRecipe.ingredients.map((ing) => {
-                    const displayQty =
-                      'displayQuantity' in ing &&
-                      (ing as ScaledIngredient).displayQuantity
-                        ? (ing as ScaledIngredient).displayQuantity
-                        : ing.quantity;
+            <CardContent className="space-y-6">
+              {/* Servings subsection */}
+              <div>
+                <h3 className="mb-2 text-sm font-semibold text-slate-900 dark:text-slate-100">
+                  Servings
+                </h3>
+                <ServingScaler
+                  originalServings={recipe.servings}
+                  currentServings={servings}
+                  onScaleChange={setServings}
+                  disabled={isScaling}
+                />
+              </div>
 
-                    const adjustment = ingredientAdjustments.get(
-                      ing.ingredientId
-                    );
-                    const finalQty: string =
-                      adjustment !== undefined
-                        ? adjustment.toFixed(2).replace(/\.?0+$/, '')
-                        : String(displayQty || '');
+              {/* Ingredients subsection */}
+              <div className="border-t border-slate-200 pt-4 dark:border-slate-700">
+                <h3 className="mb-3 text-sm font-semibold text-slate-900 dark:text-slate-100">
+                  Ingredients
+                </h3>
+                {isLoadingPantry || isScaling ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-6 w-6 animate-spin text-slate-400" />
+                  </div>
+                ) : (
+                  <div className="max-h-[300px] space-y-2 overflow-y-auto">
+                    {activeRecipe.ingredients.map((ing) => {
+                      const displayQty =
+                        'displayQuantity' in ing &&
+                        (ing as ScaledIngredient).displayQuantity
+                          ? (ing as ScaledIngredient).displayQuantity
+                          : ing.quantity;
 
-                    return (
-                      <div
-                        key={ing.id}
-                        className="flex items-start justify-between gap-2 rounded-lg border border-slate-200 p-3 dark:border-slate-800"
-                      >
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-medium">
-                            {ing.ingredientName || 'Unknown ingredient'}
-                          </p>
-                          <div className="text-xs text-slate-600 dark:text-slate-400">
-                            {finalQty}
-                            {ing.unit ? ` ${ing.unit}` : ''}
-                            {adjustment !== undefined && (
-                              <Badge
-                                variant="secondary"
-                                className="ml-2 text-xs"
-                              >
-                                Adjusted
-                              </Badge>
+                      const adjustment = ingredientAdjustments.get(
+                        ing.ingredientId
+                      );
+                      const finalQty: string =
+                        adjustment !== undefined
+                          ? adjustment.toFixed(2).replace(/\.?0+$/, '')
+                          : String(displayQty || '');
+
+                      return (
+                        <div
+                          key={ing.id}
+                          className="rounded-lg border border-slate-200 p-2 text-xs dark:border-slate-800"
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate font-medium">
+                                {ing.ingredientName || 'Unknown ingredient'}
+                              </p>
+                              <div className="text-slate-600 dark:text-slate-400">
+                                {finalQty}
+                                {ing.unit ? ` ${ing.unit}` : ''}
+                              </div>
+                              {ing.notes && (
+                                <p className="mt-1 text-slate-500">
+                                  {ing.notes}
+                                </p>
+                              )}
+                            </div>
+
+                            {/* Quantity adjustment controls */}
+                            {displayQty && !ing.optional && (
+                              <div className="flex items-center gap-1">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-6 w-6 p-0"
+                                  onClick={() => {
+                                    const current =
+                                      adjustment !== undefined
+                                        ? adjustment
+                                        : parseFloat(displayQty || '0');
+                                    adjustIngredientQuantity(
+                                      ing.ingredientId,
+                                      Math.max(0, current - 0.5)
+                                    );
+                                  }}
+                                >
+                                  -
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-6 w-6 p-0"
+                                  onClick={() => {
+                                    const current =
+                                      adjustment !== undefined
+                                        ? adjustment
+                                        : parseFloat(displayQty || '0');
+                                    adjustIngredientQuantity(
+                                      ing.ingredientId,
+                                      current + 0.5
+                                    );
+                                  }}
+                                >
+                                  +
+                                </Button>
+                              </div>
                             )}
                           </div>
-                          {ing.notes && (
-                            <p className="mt-1 text-xs text-slate-500">
-                              {ing.notes}
-                            </p>
-                          )}
                         </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
 
-                        {/* Quantity adjustment controls */}
-                        {displayQty && !ing.optional && (
-                          <div className="flex items-center gap-1">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="h-7 w-7 p-0"
-                              onClick={() => {
-                                const current =
-                                  adjustment !== undefined
-                                    ? adjustment
-                                    : parseFloat(displayQty || '0');
-                                adjustIngredientQuantity(
-                                  ing.ingredientId,
-                                  Math.max(0, current - 0.5)
-                                );
-                              }}
-                            >
-                              -
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="h-7 w-7 p-0"
-                              onClick={() => {
-                                const current =
-                                  adjustment !== undefined
-                                    ? adjustment
-                                    : parseFloat(displayQty || '0');
-                                adjustIngredientQuantity(
-                                  ing.ingredientId,
-                                  current + 0.5
-                                );
-                              }}
-                            >
-                              +
-                            </Button>
-                          </div>
+              {/* Pantry Impact subsection */}
+              <div className="border-t border-slate-200 pt-4 dark:border-slate-700">
+                <h3 className="mb-3 text-sm font-semibold text-slate-900 dark:text-slate-100">
+                  Pantry Impact
+                </h3>
+                {(hasInsufficient || hasNotInPantry) && (
+                  <div className="mb-3 rounded-lg border border-amber-200 bg-amber-50 p-2 dark:border-amber-900 dark:bg-amber-950">
+                    <div className="flex gap-2">
+                      <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0 text-amber-600 dark:text-amber-500" />
+                      <div className="text-xs text-amber-900 dark:text-amber-100">
+                        {hasInsufficient && (
+                          <p>Some items have insufficient quantities.</p>
+                        )}
+                        {hasNotInPantry && (
+                          <p>Some items not in pantry will be skipped.</p>
                         )}
                       </div>
-                    );
-                  })}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Pantry impact preview */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Pantry Impact</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {(hasInsufficient || hasNotInPantry) && (
-                <div className="mb-3 rounded-lg border border-amber-200 bg-amber-50 p-3 dark:border-amber-900 dark:bg-amber-950">
-                  <div className="flex gap-2">
-                    <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-500" />
-                    <div className="text-sm text-amber-900 dark:text-amber-100">
-                      {hasInsufficient && (
-                        <p>Some items have insufficient quantities.</p>
-                      )}
-                      {hasNotInPantry && (
-                        <p>Some items not in pantry will be skipped.</p>
-                      )}
                     </div>
                   </div>
-                </div>
-              )}
+                )}
 
               <div className="max-h-[400px] space-y-2 overflow-y-auto">
                 {deductions.map((ing) => (
