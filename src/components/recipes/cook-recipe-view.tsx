@@ -167,6 +167,27 @@ export function CookRecipeView(recipe: CookRecipeViewProps) {
     fetchNotes();
   }, [recipe.id]);
 
+  // Show toast notification when a timer completes while hidden
+  useEffect(() => {
+    if (completedTimerStep) {
+      const timerExpanded = expandedTimers.has(completedTimerStep.stepNumber);
+
+      // If timer was hidden, show a toast to alert the user
+      if (!timerExpanded) {
+        const stepNum = completedTimerStep.stepNumber + 1;
+        const timerLabel = completedTimerStep.label
+          ? `${completedTimerStep.label} (Step ${stepNum})`
+          : `Step ${stepNum}`;
+
+        toast({
+          title: '⏱️ Timer Complete!',
+          description: `${timerLabel} timer has finished. Check on your food!`,
+          duration: 10000, // Show for 10 seconds
+        });
+      }
+    }
+  }, [completedTimerStep, expandedTimers, toast]);
+
   const fetchPantry = async () => {
     try {
       setIsLoadingPantry(true);
@@ -582,55 +603,51 @@ export function CookRecipeView(recipe: CookRecipeViewProps) {
                         </div>
                       </div>
 
-                      {/* Expanded panels - side by side */}
+                      {/* Expanded panels - timers always render to keep counting, notes conditional */}
                       {hasExpandedContent && (
                         <div className="border-t border-slate-200 p-4 dark:border-slate-700">
                           <div className="grid gap-4 lg:grid-cols-2">
-                            {/* Timers panel */}
-                            {timerExpanded && (
-                              <div>
-                                <h4 className="mb-3 text-sm font-semibold text-slate-900 dark:text-slate-100">
-                                  ⏱️ Timers
-                                </h4>
-                                {hasTimers ? (
-                                  <div className="space-y-3">
-                                    {stepTimer.timers.map(
-                                      (timer, timerIndex) => {
-                                        const timerId = `step-${index}-timer-${timerIndex}`;
-                                        const timerState = getTimerState(
-                                          timerId,
-                                          timer.duration
-                                        );
-                                        return (
-                                          <RecipeTimer
-                                            key={timerId}
-                                            timerId={timerId}
-                                            duration={timer.duration}
-                                            label={timer.label}
-                                            stepNumber={index}
-                                            isRange={timer.isRange}
-                                            minDuration={timer.minDuration}
-                                            maxDuration={timer.maxDuration}
-                                            timerState={timerState}
-                                            onStateChange={updateTimerState}
-                                            onComplete={() => {
-                                              setCompletedTimerStep({
-                                                stepNumber: index,
-                                                label: timer.label,
-                                              });
-                                            }}
-                                          />
-                                        );
-                                      }
-                                    )}
-                                  </div>
-                                ) : (
-                                  <p className="text-sm text-slate-500">
-                                    No timers detected
-                                  </p>
-                                )}
-                              </div>
-                            )}
+                            {/* Timers panel - always render even when hidden */}
+                            <div className={timerExpanded ? '' : 'hidden'}>
+                              <h4 className="mb-3 text-sm font-semibold text-slate-900 dark:text-slate-100">
+                                ⏱️ Timers
+                              </h4>
+                              {hasTimers ? (
+                                <div className="space-y-3">
+                                  {stepTimer.timers.map((timer, timerIndex) => {
+                                    const timerId = `step-${index}-timer-${timerIndex}`;
+                                    const timerState = getTimerState(
+                                      timerId,
+                                      timer.duration
+                                    );
+                                    return (
+                                      <RecipeTimer
+                                        key={timerId}
+                                        timerId={timerId}
+                                        duration={timer.duration}
+                                        label={timer.label}
+                                        stepNumber={index}
+                                        isRange={timer.isRange}
+                                        minDuration={timer.minDuration}
+                                        maxDuration={timer.maxDuration}
+                                        timerState={timerState}
+                                        onStateChange={updateTimerState}
+                                        onComplete={() => {
+                                          setCompletedTimerStep({
+                                            stepNumber: index,
+                                            label: timer.label,
+                                          });
+                                        }}
+                                      />
+                                    );
+                                  })}
+                                </div>
+                              ) : (
+                                <p className="text-sm text-slate-500">
+                                  No timers detected
+                                </p>
+                              )}
+                            </div>
 
                             {/* Notes panel */}
                             {notesExpanded && (
