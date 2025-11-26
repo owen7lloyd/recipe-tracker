@@ -97,7 +97,7 @@ export function RatingPromptModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md bg-[#faf8f3] border-[#e8dcc8]">
+      <DialogContent className="max-w-md border-[#e8dcc8] bg-[#faf8f3]">
         <DialogHeader>
           <DialogTitle className="font-merriweather text-2xl text-[#2c2415]">
             How was {recipeName}?
@@ -110,13 +110,13 @@ export function RatingPromptModal({
             <img
               src={imageUrl}
               alt={recipeName}
-              className="w-full h-40 object-cover rounded-xl border border-[#e8dcc8]"
+              className="h-40 w-full rounded-xl border border-[#e8dcc8] object-cover"
             />
           )}
 
           {/* Star Rating */}
           <div className="space-y-2">
-            <div className="flex gap-2 justify-center">
+            <div className="flex justify-center gap-2">
               {[1, 2, 3, 4, 5].map((star) => (
                 <button
                   key={star}
@@ -140,9 +140,9 @@ export function RatingPromptModal({
             </div>
 
             {/* Rating Display - fixed height to prevent jumping */}
-            <div className="h-6 flex items-center justify-center">
+            <div className="flex h-6 items-center justify-center">
               <p className="text-center text-sm text-[#6b6250]">
-                {(rating > 0 || hoveredRating > 0) ? (
+                {rating > 0 || hoveredRating > 0 ? (
                   <>
                     {ratingEmojis[(hoveredRating || rating) - 1]}{' '}
                     {ratingLabels[(hoveredRating || rating) - 1]}
@@ -158,7 +158,7 @@ export function RatingPromptModal({
           <div>
             <label
               htmlFor="rating-comment"
-              className="block text-sm font-medium mb-2 text-[#2c2415]"
+              className="mb-2 block text-sm font-medium text-[#2c2415]"
             >
               What did you think? (optional)
             </label>
@@ -167,7 +167,7 @@ export function RatingPromptModal({
               placeholder="Share your thoughts about this recipe..."
               value={comment}
               onChange={(e) => setComment(e.target.value)}
-              className="w-full resize-none rounded-xl border border-[#e8dcc8] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d4a574] focus:border-transparent transition-all"
+              className="w-full resize-none rounded-xl border border-[#e8dcc8] bg-white px-3 py-2 text-sm transition-all focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#d4a574]"
               rows={3}
               disabled={isSubmitting}
             />
@@ -180,14 +180,14 @@ export function RatingPromptModal({
             variant="outline"
             onClick={handleSkip}
             disabled={isSubmitting}
-            className="border-[#e8dcc8] text-[#2c2415] hover:bg-[#e8dcc8]/20 hover:border-[#d4a574] transition-all"
+            className="border-[#e8dcc8] text-[#2c2415] transition-all hover:border-[#d4a574] hover:bg-[#e8dcc8]/20"
           >
             Skip
           </Button>
           <Button
             onClick={handleSubmit}
             disabled={isSubmitting || rating === 0}
-            className="flex-1 bg-gradient-to-r from-[#2d5016] to-[#3d6b1f] text-white hover:shadow-lg transition-all rounded-full"
+            className="flex-1 rounded-full bg-gradient-to-r from-[#2d5016] to-[#3d6b1f] text-white transition-all hover:shadow-lg"
           >
             {isSubmitting ? 'Saving...' : 'Submit Rating'}
           </Button>

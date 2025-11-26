@@ -35,8 +35,7 @@ export function RecipeCard({
   avgRating,
   ratingCount,
 }: RecipeCardProps) {
-  const totalTime =
-    (prepTimeMinutes || 0) + (cookTimeMinutes || 0) || null;
+  const totalTime = (prepTimeMinutes || 0) + (cookTimeMinutes || 0) || null;
 
   return (
     <Link
@@ -44,7 +43,7 @@ export function RecipeCard({
       className="group block rounded-3xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
       aria-label={`View recipe: ${title}`}
     >
-      <Card className="h-full overflow-hidden transition-all duration-300 hover:-translate-y-2 hover:border-[#d4a574] hover:shadow-xl rounded-3xl">
+      <Card className="h-full overflow-hidden rounded-3xl transition-all duration-300 hover:-translate-y-2 hover:border-[#d4a574] hover:shadow-xl">
         {/* Recipe Image */}
         <div className="aspect-video w-full overflow-hidden bg-[#f0ebe0]">
           <OptimizedImage
@@ -59,13 +58,22 @@ export function RecipeCard({
         <CardContent className="p-6">
           {/* Title and Rating */}
           <div className="mb-3 flex items-start justify-between gap-2">
-            <h3 className="line-clamp-2 font-merriweather text-lg font-bold text-[#2d5016] transition-colors group-hover:text-[#3d6b1f]">
+            <h3 className="font-merriweather line-clamp-2 text-lg font-bold text-[#2d5016] transition-colors group-hover:text-[#3d6b1f]">
               {title}
             </h3>
             {(avgRating || rating) && (
-              <div className="flex items-center gap-1 shrink-0" aria-label={`Rating: ${avgRating || rating} out of 5 stars${ratingCount ? ` (${ratingCount} rating${ratingCount !== 1 ? 's' : ''})` : ''}`}>
-                <Star className="h-4 w-4 fill-[#d4a574] text-[#d4a574]" aria-hidden="true" />
-                <span className="text-sm font-semibold text-[#2c2415]" aria-hidden="true">
+              <div
+                className="flex shrink-0 items-center gap-1"
+                aria-label={`Rating: ${avgRating || rating} out of 5 stars${ratingCount ? ` (${ratingCount} rating${ratingCount !== 1 ? 's' : ''})` : ''}`}
+              >
+                <Star
+                  className="h-4 w-4 fill-[#d4a574] text-[#d4a574]"
+                  aria-hidden="true"
+                />
+                <span
+                  className="text-sm font-semibold text-[#2c2415]"
+                  aria-hidden="true"
+                >
                   {avgRating ? parseFloat(avgRating).toFixed(1) : rating}
                 </span>
                 {ratingCount !== null && ratingCount !== undefined && (
@@ -85,12 +93,24 @@ export function RecipeCard({
           )}
 
           {/* Category and Tags */}
-          <div className="mb-4 flex flex-wrap gap-2" role="list" aria-label="Recipe categories and tags">
-            <Badge className="rounded-full bg-[#6b8e23] text-white capitalize" role="listitem">
+          <div
+            className="mb-4 flex flex-wrap gap-2"
+            role="list"
+            aria-label="Recipe categories and tags"
+          >
+            <Badge
+              className="rounded-full bg-[#6b8e23] capitalize text-white"
+              role="listitem"
+            >
               {category}
             </Badge>
             {tags?.slice(0, 2).map((tag, index) => (
-              <Badge key={index} variant="outline" className="rounded-full border-[#d4a574] text-[#2d5016]" role="listitem">
+              <Badge
+                key={index}
+                variant="outline"
+                className="rounded-full border-[#d4a574] text-[#2d5016]"
+                role="listitem"
+              >
                 {tag}
               </Badge>
             ))}
