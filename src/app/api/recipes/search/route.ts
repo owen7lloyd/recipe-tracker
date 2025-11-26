@@ -69,7 +69,7 @@ export async function GET(request: Request) {
       return NextResponse.json(
         {
           error: 'Invalid query parameters',
-          details: validationResult.error.errors,
+          details: validationResult.error.issues,
         },
         { status: 400 }
       );
@@ -89,16 +89,22 @@ export async function GET(request: Request) {
     }
 
     // Parse excluded ingredient IDs
-    const excludeIngredients = exclude ? exclude.split(',').filter(Boolean) : [];
+    const excludeIngredients = exclude
+      ? exclude.split(',').filter(Boolean)
+      : [];
 
     // Perform search
-    const results = await searchRecipesByIngredients(householdId, ingredientIds, {
-      matchMode,
-      excludeIngredients,
-      limit,
-      offset,
-      sortBy,
-    });
+    const results = await searchRecipesByIngredients(
+      householdId,
+      ingredientIds,
+      {
+        matchMode,
+        excludeIngredients,
+        limit,
+        offset,
+        sortBy,
+      }
+    );
 
     return NextResponse.json(
       {
