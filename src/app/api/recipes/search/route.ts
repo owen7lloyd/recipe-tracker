@@ -49,19 +49,19 @@ export async function GET(request: Request) {
 
     // Build params object, only including non-null values
     const params: Record<string, string> = {};
-    const ingredients = url.searchParams.get('ingredients');
-    const matchMode = url.searchParams.get('matchMode');
-    const exclude = url.searchParams.get('exclude');
-    const limit = url.searchParams.get('limit');
-    const offset = url.searchParams.get('offset');
-    const sortBy = url.searchParams.get('sortBy');
+    const ingredientsParam = url.searchParams.get('ingredients');
+    const matchModeParam = url.searchParams.get('matchMode');
+    const excludeParam = url.searchParams.get('exclude');
+    const limitParam = url.searchParams.get('limit');
+    const offsetParam = url.searchParams.get('offset');
+    const sortByParam = url.searchParams.get('sortBy');
 
-    if (ingredients) params.ingredients = ingredients;
-    if (matchMode) params.matchMode = matchMode;
-    if (exclude) params.exclude = exclude;
-    if (limit) params.limit = limit;
-    if (offset) params.offset = offset;
-    if (sortBy) params.sortBy = sortBy;
+    if (ingredientsParam) params.ingredients = ingredientsParam;
+    if (matchModeParam) params.matchMode = matchModeParam;
+    if (excludeParam) params.exclude = excludeParam;
+    if (limitParam) params.limit = limitParam;
+    if (offsetParam) params.offset = offsetParam;
+    if (sortByParam) params.sortBy = sortByParam;
 
     const validationResult = searchQuerySchema.safeParse(params);
 
