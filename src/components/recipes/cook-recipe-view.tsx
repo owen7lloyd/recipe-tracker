@@ -603,53 +603,47 @@ export function CookRecipeView(recipe: CookRecipeViewProps) {
                         </div>
                       </div>
 
-                      {/* Expanded panels - timers always render to keep counting, notes conditional */}
-                      {hasExpandedContent && (
+                      {/* Timers - always render if they exist to keep countdown running */}
+                      {hasTimers && (
                         <div className="border-t border-slate-200 p-4 dark:border-slate-700">
                           <div className="grid gap-4 lg:grid-cols-2">
-                            {/* Timers panel - always render even when hidden */}
+                            {/* Timers panel - always in DOM, hidden visually when not expanded */}
                             <div className={timerExpanded ? '' : 'hidden'}>
                               <h4 className="mb-3 text-sm font-semibold text-slate-900 dark:text-slate-100">
                                 ⏱️ Timers
                               </h4>
-                              {hasTimers ? (
-                                <div className="space-y-3">
-                                  {stepTimer.timers.map((timer, timerIndex) => {
-                                    const timerId = `step-${index}-timer-${timerIndex}`;
-                                    const timerState = getTimerState(
-                                      timerId,
-                                      timer.duration
-                                    );
-                                    return (
-                                      <RecipeTimer
-                                        key={timerId}
-                                        timerId={timerId}
-                                        duration={timer.duration}
-                                        label={timer.label}
-                                        stepNumber={index}
-                                        isRange={timer.isRange}
-                                        minDuration={timer.minDuration}
-                                        maxDuration={timer.maxDuration}
-                                        timerState={timerState}
-                                        onStateChange={updateTimerState}
-                                        onComplete={() => {
-                                          setCompletedTimerStep({
-                                            stepNumber: index,
-                                            label: timer.label,
-                                          });
-                                        }}
-                                      />
-                                    );
-                                  })}
-                                </div>
-                              ) : (
-                                <p className="text-sm text-slate-500">
-                                  No timers detected
-                                </p>
-                              )}
+                              <div className="space-y-3">
+                                {stepTimer.timers.map((timer, timerIndex) => {
+                                  const timerId = `step-${index}-timer-${timerIndex}`;
+                                  const timerState = getTimerState(
+                                    timerId,
+                                    timer.duration
+                                  );
+                                  return (
+                                    <RecipeTimer
+                                      key={timerId}
+                                      timerId={timerId}
+                                      duration={timer.duration}
+                                      label={timer.label}
+                                      stepNumber={index}
+                                      isRange={timer.isRange}
+                                      minDuration={timer.minDuration}
+                                      maxDuration={timer.maxDuration}
+                                      timerState={timerState}
+                                      onStateChange={updateTimerState}
+                                      onComplete={() => {
+                                        setCompletedTimerStep({
+                                          stepNumber: index,
+                                          label: timer.label,
+                                        });
+                                      }}
+                                    />
+                                  );
+                                })}
+                              </div>
                             </div>
 
-                            {/* Notes panel */}
+                            {/* Notes panel - only render when expanded */}
                             {notesExpanded && (
                               <div>
                                 <h4 className="mb-3 text-sm font-semibold text-slate-900 dark:text-slate-100">
@@ -666,6 +660,23 @@ export function CookRecipeView(recipe: CookRecipeViewProps) {
                               </div>
                             )}
                           </div>
+                        </div>
+                      )}
+
+                      {/* Notes-only panel if no timers but notes are expanded */}
+                      {!hasTimers && notesExpanded && (
+                        <div className="border-t border-slate-200 p-4 dark:border-slate-700">
+                          <h4 className="mb-3 text-sm font-semibold text-slate-900 dark:text-slate-100">
+                            📝 Notes
+                          </h4>
+                          <RecipeNoteInput
+                            recipeId={recipe.id}
+                            stepNumber={index}
+                            existingNotes={notes}
+                            onNoteAdded={fetchNotes}
+                            onNoteUpdated={fetchNotes}
+                            onNoteDeleted={fetchNotes}
+                          />
                         </div>
                       )}
                     </li>
