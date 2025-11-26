@@ -46,14 +46,22 @@ export async function GET(request: Request) {
 
     // Parse and validate query parameters
     const url = new URL(request.url);
-    const params = {
-      ingredients: url.searchParams.get('ingredients'),
-      matchMode: url.searchParams.get('matchMode'),
-      exclude: url.searchParams.get('exclude'),
-      limit: url.searchParams.get('limit'),
-      offset: url.searchParams.get('offset'),
-      sortBy: url.searchParams.get('sortBy'),
-    };
+
+    // Build params object, only including non-null values
+    const params: Record<string, string> = {};
+    const ingredients = url.searchParams.get('ingredients');
+    const matchMode = url.searchParams.get('matchMode');
+    const exclude = url.searchParams.get('exclude');
+    const limit = url.searchParams.get('limit');
+    const offset = url.searchParams.get('offset');
+    const sortBy = url.searchParams.get('sortBy');
+
+    if (ingredients) params.ingredients = ingredients;
+    if (matchMode) params.matchMode = matchMode;
+    if (exclude) params.exclude = exclude;
+    if (limit) params.limit = limit;
+    if (offset) params.offset = offset;
+    if (sortBy) params.sortBy = sortBy;
 
     const validationResult = searchQuerySchema.safeParse(params);
 
