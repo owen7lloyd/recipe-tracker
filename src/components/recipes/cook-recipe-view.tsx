@@ -98,6 +98,10 @@ export function CookRecipeView(recipe: CookRecipeViewProps) {
   // Modal state
   const [showFinishDialog, setShowFinishDialog] = useState(false);
   const [isCooking, setIsCooking] = useState(false);
+  const [completedTimerStep, setCompletedTimerStep] = useState<{
+    stepNumber: number;
+    label?: string;
+  } | null>(null);
 
   // Timer and notes state
   const [stepTimers, setStepTimers] = useState<StepTimer[]>([]);
@@ -609,6 +613,12 @@ export function CookRecipeView(recipe: CookRecipeViewProps) {
                                             maxDuration={timer.maxDuration}
                                             timerState={timerState}
                                             onStateChange={updateTimerState}
+                                            onComplete={() => {
+                                              setCompletedTimerStep({
+                                                stepNumber: index,
+                                                label: timer.label,
+                                              });
+                                            }}
                                           />
                                         );
                                       }
@@ -842,6 +852,44 @@ export function CookRecipeView(recipe: CookRecipeViewProps) {
           </Card>
         </div>
       </div>
+
+      {/* Timer completion dialog */}
+      <Dialog
+        open={!!completedTimerStep}
+        onOpenChange={() => setCompletedTimerStep(null)}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-xl">
+              <span>⏱️</span>
+              Timer Complete!
+            </DialogTitle>
+            <DialogDescription>
+              {completedTimerStep?.label
+                ? `${completedTimerStep.label} - Step ${completedTimerStep.stepNumber + 1}`
+                : `Step ${completedTimerStep?.stepNumber ? completedTimerStep.stepNumber + 1 : '?'} timer finished`}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="py-4 text-center">
+            <div className="mb-2 text-5xl font-bold text-green-600 dark:text-green-400">
+              ✓
+            </div>
+            <p className="text-slate-600 dark:text-slate-400">
+              Your cooking timer has finished. Check on your food!
+            </p>
+          </div>
+
+          <DialogFooter>
+            <Button
+              onClick={() => setCompletedTimerStep(null)}
+              className="w-full bg-[#2d5016] hover:bg-[#3d6b1f]"
+            >
+              Got it, thanks!
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Finish cooking dialog */}
       <Dialog open={showFinishDialog} onOpenChange={setShowFinishDialog}>
