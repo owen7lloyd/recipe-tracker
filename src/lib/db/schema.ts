@@ -142,6 +142,8 @@ export const recipes = pgTable(
     cookTimeMinutes: integer('cook_time_minutes'),
     servings: integer('servings').notNull().default(4),
     rating: integer('rating'),
+    avgRating: decimal('avg_rating', { precision: 2, scale: 1 }),
+    ratingCount: integer('rating_count').default(0),
     instructions: text('instructions').array().notNull(),
     createdBy: uuid('created_by')
       .notNull()
@@ -260,7 +262,37 @@ export const recipeNotes = pgTable(
     ),
     recipeIdx: index('idx_recipe_notes_recipe').on(table.recipeId),
     sessionIdx: index('idx_recipe_notes_session').on(table.sessionId),
-    stepIdx: index('idx_recipe_notes_step').on(table.recipeId, table.stepNumber),
+    stepIdx: index('idx_recipe_notes_step').on(
+      table.recipeId,
+      table.stepNumber
+    ),
+  })
+);
+
+// Recipe ratings table (for tracking user ratings of recipes)
+export const recipeRatings = pgTable(
+  'recipe_ratings',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    recipeId: uuid('recipe_id')
+      .notNull()
+      .references(() => recipes.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    householdId: uuid('household_id')
+      .notNull()
+      .references(() => households.id, { onDelete: 'cascade' }),
+    rating: integer('rating').notNull(),
+    comment: text('comment'),
+    ratedAt: timestamp('rated_at').defaultNow().notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  },
+  (table) => ({
+    recipeIdx: index('idx_recipe_ratings_recipe').on(table.recipeId),
+    userIdx: index('idx_recipe_ratings_user').on(table.userId),
+    householdIdx: index('idx_recipe_ratings_household').on(table.householdId),
   })
 );
 
@@ -374,6 +406,7 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   pantryItems: many(pantryItems),
   groceryLists: many(groceryLists),
   recipeNotes: many(recipeNotes),
+  recipeRatings: many(recipeRatings),
   createdInvites: many(householdInvites, {
     relationName: 'inviteCreator',
   }),
@@ -430,6 +463,7 @@ export const recipesRelations = relations(recipes, ({ one, many }) => ({
   }),
   ingredients: many(recipeIngredients),
   notes: many(recipeNotes),
+  ratings: many(recipeRatings),
   history: many(recipeHistory),
 }));
 
@@ -523,21 +557,24 @@ export const ingredientSubstitutionsRelations = relations(
   })
 );
 
-export const recipeHistoryRelations = relations(recipeHistory, ({ one, many }) => ({
-  recipe: one(recipes, {
-    fields: [recipeHistory.recipeId],
-    references: [recipes.id],
-  }),
-  household: one(households, {
-    fields: [recipeHistory.householdId],
-    references: [households.id],
-  }),
-  cookedByUser: one(users, {
-    fields: [recipeHistory.cookedBy],
-    references: [users.id],
-  }),
-  notes: many(recipeNotes),
-}));
+export const recipeHistoryRelations = relations(
+  recipeHistory,
+  ({ one, many }) => ({
+    recipe: one(recipes, {
+      fields: [recipeHistory.recipeId],
+      references: [recipes.id],
+    }),
+    household: one(households, {
+      fields: [recipeHistory.householdId],
+      references: [households.id],
+    }),
+    cookedByUser: one(users, {
+      fields: [recipeHistory.cookedBy],
+      references: [users.id],
+    }),
+    notes: many(recipeNotes),
+  })
+);
 
 export const recipeNotesRelations = relations(recipeNotes, ({ one }) => ({
   user: one(users, {
@@ -551,6 +588,21 @@ export const recipeNotesRelations = relations(recipeNotes, ({ one }) => ({
   session: one(recipeHistory, {
     fields: [recipeNotes.sessionId],
     references: [recipeHistory.id],
+  }),
+}));
+
+export const recipeRatingsRelations = relations(recipeRatings, ({ one }) => ({
+  recipe: one(recipes, {
+    fields: [recipeRatings.recipeId],
+    references: [recipes.id],
+  }),
+  user: one(users, {
+    fields: [recipeRatings.userId],
+    references: [users.id],
+  }),
+  household: one(households, {
+    fields: [recipeRatings.householdId],
+    references: [households.id],
   }),
 }));
 

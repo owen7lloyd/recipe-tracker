@@ -4,9 +4,8 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select } from '@/components/ui/select';
+import { SmartUnitSelector } from '@/components/ui/smart-unit-selector';
 import { Loader2 } from 'lucide-react';
-import { COOKING_UNITS } from '@/lib/constants/units';
 
 interface Ingredient {
   id: string;
@@ -134,18 +133,12 @@ export function AddManualItem({ onAdd, onCancel }: AddManualItemProps) {
         </div>
         <div className="space-y-2">
           <Label htmlFor="unit">Unit</Label>
-          <Select
+          <SmartUnitSelector
             id="unit"
             value={unit}
-            onChange={(e) => setUnit(e.target.value)}
-          >
-            <option value="">Select unit...</option>
-            {COOKING_UNITS.map((u) => (
-              <option key={u.value} value={u.value}>
-                {u.label}
-              </option>
-            ))}
-          </Select>
+            onChange={setUnit}
+            ingredientCategory={selectedIngredient?.category}
+          />
         </div>
       </div>
 

@@ -313,6 +313,12 @@ export async function POST(
       message: `Cooked ${recipe.title}`,
       updates,
       servingsCooked: targetServings,
+      showRatingPrompt: true,
+      recipe: {
+        id: recipe.id,
+        title: recipe.title,
+        imageUrl: recipe.imageUrl,
+      },
     });
   } catch (error: unknown) {
     if (error instanceof z.ZodError) {

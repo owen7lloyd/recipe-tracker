@@ -55,15 +55,14 @@ export async function POST(
     const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days
 
     // Update the list with share token
-    const [updatedList] = await db
+    await db
       .update(groceryLists)
       .set({
         shareToken: token,
         shareExpiresAt: expiresAt,
         updatedAt: new Date(),
       })
-      .where(eq(groceryLists.id, listId))
-      .returning();
+      .where(eq(groceryLists.id, listId));
 
     const baseUrl =
       process.env.NEXTAUTH_URL || `https://${req.headers.get('host')}`;

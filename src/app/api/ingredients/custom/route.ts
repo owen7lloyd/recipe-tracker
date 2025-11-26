@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { customIngredients, users, ingredients } from '@/lib/db/schema';
+import { ingredients, users } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 
 const VALID_CATEGORIES = [
@@ -44,7 +44,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { name, defaultUnit, category } = body;
+    const { name, category } = body;
 
     // Validate required fields
     if (!name || typeof name !== 'string' || name.trim() === '') {
@@ -124,7 +124,7 @@ export async function POST(request: Request) {
  * GET /api/ingredients/custom
  * Get all custom ingredients for the authenticated user's household
  */
-export async function GET(request: Request) {
+export async function GET(_request: Request) {
   try {
     const session = await auth();
     if (!session?.user?.id) {

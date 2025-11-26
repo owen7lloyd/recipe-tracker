@@ -4,9 +4,8 @@ import { useState } from 'react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Select } from '@/components/ui/select';
+import { SmartUnitSelector } from '@/components/ui/smart-unit-selector';
 import { Trash2, Edit2, Check, X } from 'lucide-react';
-import { COOKING_UNITS } from '@/lib/constants/units';
 
 interface Ingredient {
   id: string;
@@ -99,33 +98,28 @@ export function GroceryListItem({
 
         {isEditing ? (
           <div className="mt-2 flex flex-col gap-2">
-            <div className="flex items-center gap-2">
+            <div className="grid grid-cols-12 gap-2">
               <Input
                 type="number"
                 value={editQuantity}
                 onChange={(e) => setEditQuantity(parseFloat(e.target.value))}
-                className="w-24"
+                className="col-span-3"
                 step="0.01"
                 placeholder="qty"
               />
-              <Select
-                value={editUnit}
-                onChange={(e) => setEditUnit(e.target.value)}
-                className="w-40"
-              >
-                <option value="">Select unit...</option>
-                {COOKING_UNITS.map((u) => (
-                  <option key={u.value} value={u.value}>
-                    {u.label}
-                  </option>
-                ))}
-              </Select>
+              <div className="col-span-5">
+                <SmartUnitSelector
+                  value={editUnit}
+                  onChange={setEditUnit}
+                  ingredientCategory={item.ingredient.category}
+                />
+              </div>
               <Input
                 type="text"
                 value={editStore}
                 onChange={(e) => setEditStore(e.target.value)}
-                className="w-40"
-                placeholder="store (optional)"
+                className="col-span-4"
+                placeholder="store"
               />
             </div>
             <div className="flex gap-1">

@@ -31,10 +31,7 @@ export async function GET(
 
     const recipe = await getRecipeWithIngredients(id);
     if (!recipe) {
-      return NextResponse.json(
-        { error: 'Recipe not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Recipe not found' }, { status: 404 });
     }
 
     return NextResponse.json(recipe);
@@ -70,7 +67,7 @@ export async function PUT(
     const validatedData = updateRecipeSchema.parse(body);
 
     // Update recipe
-    const updateData: any = {
+    const updateData: Record<string, unknown> = {
       updatedAt: new Date(),
     };
 
@@ -105,7 +102,9 @@ export async function PUT(
     // Update ingredients if provided
     if (validatedData.ingredients !== undefined) {
       // Delete existing ingredients
-      await db.delete(recipeIngredients).where(eq(recipeIngredients.recipeId, id));
+      await db
+        .delete(recipeIngredients)
+        .where(eq(recipeIngredients.recipeId, id));
 
       // Insert new ingredients
       if (validatedData.ingredients.length > 0) {
@@ -160,10 +159,7 @@ export async function DELETE(
 
     const deleted = await deleteRecipe(id);
     if (!deleted) {
-      return NextResponse.json(
-        { error: 'Recipe not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Recipe not found' }, { status: 404 });
     }
 
     return NextResponse.json({ success: true, message: 'Recipe deleted' });

@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { ingredients, customIngredients, users } from '@/lib/db/schema';
-import { ilike, and, eq, or, sql } from 'drizzle-orm';
+import { ingredients, users } from '@/lib/db/schema';
+import { ilike, and, eq, sql } from 'drizzle-orm';
 
 // Valid ingredient categories
 const VALID_CATEGORIES = [

@@ -1,6 +1,5 @@
 import { getSession } from '@/lib/auth';
 import { redirect } from 'next/navigation';
-import { notFound } from 'next/navigation';
 import { GroceryListWithRealtime } from '@/components/grocery-lists/GroceryListWithRealtime';
 import { db } from '@/lib/db';
 import { users, groceryLists } from '@/lib/db/schema';

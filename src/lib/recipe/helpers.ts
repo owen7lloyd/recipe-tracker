@@ -1,5 +1,10 @@
 import { db } from '@/lib/db';
-import { recipes, recipeIngredients, users, ingredients } from '@/lib/db/schema';
+import {
+  recipes,
+  recipeIngredients,
+  users,
+  ingredients,
+} from '@/lib/db/schema';
 import { eq, and, or, ilike, inArray, desc, asc, sql } from 'drizzle-orm';
 
 /**
@@ -70,10 +75,7 @@ export async function getRecipeWithIngredients(recipeId: string) {
       substitutionGroup: recipeIngredients.substitutionGroup,
     })
     .from(recipeIngredients)
-    .leftJoin(
-      ingredients,
-      eq(recipeIngredients.ingredientId, ingredients.id)
-    )
+    .leftJoin(ingredients, eq(recipeIngredients.ingredientId, ingredients.id))
     .where(eq(recipeIngredients.recipeId, recipeId));
 
   return {
@@ -152,6 +154,8 @@ export async function searchRecipes(
       cookTimeMinutes: recipes.cookTimeMinutes,
       servings: recipes.servings,
       rating: recipes.rating,
+      avgRating: recipes.avgRating,
+      ratingCount: recipes.ratingCount,
       instructions: recipes.instructions,
       createdBy: recipes.createdBy,
       createdAt: recipes.createdAt,
@@ -166,7 +170,10 @@ export async function searchRecipes(
       query = query.orderBy(asc(recipes.createdAt)) as any;
       break;
     case 'rating':
-      query = query.orderBy(desc(recipes.rating), desc(recipes.createdAt)) as any;
+      query = query.orderBy(
+        desc(recipes.avgRating),
+        desc(recipes.createdAt)
+      ) as any;
       break;
     case 'prepTime':
       query = query.orderBy(

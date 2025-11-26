@@ -18,7 +18,7 @@ const createSubstitutionSchema = z.object({
  * Get all substitutions (admin function)
  * Returns all ingredient substitution mappings
  */
-export async function GET(request: Request) {
+export async function GET(_request: Request) {
   try {
     const authResult = await requireAuth();
     if (authResult instanceof NextResponse) return authResult;
