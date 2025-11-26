@@ -103,13 +103,19 @@ export function CookRecipeView(recipe: CookRecipeViewProps) {
   const [stepTimers, setStepTimers] = useState<StepTimer[]>([]);
   const [notes, setNotes] = useState<RecipeNote[]>([]);
   const [isLoadingNotes, setIsLoadingNotes] = useState(true);
-  const [expandedSteps, setExpandedSteps] = useState<Set<number>>(new Set());
+  const [expandedTimers, setExpandedTimers] = useState<Set<number>>(new Set());
+  const [expandedNotes, setExpandedNotes] = useState<Set<number>>(new Set());
 
   // Timer state management (persists across collapse/expand)
-  const [timerStates, setTimerStates] = useState<Map<string, TimerState>>(new Map());
+  const [timerStates, setTimerStates] = useState<Map<string, TimerState>>(
+    new Map()
+  );
 
   // Get or initialize timer state
-  const getTimerState = (timerId: string, initialDuration: number): TimerState => {
+  const getTimerState = (
+    timerId: string,
+    initialDuration: number
+  ): TimerState => {
     if (!timerStates.has(timerId)) {
       const initialState: TimerState = {
         duration: initialDuration,
@@ -121,7 +127,7 @@ export function CookRecipeView(recipe: CookRecipeViewProps) {
         startTime: null,
         pausedTime: initialDuration,
       };
-      setTimerStates(prev => new Map(prev).set(timerId, initialState));
+      setTimerStates((prev) => new Map(prev).set(timerId, initialState));
       return initialState;
     }
     return timerStates.get(timerId)!;
@@ -129,7 +135,7 @@ export function CookRecipeView(recipe: CookRecipeViewProps) {
 
   // Update timer state
   const updateTimerState = (timerId: string, newState: TimerState) => {
-    setTimerStates(prev => new Map(prev).set(timerId, newState));
+    setTimerStates((prev) => new Map(prev).set(timerId, newState));
   };
 
   // Fetch pantry items
@@ -470,25 +476,34 @@ export function CookRecipeView(recipe: CookRecipeViewProps) {
               <ol className="space-y-4">
                 {recipe.instructions.map((instruction, index) => {
                   const isCompleted = completedSteps.has(index);
-                  const stepTimer = stepTimers.find((st) => st.stepNumber === index);
+                  const stepTimer = stepTimers.find(
+                    (st) => st.stepNumber === index
+                  );
                   const hasTimers = stepTimer && stepTimer.timers.length > 0;
-                  const stepNotes = notes.filter((note) => note.stepNumber === index);
-                  const isExpanded = expandedSteps.has(index);
+                  const stepNotes = notes.filter(
+                    (note) => note.stepNumber === index
+                  );
+                  const timerExpanded = expandedTimers.has(index);
+                  const notesExpanded = expandedNotes.has(index);
+                  const hasExpandedContent = timerExpanded || notesExpanded;
 
                   return (
                     <li
                       key={index}
-                      className={`rounded-lg border-2 p-4 transition-all ${
-                        isExpanded
+                      className={`rounded-lg border-2 transition-all ${
+                        hasExpandedContent
                           ? 'border-[#d4a574] bg-amber-50 dark:bg-amber-950/10'
                           : isCompleted
-                          ? 'border-green-500 bg-green-50 dark:bg-green-950/20'
-                          : 'border-slate-200 hover:border-slate-300 dark:border-slate-800 dark:hover:border-slate-700'
+                            ? 'border-green-500 bg-green-50 dark:bg-green-950/20'
+                            : 'border-slate-200 hover:border-slate-300 dark:border-slate-800 dark:hover:border-slate-700'
                       }`}
                     >
-                      <div className="flex cursor-pointer gap-4" onClick={() => toggleStep(index)}>
+                      {/* Main step content - always visible */}
+                      <div className="flex items-start gap-4 p-4">
+                        {/* Step number */}
                         <div
-                          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full font-semibold transition-all ${
+                          onClick={() => toggleStep(index)}
+                          className={`flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full font-semibold transition-all ${
                             isCompleted
                               ? 'bg-green-600 text-white'
                               : 'bg-slate-900 text-white dark:bg-slate-50 dark:text-slate-900'
@@ -500,103 +515,129 @@ export function CookRecipeView(recipe: CookRecipeViewProps) {
                             index + 1
                           )}
                         </div>
-                        <p
-                          className={`flex-1 pt-2 text-sm leading-relaxed ${
-                            isCompleted
-                              ? 'text-slate-500 line-through dark:text-slate-500'
-                              : 'text-slate-900 dark:text-slate-100'
-                          }`}
-                        >
-                          {instruction}
-                        </p>
+
+                        {/* Step instruction and controls */}
+                        <div className="flex-1">
+                          <p
+                            onClick={() => toggleStep(index)}
+                            className={`cursor-pointer text-sm leading-relaxed ${
+                              isCompleted
+                                ? 'text-slate-500 line-through dark:text-slate-500'
+                                : 'text-slate-900 dark:text-slate-100'
+                            }`}
+                          >
+                            {instruction}
+                          </p>
+
+                          {/* Control buttons below instruction */}
+                          <div className="mt-3 flex flex-wrap gap-2">
+                            {hasTimers && (
+                              <Button
+                                size="sm"
+                                variant={timerExpanded ? 'default' : 'outline'}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  const newExpanded = new Set(expandedTimers);
+                                  if (timerExpanded) {
+                                    newExpanded.delete(index);
+                                  } else {
+                                    newExpanded.add(index);
+                                  }
+                                  setExpandedTimers(newExpanded);
+                                }}
+                                className="text-xs"
+                              >
+                                <Timer className="mr-2 h-3 w-3" />
+                                {timerExpanded ? 'Hide' : 'Show'} Timer
+                                {stepTimer.timers.length > 1 ? 's' : ''}
+                                {stepTimer.timers.length > 1 &&
+                                  ` (${stepTimer.timers.length})`}
+                              </Button>
+                            )}
+
+                            <Button
+                              size="sm"
+                              variant={notesExpanded ? 'default' : 'outline'}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const newExpanded = new Set(expandedNotes);
+                                if (notesExpanded) {
+                                  newExpanded.delete(index);
+                                } else {
+                                  newExpanded.add(index);
+                                }
+                                setExpandedNotes(newExpanded);
+                              }}
+                              className="text-xs"
+                            >
+                              <StickyNote className="mr-2 h-3 w-3" />
+                              {notesExpanded ? 'Hide' : 'Add'} Notes{' '}
+                              {stepNotes.length > 0 && `(${stepNotes.length})`}
+                            </Button>
+                          </div>
+                        </div>
                       </div>
 
-                      {/* Expand/Collapse button */}
-                      {(hasTimers || true) && (
-                        <div className="mt-3">
-                          <Button
-                            size="sm"
-                            variant={isExpanded ? 'default' : 'outline'}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              const newExpanded = new Set(expandedSteps);
-                              if (isExpanded) {
-                                newExpanded.delete(index);
-                              } else {
-                                newExpanded.add(index);
-                              }
-                              setExpandedSteps(newExpanded);
-                            }}
-                          >
-                            {isExpanded ? (
-                              <>
-                                <X className="mr-2 h-4 w-4" />
-                                Hide Details
-                              </>
-                            ) : (
-                              <>
-                                {hasTimers && (
-                                  <>
-                                    <Timer className="mr-2 h-4 w-4" />
-                                    {stepTimer.timers.length} Timer{stepTimer.timers.length > 1 ? 's' : ''}
-                                    {' • '}
-                                  </>
+                      {/* Expanded panels - side by side */}
+                      {hasExpandedContent && (
+                        <div className="border-t border-slate-200 p-4 dark:border-slate-700">
+                          <div className="grid gap-4 lg:grid-cols-2">
+                            {/* Timers panel */}
+                            {timerExpanded && (
+                              <div>
+                                <h4 className="mb-3 text-sm font-semibold text-slate-900 dark:text-slate-100">
+                                  ⏱️ Timers
+                                </h4>
+                                {hasTimers ? (
+                                  <div className="space-y-3">
+                                    {stepTimer.timers.map(
+                                      (timer, timerIndex) => {
+                                        const timerId = `step-${index}-timer-${timerIndex}`;
+                                        const timerState = getTimerState(
+                                          timerId,
+                                          timer.duration
+                                        );
+                                        return (
+                                          <RecipeTimer
+                                            key={timerId}
+                                            timerId={timerId}
+                                            duration={timer.duration}
+                                            label={timer.label}
+                                            stepNumber={index}
+                                            isRange={timer.isRange}
+                                            minDuration={timer.minDuration}
+                                            maxDuration={timer.maxDuration}
+                                            timerState={timerState}
+                                            onStateChange={updateTimerState}
+                                          />
+                                        );
+                                      }
+                                    )}
+                                  </div>
+                                ) : (
+                                  <p className="text-sm text-slate-500">
+                                    No timers detected
+                                  </p>
                                 )}
-                                <StickyNote className="mr-2 h-4 w-4" />
-                                Notes {stepNotes.length > 0 && `(${stepNotes.length})`}
-                              </>
-                            )}
-                          </Button>
-                        </div>
-                      )}
-
-                      {/* Expanded section - Timers and Notes side by side */}
-                      {isExpanded && (
-                        <div className="mt-4 grid gap-4 border-t border-slate-200 pt-4 dark:border-slate-700 lg:grid-cols-2">
-                          {/* Timers column */}
-                          <div>
-                            <h4 className="mb-3 text-sm font-semibold text-slate-900 dark:text-slate-100">
-                              Timers
-                            </h4>
-                            {hasTimers ? (
-                              <div className="space-y-3">
-                                {stepTimer.timers.map((timer, timerIndex) => {
-                                  const timerId = `step-${index}-timer-${timerIndex}`;
-                                  const timerState = getTimerState(timerId, timer.duration);
-                                  return (
-                                    <RecipeTimer
-                                      key={timerId}
-                                      timerId={timerId}
-                                      duration={timer.duration}
-                                      label={timer.label}
-                                      stepNumber={index}
-                                      isRange={timer.isRange}
-                                      minDuration={timer.minDuration}
-                                      maxDuration={timer.maxDuration}
-                                      timerState={timerState}
-                                      onStateChange={updateTimerState}
-                                    />
-                                  );
-                                })}
                               </div>
-                            ) : (
-                              <p className="text-sm text-slate-500">No timers detected</p>
                             )}
-                          </div>
 
-                          {/* Notes column */}
-                          <div>
-                            <h4 className="mb-3 text-sm font-semibold text-slate-900 dark:text-slate-100">
-                              Notes
-                            </h4>
-                            <RecipeNoteInput
-                              recipeId={recipe.id}
-                              stepNumber={index}
-                              existingNotes={notes}
-                              onNoteAdded={fetchNotes}
-                              onNoteUpdated={fetchNotes}
-                              onNoteDeleted={fetchNotes}
-                            />
+                            {/* Notes panel */}
+                            {notesExpanded && (
+                              <div>
+                                <h4 className="mb-3 text-sm font-semibold text-slate-900 dark:text-slate-100">
+                                  📝 Notes
+                                </h4>
+                                <RecipeNoteInput
+                                  recipeId={recipe.id}
+                                  stepNumber={index}
+                                  existingNotes={notes}
+                                  onNoteAdded={fetchNotes}
+                                  onNoteUpdated={fetchNotes}
+                                  onNoteDeleted={fetchNotes}
+                                />
+                              </div>
+                            )}
                           </div>
                         </div>
                       )}
@@ -743,56 +784,59 @@ export function CookRecipeView(recipe: CookRecipeViewProps) {
                   </div>
                 )}
 
-              <div className="max-h-[400px] space-y-2 overflow-y-auto">
-                {deductions.map((ing) => (
-                  <div
-                    key={ing.id}
-                    className="rounded border border-slate-200 p-2 text-xs dark:border-slate-800"
-                  >
-                    <p className="truncate font-medium">{ing.ingredientName}</p>
-                    {ing.notInPantry ? (
-                      <p className="text-amber-600 dark:text-amber-500">
-                        Not in pantry - will skip
+                <div className="max-h-[400px] space-y-2 overflow-y-auto">
+                  {deductions.map((ing) => (
+                    <div
+                      key={ing.id}
+                      className="rounded border border-slate-200 p-2 text-xs dark:border-slate-800"
+                    >
+                      <p className="truncate font-medium">
+                        {ing.ingredientName}
                       </p>
-                    ) : ing.notTracked ? (
-                      <p className="text-slate-500">Quantity not tracked</p>
-                    ) : ing.quantityNeeded === null ? (
-                      <p className="text-slate-500">Non-numeric quantity</p>
-                    ) : ing.unitMismatch ? (
-                      <p className="text-amber-600 dark:text-amber-500">
-                        Unit mismatch ({ing.unit} vs{' '}
-                        {pantry.find(
-                          (p) => p.ingredient.id === ing.ingredientId
-                        )?.unit || '?'}
-                        ) - will skip
-                      </p>
-                    ) : (
-                      <div className="mt-1 space-y-2">
-                        <div className="flex items-center justify-between">
-                          <span className="text-slate-600 dark:text-slate-400">
-                            {ing.currentQty?.toFixed(2)} →{' '}
-                            {ing.remainingQty?.toFixed(2)}{' '}
-                            {pantry.find(
-                              (p) => p.ingredient.id === ing.ingredientId
-                            )?.unit || ing.unit}
-                          </span>
-                          {ing.willBeRemoved && (
-                            <Badge variant="destructive" className="text-xs">
-                              Remove
-                            </Badge>
+                      {ing.notInPantry ? (
+                        <p className="text-amber-600 dark:text-amber-500">
+                          Not in pantry - will skip
+                        </p>
+                      ) : ing.notTracked ? (
+                        <p className="text-slate-500">Quantity not tracked</p>
+                      ) : ing.quantityNeeded === null ? (
+                        <p className="text-slate-500">Non-numeric quantity</p>
+                      ) : ing.unitMismatch ? (
+                        <p className="text-amber-600 dark:text-amber-500">
+                          Unit mismatch ({ing.unit} vs{' '}
+                          {pantry.find(
+                            (p) => p.ingredient.id === ing.ingredientId
+                          )?.unit || '?'}
+                          ) - will skip
+                        </p>
+                      ) : (
+                        <div className="mt-1 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-slate-600 dark:text-slate-400">
+                              {ing.currentQty?.toFixed(2)} →{' '}
+                              {ing.remainingQty?.toFixed(2)}{' '}
+                              {pantry.find(
+                                (p) => p.ingredient.id === ing.ingredientId
+                              )?.unit || ing.unit}
+                            </span>
+                            {ing.willBeRemoved && (
+                              <Badge variant="destructive" className="text-xs">
+                                Remove
+                              </Badge>
+                            )}
+                          </div>
+                          {ing.densityConverted && (
+                            <div className="flex items-center gap-1 rounded bg-blue-50 p-1.5 text-xs dark:bg-blue-950">
+                              <span className="text-blue-700 dark:text-blue-300">
+                                ℹ️ Unit conversion used (density-based)
+                              </span>
+                            </div>
                           )}
                         </div>
-                        {ing.densityConverted && (
-                          <div className="flex items-center gap-1 rounded bg-blue-50 p-1.5 text-xs dark:bg-blue-950">
-                            <span className="text-blue-700 dark:text-blue-300">
-                              ℹ️ Unit conversion used (density-based)
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                ))}
+                      )}
+                    </div>
+                  ))}
+                </div>
               </div>
             </CardContent>
           </Card>

@@ -2,7 +2,15 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
-import { Play, Pause, RotateCcw, Plus, Minus, Bell, BellOff } from 'lucide-react';
+import {
+  Play,
+  Pause,
+  RotateCcw,
+  Plus,
+  Minus,
+  Bell,
+  BellOff,
+} from 'lucide-react';
 import { formatTimerDisplay } from '@/lib/recipe-timer';
 import { cn } from '@/lib/utils';
 
@@ -61,12 +69,22 @@ export function RecipeTimer({
   const state = isControlled ? externalState : internalState;
   const setState = isControlled
     ? (newState: TimerState | ((prev: TimerState) => TimerState)) => {
-        const updatedState = typeof newState === 'function' ? newState(state) : newState;
+        const updatedState =
+          typeof newState === 'function' ? newState(state) : newState;
         onStateChange(timerId, updatedState);
       }
     : setInternalState;
 
-  const { duration, remaining, isActive, isPaused, isComplete, soundEnabled, startTime, pausedTime } = state;
+  const {
+    duration,
+    remaining,
+    isActive,
+    isPaused,
+    isComplete,
+    soundEnabled,
+    startTime,
+    pausedTime,
+  } = state;
 
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -82,7 +100,7 @@ export function RecipeTimer({
 
   // Handle timer completion
   const handleComplete = useCallback(() => {
-    setState(prev => ({ ...prev, isComplete: true, isActive: false }));
+    setState((prev) => ({ ...prev, isComplete: true, isActive: false }));
 
     // Play notification sound if enabled
     if (soundEnabled) {
@@ -92,7 +110,9 @@ export function RecipeTimer({
     // Show browser notification if permitted
     if ('Notification' in window && Notification.permission === 'granted') {
       new Notification('Timer Complete!', {
-        body: label ? `${label} - Step ${stepNumber !== undefined ? stepNumber + 1 : ''}` : 'Recipe timer finished',
+        body: label
+          ? `${label} - Step ${stepNumber !== undefined ? stepNumber + 1 : ''}`
+          : 'Recipe timer finished',
         icon: '/icon-192.png',
         tag: `timer-${stepNumber}`,
       });
@@ -108,14 +128,14 @@ export function RecipeTimer({
     if (isActive && !isPaused && remaining > 0) {
       const currentStartTime = startTime || Date.now();
       if (!startTime) {
-        setState(prev => ({ ...prev, startTime: currentStartTime }));
+        setState((prev) => ({ ...prev, startTime: currentStartTime }));
       }
 
       intervalRef.current = setInterval(() => {
         const elapsed = Math.floor((Date.now() - currentStartTime) / 1000);
         const newRemaining = Math.max(0, pausedTime - elapsed);
 
-        setState(prev => ({ ...prev, remaining: newRemaining }));
+        setState((prev) => ({ ...prev, remaining: newRemaining }));
 
         if (newRemaining <= 0) {
           if (intervalRef.current) {
@@ -131,12 +151,21 @@ export function RecipeTimer({
         }
       };
     }
-  }, [isActive, isPaused, remaining, handleComplete, startTime, pausedTime, setState]);
+  }, [
+    isActive,
+    isPaused,
+    remaining,
+    handleComplete,
+    startTime,
+    pausedTime,
+    setState,
+  ]);
 
   // Play notification sound using Web Audio API
   const playNotificationSound = () => {
     try {
-      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const audioContext = new (window.AudioContext ||
+        (window as any).webkitAudioContext)();
       const oscillator = audioContext.createOscillator();
       const gainNode = audioContext.createGain();
 
@@ -147,7 +176,10 @@ export function RecipeTimer({
       oscillator.type = 'sine';
 
       gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+      gainNode.gain.exponentialRampToValueAtTime(
+        0.01,
+        audioContext.currentTime + 0.5
+      );
 
       oscillator.start(audioContext.currentTime);
       oscillator.stop(audioContext.currentTime + 0.5);
@@ -158,7 +190,7 @@ export function RecipeTimer({
 
   const handleStart = () => {
     const now = Date.now();
-    setState(prev => ({
+    setState((prev) => ({
       ...prev,
       isActive: true,
       isPaused: false,
@@ -169,7 +201,7 @@ export function RecipeTimer({
   };
 
   const handlePause = () => {
-    setState(prev => ({
+    setState((prev) => ({
       ...prev,
       isPaused: true,
       isActive: false,
@@ -182,7 +214,7 @@ export function RecipeTimer({
   };
 
   const handleReset = () => {
-    setState(prev => ({
+    setState((prev) => ({
       ...prev,
       isActive: false,
       isPaused: false,
@@ -197,7 +229,7 @@ export function RecipeTimer({
   };
 
   const handleAddTime = (seconds: number) => {
-    setState(prev => {
+    setState((prev) => {
       // Prevent reducing time below 0
       const newRemaining = Math.max(0, prev.remaining + seconds);
       const newDuration = Math.max(0, prev.duration + seconds);
@@ -212,7 +244,7 @@ export function RecipeTimer({
   };
 
   const handleSetDuration = (newDuration: number) => {
-    setState(prev => ({
+    setState((prev) => ({
       ...prev,
       duration: newDuration,
       remaining: newDuration,
@@ -228,7 +260,7 @@ export function RecipeTimer({
   };
 
   const handleToggleSound = () => {
-    setState(prev => ({ ...prev, soundEnabled: !prev.soundEnabled }));
+    setState((prev) => ({ ...prev, soundEnabled: !prev.soundEnabled }));
   };
 
   const requestNotificationPermission = async () => {
@@ -247,8 +279,8 @@ export function RecipeTimer({
         isComplete
           ? 'border-green-500 bg-green-50 dark:bg-green-950/20'
           : isRunning
-          ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/20'
-          : 'border-[#e8dcc8] bg-white dark:border-slate-700 dark:bg-slate-900'
+            ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/20'
+            : 'border-[#e8dcc8] bg-white dark:border-slate-700 dark:bg-slate-900'
       )}
     >
       {/* Timer display */}
@@ -264,8 +296,8 @@ export function RecipeTimer({
             isComplete
               ? 'text-green-600 dark:text-green-400'
               : isRunning
-              ? 'text-blue-600 dark:text-blue-400'
-              : 'text-[#2d5016] dark:text-slate-200'
+                ? 'text-blue-600 dark:text-blue-400'
+                : 'text-[#2d5016] dark:text-slate-200'
           )}
         >
           {formatTimerDisplay(remaining)}
@@ -286,95 +318,109 @@ export function RecipeTimer({
             isComplete
               ? 'bg-green-500'
               : isRunning
-              ? 'bg-blue-500'
-              : 'bg-[#2d5016]'
+                ? 'bg-blue-500'
+                : 'bg-[#2d5016]'
           )}
           style={{ width: `${progress}%` }}
         />
       </div>
 
       {/* Controls */}
-      <div className="flex flex-wrap items-center justify-center gap-2">
-        {!isRunning && !isComplete && (
+      <div className="space-y-2">
+        {/* Primary controls - Start/Pause/Reset */}
+        <div className="flex items-center justify-center gap-2">
+          {!isRunning && !isComplete && (
+            <Button
+              size="sm"
+              onClick={() => {
+                handleStart();
+                requestNotificationPermission();
+              }}
+              className="flex-1 bg-[#2d5016] hover:bg-[#3d6b1f]"
+            >
+              <Play className="mr-1 h-4 w-4" />
+              Start
+            </Button>
+          )}
+
+          {isRunning && (
+            <Button
+              size="sm"
+              onClick={handlePause}
+              variant="outline"
+              className="flex-1"
+            >
+              <Pause className="mr-1 h-4 w-4" />
+              Pause
+            </Button>
+          )}
+
+          <Button size="sm" onClick={handleReset} variant="outline">
+            <RotateCcw className="h-4 w-4" />
+          </Button>
+
           <Button
             size="sm"
-            onClick={() => {
-              handleStart();
-              requestNotificationPermission();
-            }}
-            className="bg-[#2d5016] hover:bg-[#3d6b1f]"
+            onClick={handleToggleSound}
+            variant="ghost"
+            title={soundEnabled ? 'Disable sound' : 'Enable sound'}
           >
-            <Play className="mr-1 h-4 w-4" />
-            Start
+            {soundEnabled ? (
+              <Bell className="h-4 w-4" />
+            ) : (
+              <BellOff className="h-4 w-4" />
+            )}
           </Button>
-        )}
+        </div>
 
-        {isRunning && (
-          <Button size="sm" onClick={handlePause} variant="outline">
-            <Pause className="mr-1 h-4 w-4" />
-            Pause
+        {/* Time adjustment buttons */}
+        <div className="grid grid-cols-4 gap-1">
+          <Button
+            size="sm"
+            onClick={() => handleAddTime(-300)}
+            variant="outline"
+            title="Subtract 5 minutes"
+            disabled={remaining < 300}
+            className="text-xs"
+          >
+            <Minus className="h-3 w-3" />
+            5m
           </Button>
-        )}
 
-        <Button size="sm" onClick={handleReset} variant="outline">
-          <RotateCcw className="mr-1 h-4 w-4" />
-          Reset
-        </Button>
+          <Button
+            size="sm"
+            onClick={() => handleAddTime(-60)}
+            variant="outline"
+            title="Subtract 1 minute"
+            disabled={remaining < 60}
+            className="text-xs"
+          >
+            <Minus className="h-3 w-3" />
+            1m
+          </Button>
 
-        <Button
-          size="sm"
-          onClick={() => handleAddTime(-60)}
-          variant="outline"
-          title="Subtract 1 minute"
-          disabled={remaining < 60}
-        >
-          <Minus className="mr-1 h-4 w-4" />
-          1m
-        </Button>
+          <Button
+            size="sm"
+            onClick={() => handleAddTime(60)}
+            variant="outline"
+            title="Add 1 minute"
+            className="text-xs"
+          >
+            <Plus className="h-3 w-3" />
+            1m
+          </Button>
 
-        <Button
-          size="sm"
-          onClick={() => handleAddTime(-300)}
-          variant="outline"
-          title="Subtract 5 minutes"
-          disabled={remaining < 300}
-        >
-          <Minus className="mr-1 h-4 w-4" />
-          5m
-        </Button>
-
-        <Button
-          size="sm"
-          onClick={() => handleAddTime(60)}
-          variant="outline"
-          title="Add 1 minute"
-        >
-          <Plus className="mr-1 h-4 w-4" />
-          1m
-        </Button>
-
-        <Button
-          size="sm"
-          onClick={() => handleAddTime(300)}
-          variant="outline"
-          title="Add 5 minutes"
-        >
-          <Plus className="mr-1 h-4 w-4" />
-          5m
-        </Button>
-
-        <Button
-          size="sm"
-          onClick={handleToggleSound}
-          variant="ghost"
-          title={soundEnabled ? 'Disable sound' : 'Enable sound'}
-        >
-          {soundEnabled ? (
-            <Bell className="h-4 w-4" />
-          ) : (
-            <BellOff className="h-4 w-4" />
-          )}
-        </Button>
+          <Button
+            size="sm"
+            onClick={() => handleAddTime(300)}
+            variant="outline"
+            title="Add 5 minutes"
+            className="text-xs"
+          >
+            <Plus className="h-3 w-3" />
+            5m
+          </Button>
+        </div>
       </div>
 
       {/* Range options */}
