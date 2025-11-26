@@ -200,7 +200,7 @@ export function IngredientInput({
         </div>
       </div>
 
-      <div className="col-span-4 md:col-span-2">
+      <div className="col-span-4 md:col-span-1">
         <Input
           type="number"
           placeholder="Qty"
@@ -216,7 +216,7 @@ export function IngredientInput({
         />
       </div>
 
-      <div className="col-span-8 md:col-span-3">
+      <div className="col-span-8 md:col-span-4">
         <SmartUnitSelector
           value={value.unit || ''}
           onChange={(newUnit) => onChange({ ...value, unit: newUnit || null })}
@@ -225,7 +225,7 @@ export function IngredientInput({
         />
       </div>
 
-      <div className="col-span-10 md:col-span-2">
+      <div className="col-span-12 md:col-span-6">
         <Input
           type="text"
           placeholder="Notes (optional)"
