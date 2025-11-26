@@ -152,6 +152,8 @@ export async function searchRecipes(
       cookTimeMinutes: recipes.cookTimeMinutes,
       servings: recipes.servings,
       rating: recipes.rating,
+      avgRating: recipes.avgRating,
+      ratingCount: recipes.ratingCount,
       instructions: recipes.instructions,
       createdBy: recipes.createdBy,
       createdAt: recipes.createdAt,
@@ -166,7 +168,7 @@ export async function searchRecipes(
       query = query.orderBy(asc(recipes.createdAt)) as any;
       break;
     case 'rating':
-      query = query.orderBy(desc(recipes.rating), desc(recipes.createdAt)) as any;
+      query = query.orderBy(desc(recipes.avgRating), desc(recipes.createdAt)) as any;
       break;
     case 'prepTime':
       query = query.orderBy(

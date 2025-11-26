@@ -19,7 +19,7 @@ import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 import * as schema from '../src/lib/db/schema';
 import { seedIngredients } from '../src/lib/db/seed/ingredients-data';
-import { eq, sql } from 'drizzle-orm';
+import { sql } from 'drizzle-orm';
 import dotenv from 'dotenv';
 
 // Parse command line arguments
@@ -43,16 +43,18 @@ interface MigrationReport {
   warnings: string[];
 }
 
-async function checkCustomIngredientsTable(db: any): Promise<boolean> {
+async function checkCustomIngredientsTable(
+  db: ReturnType<typeof drizzle>
+): Promise<boolean> {
   try {
     await db.select().from(schema.customIngredients).limit(1);
     return true;
-  } catch (error) {
+  } catch {
     return false;
   }
 }
 
-async function getIngredientStats(db: any): Promise<{
+async function getIngredientStats(db: ReturnType<typeof drizzle>): Promise<{
   count: number;
   categories: Record<string, number>;
 }> {
@@ -65,22 +67,25 @@ async function getIngredientStats(db: any): Promise<{
     .groupBy(schema.ingredients.category);
 
   const count = results.reduce(
-    (sum: number, row: any) => sum + Number(row.count),
+    (sum: number, row: { category: string | null; count: number }) =>
+      sum + Number(row.count),
     0
   );
   const categories: Record<string, number> = {};
-  results.forEach((row: any) => {
+  results.forEach((row: { category: string | null; count: number }) => {
     categories[row.category || 'null'] = Number(row.count);
   });
 
   return { count, categories };
 }
 
-async function findDuplicateIngredients(db: any): Promise<string[]> {
+async function findDuplicateIngredients(
+  db: ReturnType<typeof drizzle>
+): Promise<string[]> {
   const duplicates: string[] = [];
   const existingIngredients = await db.select().from(schema.ingredients);
   const existingNames = new Set(
-    existingIngredients.map((ing: any) => ing.name.toLowerCase())
+    existingIngredients.map((ing: { name: string }) => ing.name.toLowerCase())
   );
 
   for (const seedIng of seedIngredients) {

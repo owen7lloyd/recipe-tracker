@@ -142,6 +142,8 @@ export const recipes = pgTable(
     cookTimeMinutes: integer('cook_time_minutes'),
     servings: integer('servings').notNull().default(4),
     rating: integer('rating'),
+    avgRating: decimal('avg_rating', { precision: 2, scale: 1 }),
+    ratingCount: integer('rating_count').default(0),
     instructions: text('instructions').array().notNull(),
     createdBy: uuid('created_by')
       .notNull()
@@ -231,6 +233,33 @@ export const recipeHistory = pgTable(
     recipeIdx: index('idx_recipe_history_recipe').on(table.recipeId),
     householdIdx: index('idx_recipe_history_household').on(table.householdId),
     cookedAtIdx: index('idx_recipe_history_date').on(table.cookedAt),
+  })
+);
+
+// Recipe ratings table (for tracking user ratings of recipes)
+export const recipeRatings = pgTable(
+  'recipe_ratings',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    recipeId: uuid('recipe_id')
+      .notNull()
+      .references(() => recipes.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    householdId: uuid('household_id')
+      .notNull()
+      .references(() => households.id, { onDelete: 'cascade' }),
+    rating: integer('rating').notNull(),
+    comment: text('comment'),
+    ratedAt: timestamp('rated_at').defaultNow().notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  },
+  (table) => ({
+    recipeIdx: index('idx_recipe_ratings_recipe').on(table.recipeId),
+    userIdx: index('idx_recipe_ratings_user').on(table.userId),
+    householdIdx: index('idx_recipe_ratings_household').on(table.householdId),
   })
 );
 
@@ -343,6 +372,7 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   recipes: many(recipes),
   pantryItems: many(pantryItems),
   groceryLists: many(groceryLists),
+  recipeRatings: many(recipeRatings),
   createdInvites: many(householdInvites, {
     relationName: 'inviteCreator',
   }),
@@ -398,6 +428,7 @@ export const recipesRelations = relations(recipes, ({ one, many }) => ({
     references: [users.id],
   }),
   ingredients: many(recipeIngredients),
+  ratings: many(recipeRatings),
 }));
 
 export const ingredientsRelations = relations(ingredients, ({ many }) => ({
@@ -502,6 +533,21 @@ export const recipeHistoryRelations = relations(recipeHistory, ({ one }) => ({
   cookedByUser: one(users, {
     fields: [recipeHistory.cookedBy],
     references: [users.id],
+  }),
+}));
+
+export const recipeRatingsRelations = relations(recipeRatings, ({ one }) => ({
+  recipe: one(recipes, {
+    fields: [recipeRatings.recipeId],
+    references: [recipes.id],
+  }),
+  user: one(users, {
+    fields: [recipeRatings.userId],
+    references: [users.id],
+  }),
+  household: one(households, {
+    fields: [recipeRatings.householdId],
+    references: [households.id],
   }),
 }));
 

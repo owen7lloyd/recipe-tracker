@@ -17,6 +17,8 @@ interface RecipeCardProps {
   cookTimeMinutes?: number | null;
   servings: number;
   rating?: number | null;
+  avgRating?: string | null;
+  ratingCount?: number | null;
 }
 
 export function RecipeCard({
@@ -30,6 +32,8 @@ export function RecipeCard({
   cookTimeMinutes,
   servings,
   rating,
+  avgRating,
+  ratingCount,
 }: RecipeCardProps) {
   const totalTime =
     (prepTimeMinutes || 0) + (cookTimeMinutes || 0) || null;
@@ -58,10 +62,17 @@ export function RecipeCard({
             <h3 className="line-clamp-2 font-merriweather text-lg font-bold text-[#2d5016] transition-colors group-hover:text-[#3d6b1f]">
               {title}
             </h3>
-            {rating && (
-              <div className="flex items-center gap-1 text-yellow-500" aria-label={`Rating: ${rating} out of 5 stars`}>
-                <Star className="h-4 w-4 fill-current" aria-hidden="true" />
-                <span className="text-sm font-medium" aria-hidden="true">{rating}</span>
+            {(avgRating || rating) && (
+              <div className="flex items-center gap-1 shrink-0" aria-label={`Rating: ${avgRating || rating} out of 5 stars${ratingCount ? ` (${ratingCount} rating${ratingCount !== 1 ? 's' : ''})` : ''}`}>
+                <Star className="h-4 w-4 fill-[#d4a574] text-[#d4a574]" aria-hidden="true" />
+                <span className="text-sm font-semibold text-[#2c2415]" aria-hidden="true">
+                  {avgRating ? parseFloat(avgRating).toFixed(1) : rating}
+                </span>
+                {ratingCount !== null && ratingCount !== undefined && (
+                  <span className="text-xs text-[#6b6250]" aria-hidden="true">
+                    ({ratingCount})
+                  </span>
+                )}
               </div>
             )}
           </div>
