@@ -312,7 +312,9 @@ tags: text[] (nullable)
 prepTimeMinutes: integer (nullable)
 cookTimeMinutes: integer (nullable)
 servings: integer (default 4)
-rating: integer (nullable, 1-5)
+rating: integer (nullable, 1-5) - legacy field, use avgRating instead
+avgRating: decimal(2,1) (nullable) - calculated average of all user ratings
+ratingCount: integer (default 0) - total number of ratings
 instructions: text[] - array of step strings
 createdBy: uuid (FK -> users.id)
 createdAt, updatedAt: timestamp
@@ -350,6 +352,19 @@ householdId: uuid (FK -> households.id, CASCADE)
 cookedBy: uuid (FK -> users.id)
 servings: integer
 cookedAt: timestamp (default now)
+```
+
+#### **recipeRatings**
+```typescript
+id: uuid (PK)
+recipeId: uuid (FK -> recipes.id, CASCADE)
+userId: uuid (FK -> users.id, CASCADE)
+householdId: uuid (FK -> households.id, CASCADE)
+rating: integer (1-5)
+comment: text (nullable)
+ratedAt: timestamp (default now)
+createdAt, updatedAt: timestamp
+UNIQUE(recipeId, userId) - one rating per user per recipe
 ```
 
 #### **groceryLists**
@@ -556,8 +571,10 @@ return createErrorResponse(
 - `GET/PUT/DELETE /api/recipes/[id]` - Single recipe operations
 - `GET /api/recipes/available` - "What Can I Cook?" feature
 - `POST /api/recipes/import` - Import from URL
-- `POST /api/recipes/[id]/cook` - Mark as cooked
+- `POST /api/recipes/[id]/cook` - Mark as cooked (returns rating prompt flag)
 - `POST /api/recipes/[id]/scale` - Scale servings
+- `POST /api/recipes/[id]/rate` - Rate recipe (1-5 stars with optional comment)
+- `GET /api/recipes/[id]/rate` - Get user's rating for a recipe
 
 #### Pantry
 - `GET /api/pantry` - List all items
@@ -598,11 +615,12 @@ pnpm dlx shadcn@latest add <component-name>
 #### Recipes (`/src/components/recipes/`)
 - `recipe-form.tsx` - Create/edit form with validation
 - `recipe-list.tsx` - Paginated list with filters
-- `recipe-card.tsx` - Card view for list display
+- `recipe-card.tsx` - Card view for list display (includes rating display)
 - `recipe-detail.tsx` - Full recipe view
 - `ingredient-input.tsx` - Autocomplete ingredient selector
-- `cook-recipe-view.tsx` - Step-by-step cooking mode
+- `cook-recipe-view.tsx` - Step-by-step cooking mode (includes rating prompt integration)
 - `serving-scaler.tsx` - Adjust servings with live updates
+- `rating-prompt-modal.tsx` - Post-cook rating modal with 5-star input and optional comment
 
 #### Pantry (`/src/components/pantry/`)
 - `pantry-list.tsx` - List with edit/delete
@@ -759,6 +777,40 @@ Import recipes from websites:
 - `schema-org.ts` - JSON-LD Recipe schema parsing
 - `html-parser.ts` - HTML fallback extraction
 - `ingredient-matcher.ts` - Match scraped text to DB ingredients
+
+### Recipe Rating System
+
+**Post-Cook Rating Workflow:**
+
+1. User completes cooking a recipe via `/dashboard/recipes/[id]/cook`
+2. User clicks "Finish Cooking" button
+3. API endpoint `POST /api/recipes/[id]/cook` is called
+4. API returns `showRatingPrompt: true` flag with recipe info
+5. `RatingPromptModal` component is displayed
+6. User can:
+   - Rate 1-5 stars (required)
+   - Add optional comment
+   - Skip rating (closes modal)
+   - Submit rating (saves to database)
+
+**Rating Storage & Calculation:**
+
+- Individual ratings stored in `recipeRatings` table
+- Each user can rate each recipe once (unique constraint)
+- Updating a rating replaces the previous rating
+- Average rating automatically calculated via database trigger
+- Recipe's `avgRating` and `ratingCount` fields updated on insert/update/delete
+- Ratings displayed on recipe cards with star icon and count
+
+**API Endpoints:**
+- `POST /api/recipes/[id]/rate` - Submit or update rating
+- `GET /api/recipes/[id]/rate` - Get user's existing rating
+- Returns updated `avgRating` and `ratingCount` after submission
+
+**Components:**
+- `RatingPromptModal` - Star rating input with hover effects, optional comment field
+- `RecipeCard` - Displays avgRating (decimal to 1 place) and count
+- `CookRecipeView` - Integrates rating modal after cooking completion
 
 ---
 

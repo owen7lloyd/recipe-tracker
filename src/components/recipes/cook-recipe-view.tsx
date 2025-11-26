@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ServingScaler } from './serving-scaler';
+import { RatingPromptModal } from './rating-prompt-modal';
 import {
   ChefHat,
   Check,
@@ -92,6 +93,7 @@ export function CookRecipeView(recipe: CookRecipeViewProps) {
   // Modal state
   const [showFinishDialog, setShowFinishDialog] = useState(false);
   const [isCooking, setIsCooking] = useState(false);
+  const [showRatingPrompt, setShowRatingPrompt] = useState(false);
 
   // Fetch pantry items
   useEffect(() => {
@@ -299,8 +301,16 @@ export function CookRecipeView(recipe: CookRecipeViewProps) {
         description: `${recipe.title} has been cooked. Pantry updated with ${result.updates.length} ingredient${result.updates.length !== 1 ? 's' : ''}.`,
       });
 
-      // Redirect back to recipe detail
-      router.push(`/dashboard/recipes/${recipe.id}`);
+      // Close the finish dialog
+      setShowFinishDialog(false);
+
+      // Show rating prompt if returned by API
+      if (result.showRatingPrompt) {
+        setShowRatingPrompt(true);
+      } else {
+        // Redirect back to recipe detail
+        router.push(`/dashboard/recipes/${recipe.id}`);
+      }
     } catch (error) {
       console.error('Error cooking recipe:', error);
       toast({
@@ -313,8 +323,12 @@ export function CookRecipeView(recipe: CookRecipeViewProps) {
       });
     } finally {
       setIsCooking(false);
-      setShowFinishDialog(false);
     }
+  };
+
+  const handleRatingComplete = () => {
+    setShowRatingPrompt(false);
+    router.push(`/dashboard/recipes/${recipe.id}`);
   };
 
   const progress = (completedSteps.size / recipe.instructions.length) * 100;
@@ -697,6 +711,16 @@ export function CookRecipeView(recipe: CookRecipeViewProps) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Rating prompt modal */}
+      <RatingPromptModal
+        recipeId={recipe.id}
+        recipeName={recipe.title}
+        imageUrl={recipe.imageUrl}
+        open={showRatingPrompt}
+        onOpenChange={setShowRatingPrompt}
+        onRatingComplete={handleRatingComplete}
+      />
     </div>
   );
 }
