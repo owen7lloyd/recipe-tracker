@@ -138,8 +138,8 @@ export function IngredientInput({
           : 'border-red-300 bg-red-50 dark:border-red-800 dark:bg-red-950/20'
       }`}
     >
-      {/* Row 1: Ingredient + Delete */}
-      <div className="col-span-11 flex items-center gap-2" ref={containerRef}>
+      {/* Row 1: Ingredient + Notes + Delete */}
+      <div className="col-span-8 flex items-center gap-2" ref={containerRef}>
         <GripVertical className="h-5 w-5 shrink-0 text-slate-400" />
         <div className="relative flex-1">
           <Input
@@ -198,6 +198,18 @@ export function IngredientInput({
         </div>
       </div>
 
+      <div className="col-span-3">
+        <Input
+          type="text"
+          placeholder="Notes (optional)"
+          value={value.notes || ''}
+          onChange={(e) =>
+            onChange({ ...value, notes: e.target.value || null })
+          }
+          disabled={disabled}
+        />
+      </div>
+
       <div className="col-span-1 flex items-center justify-end">
         <Button
           type="button"
@@ -210,8 +222,8 @@ export function IngredientInput({
         </Button>
       </div>
 
-      {/* Row 2: Quantity + Unit + Notes */}
-      <div className="col-span-3">
+      {/* Row 2: Quantity + Unit */}
+      <div className="col-span-2">
         <Input
           type="number"
           placeholder="Qty"
@@ -227,23 +239,11 @@ export function IngredientInput({
         />
       </div>
 
-      <div className="col-span-5">
+      <div className="col-span-10">
         <SmartUnitSelector
           value={value.unit || ''}
           onChange={(newUnit) => onChange({ ...value, unit: newUnit || null })}
           ingredientCategory={selectedIngredient?.category}
-          disabled={disabled}
-        />
-      </div>
-
-      <div className="col-span-4">
-        <Input
-          type="text"
-          placeholder="Notes (optional)"
-          value={value.notes || ''}
-          onChange={(e) =>
-            onChange({ ...value, notes: e.target.value || null })
-          }
           disabled={disabled}
         />
       </div>
