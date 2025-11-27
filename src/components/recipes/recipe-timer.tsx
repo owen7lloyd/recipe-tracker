@@ -27,7 +27,6 @@ export interface TimerState {
 
 export interface RecipeTimerProps {
   duration: number; // in seconds
-  label?: string;
   onComplete?: () => void;
   autoStart?: boolean;
   stepNumber?: number;
@@ -41,7 +40,6 @@ export interface RecipeTimerProps {
 
 export function RecipeTimer({
   duration: initialDuration,
-  label,
   onComplete,
   autoStart = false,
   stepNumber,
@@ -110,9 +108,10 @@ export function RecipeTimer({
     // Show browser notification if permitted
     if ('Notification' in window && Notification.permission === 'granted') {
       new Notification('Timer Complete!', {
-        body: label
-          ? `${label} - Step ${stepNumber !== undefined ? stepNumber + 1 : ''}`
-          : 'Recipe timer finished',
+        body:
+          stepNumber !== undefined
+            ? `Step ${stepNumber + 1} finished`
+            : 'Recipe timer finished',
         icon: '/icon-192.png',
         tag: `timer-${stepNumber}`,
       });
@@ -121,7 +120,7 @@ export function RecipeTimer({
     if (onComplete) {
       onComplete();
     }
-  }, [soundEnabled, label, stepNumber, onComplete, setState]);
+  }, [soundEnabled, stepNumber, onComplete, setState]);
 
   // Timer countdown logic
   useEffect(() => {
@@ -296,11 +295,6 @@ export function RecipeTimer({
     >
       {/* Timer display */}
       <div className="mb-3 text-center">
-        {label && (
-          <div className="mb-1 text-xs font-medium text-slate-600 dark:text-slate-400">
-            {label}
-          </div>
-        )}
         <div
           className={cn(
             'font-mono text-3xl font-bold',
