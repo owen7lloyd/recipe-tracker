@@ -132,85 +132,121 @@ export function IngredientInput({
 
   return (
     <div
-      className={`grid grid-cols-12 gap-3 rounded-lg border p-3 ${
+      className={`flex gap-3 rounded-lg border p-3 ${
         isValid
           ? 'border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950'
           : 'border-red-300 bg-red-50 dark:border-red-800 dark:bg-red-950/20'
       }`}
     >
-      {/* Row 1: Ingredient + Notes + Delete */}
-      <div className="col-span-8 flex items-center gap-2" ref={containerRef}>
+      {/* Left column: Resize handle (centered vertically) */}
+      <div className="flex items-center justify-center">
         <GripVertical className="h-5 w-5 shrink-0 text-slate-400" />
-        <div className="relative flex-1">
-          <Input
-            type="text"
-            placeholder="Search ingredient..."
-            value={searchQuery}
-            onChange={(e) => {
-              setSearchQuery(e.target.value);
-              setShowSuggestions(true);
-            }}
-            onFocus={() => setShowSuggestions(true)}
-            disabled={disabled}
-            className={`w-full ${!isValid ? 'border-red-400 focus-visible:ring-red-500' : ''}`}
-          />
-          {showSuggestions && (
-            <div className="absolute z-10 mt-1 w-full rounded-md border border-slate-200 bg-white shadow-lg dark:border-slate-800 dark:bg-slate-950">
-              {suggestions.length > 0 && (
-                <div className="py-1">
-                  {suggestions.map((ingredient) => (
-                    <button
-                      key={ingredient.id}
+      </div>
+
+      {/* Middle column: Ingredient fields in 2x2 grid */}
+      <div className="flex-1" ref={containerRef}>
+        <div className="grid grid-cols-[65%_35%] gap-3">
+          {/* Top row: Ingredient (65%) + Note (35%) */}
+          <div className="relative">
+            <Input
+              type="text"
+              placeholder="Search ingredient..."
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setShowSuggestions(true);
+              }}
+              onFocus={() => setShowSuggestions(true)}
+              disabled={disabled}
+              className={`w-full ${!isValid ? 'border-red-400 focus-visible:ring-red-500' : ''}`}
+            />
+            {showSuggestions && (
+              <div className="absolute z-10 mt-1 w-full rounded-md border border-slate-200 bg-white shadow-lg dark:border-slate-800 dark:bg-slate-950">
+                {suggestions.length > 0 && (
+                  <div className="py-1">
+                    {suggestions.map((ingredient) => (
+                      <button
+                        key={ingredient.id}
+                        type="button"
+                        onClick={() => handleSelectIngredient(ingredient)}
+                        className="w-full px-3 py-2 text-left text-sm hover:bg-slate-100 dark:hover:bg-slate-800"
+                      >
+                        <div className="flex items-center gap-2">
+                          <div className="font-medium">{ingredient.name}</div>
+                          {ingredient.isCustom && (
+                            <span className="rounded bg-blue-100 px-2 py-0.5 text-xs font-semibold text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                              Custom
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-xs text-slate-500">
+                          {ingredient.category}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {searchQuery.length > 0 && suggestions.length === 0 && (
+                  <div className="border-t border-slate-200 dark:border-slate-800">
+                    <Button
                       type="button"
-                      onClick={() => handleSelectIngredient(ingredient)}
-                      className="w-full px-3 py-2 text-left text-sm hover:bg-slate-100 dark:hover:bg-slate-800"
+                      onClick={handleOpenCreateModal}
+                      variant="ghost"
+                      className="w-full justify-start rounded-none px-3 py-2 text-sm hover:bg-blue-50 dark:hover:bg-blue-900/20"
                     >
-                      <div className="flex items-center gap-2">
-                        <div className="font-medium">{ingredient.name}</div>
-                        {ingredient.isCustom && (
-                          <span className="rounded bg-blue-100 px-2 py-0.5 text-xs font-semibold text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-                            Custom
-                          </span>
-                        )}
-                      </div>
-                      <div className="text-xs text-slate-500">
-                        {ingredient.category}
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
-              {searchQuery.length > 0 && suggestions.length === 0 && (
-                <div className="border-t border-slate-200 dark:border-slate-800">
-                  <Button
-                    type="button"
-                    onClick={handleOpenCreateModal}
-                    variant="ghost"
-                    className="w-full justify-start rounded-none px-3 py-2 text-sm hover:bg-blue-50 dark:hover:bg-blue-900/20"
-                  >
-                    <Plus className="mr-2 h-4 w-4" />
-                    Create: "{searchQuery}"
-                  </Button>
-                </div>
-              )}
-            </div>
-          )}
+                      <Plus className="mr-2 h-4 w-4" />
+                      Create: "{searchQuery}"
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          <div>
+            <Input
+              type="text"
+              placeholder="Notes (optional)"
+              value={value.notes || ''}
+              onChange={(e) =>
+                onChange({ ...value, notes: e.target.value || null })
+              }
+              disabled={disabled}
+            />
+          </div>
+
+          {/* Bottom row: Unit (65%) + Quantity (35%) */}
+          <div>
+            <SmartUnitSelector
+              value={value.unit || ''}
+              onChange={(newUnit) =>
+                onChange({ ...value, unit: newUnit || null })
+              }
+              ingredientCategory={selectedIngredient?.category}
+              disabled={disabled}
+            />
+          </div>
+
+          <div>
+            <Input
+              type="number"
+              placeholder="Qty"
+              value={value.quantity || ''}
+              onChange={(e) =>
+                onChange({
+                  ...value,
+                  quantity: e.target.value ? parseFloat(e.target.value) : null,
+                })
+              }
+              disabled={disabled}
+              step="0.01"
+            />
+          </div>
         </div>
       </div>
 
-      <div className="col-span-3">
-        <Input
-          type="text"
-          placeholder="Notes (optional)"
-          value={value.notes || ''}
-          onChange={(e) =>
-            onChange({ ...value, notes: e.target.value || null })
-          }
-          disabled={disabled}
-        />
-      </div>
-
-      <div className="col-span-1 flex items-center justify-end">
+      {/* Right column: Cancel button (centered vertically) */}
+      <div className="flex items-center justify-center">
         <Button
           type="button"
           variant="ghost"
@@ -220,32 +256,6 @@ export function IngredientInput({
         >
           <X className="h-4 w-4" />
         </Button>
-      </div>
-
-      {/* Row 2: Quantity + Unit */}
-      <div className="col-span-2">
-        <Input
-          type="number"
-          placeholder="Qty"
-          value={value.quantity || ''}
-          onChange={(e) =>
-            onChange({
-              ...value,
-              quantity: e.target.value ? parseFloat(e.target.value) : null,
-            })
-          }
-          disabled={disabled}
-          step="0.01"
-        />
-      </div>
-
-      <div className="col-span-10">
-        <SmartUnitSelector
-          value={value.unit || ''}
-          onChange={(newUnit) => onChange({ ...value, unit: newUnit || null })}
-          ingredientCategory={selectedIngredient?.category}
-          disabled={disabled}
-        />
       </div>
 
       <CreateCustomIngredientModal
