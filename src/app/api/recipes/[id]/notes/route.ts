@@ -38,7 +38,8 @@ export async function GET(
     }
 
     // Parse query parameters
-    const { searchParams } = new URL(request.url);
+    const url = new URL(request.url, 'https://localhost');
+    const { searchParams } = url;
     const queryParams = Object.fromEntries(searchParams.entries());
     const validatedQuery = getRecipeNotesQuerySchema.parse(queryParams);
 
