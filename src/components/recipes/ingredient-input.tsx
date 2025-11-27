@@ -132,17 +132,15 @@ export function IngredientInput({
 
   return (
     <div
-      className={`grid grid-cols-12 gap-2 rounded-lg border p-3 ${
+      className={`grid grid-cols-12 gap-3 rounded-lg border p-3 ${
         isValid
           ? 'border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950'
           : 'border-red-300 bg-red-50 dark:border-red-800 dark:bg-red-950/20'
       }`}
     >
-      <div
-        className="col-span-12 flex items-center gap-2 md:col-span-5"
-        ref={containerRef}
-      >
-        <GripVertical className="h-5 w-5 text-slate-400" />
+      {/* Row 1: Ingredient + Delete */}
+      <div className="col-span-11 flex items-center gap-2" ref={containerRef}>
+        <GripVertical className="h-5 w-5 shrink-0 text-slate-400" />
         <div className="relative flex-1">
           <Input
             type="text"
@@ -200,7 +198,20 @@ export function IngredientInput({
         </div>
       </div>
 
-      <div className="col-span-4 md:col-span-1">
+      <div className="col-span-1 flex items-center justify-end">
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          onClick={onRemove}
+          disabled={disabled}
+        >
+          <X className="h-4 w-4" />
+        </Button>
+      </div>
+
+      {/* Row 2: Quantity + Unit + Notes */}
+      <div className="col-span-3">
         <Input
           type="number"
           placeholder="Qty"
@@ -216,7 +227,7 @@ export function IngredientInput({
         />
       </div>
 
-      <div className="col-span-8 md:col-span-4">
+      <div className="col-span-5">
         <SmartUnitSelector
           value={value.unit || ''}
           onChange={(newUnit) => onChange({ ...value, unit: newUnit || null })}
@@ -225,7 +236,7 @@ export function IngredientInput({
         />
       </div>
 
-      <div className="col-span-12 md:col-span-1">
+      <div className="col-span-4">
         <Input
           type="text"
           placeholder="Notes (optional)"
@@ -235,18 +246,6 @@ export function IngredientInput({
           }
           disabled={disabled}
         />
-      </div>
-
-      <div className="col-span-2 flex items-center justify-end md:col-span-1">
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          onClick={onRemove}
-          disabled={disabled}
-        >
-          <X className="h-4 w-4" />
-        </Button>
       </div>
 
       <CreateCustomIngredientModal

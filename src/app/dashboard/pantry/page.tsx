@@ -13,7 +13,15 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Search, Loader2, PackageOpen } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Search, Loader2, Plus } from 'lucide-react';
 import {
   PantryEmptyState,
   SearchEmptyState,
@@ -50,6 +58,7 @@ export default function PantryPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
 
   const fetchPantryItems = async () => {
     setIsLoading(true);
@@ -109,153 +118,179 @@ export default function PantryPage() {
       <div className="mx-auto max-w-7xl space-y-6">
         {/* Header */}
         <div>
-          <h1 className="font-merriweather text-3xl font-bold text-[#2d5016]">Pantry Management</h1>
+          <h1 className="font-merriweather text-3xl font-bold text-[#2d5016]">
+            Pantry Management
+          </h1>
           <p className="text-[#6b6250]">
             Manage your household ingredient inventory
           </p>
         </div>
 
-      {/* Stats */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Total Items</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{items.length}</div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Categories</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {Object.keys(categoryStats).length}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">
-              With Quantities
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {items.filter((item) => item.quantity).length}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">
-              Without Quantity
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {items.filter((item) => !item.quantity).length}
-            </div>
-            <p className="mt-1 text-xs text-gray-500">
-              Items marked as available
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Main Content */}
-      <div className="grid gap-6 lg:grid-cols-3">
-        {/* Add Item Form */}
-        <div className="lg:col-span-1">
-          <AddPantryItemForm onItemAdded={fetchPantryItems} />
-        </div>
-
-        {/* Pantry List */}
-        <div className="lg:col-span-2">
+        {/* Stats */}
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <Card>
-            <CardHeader>
-              <CardTitle>Your Pantry</CardTitle>
-              <CardDescription>
-                Search and filter your pantry items
-              </CardDescription>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium">Total Items</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Search and Filter */}
-              <div className="space-y-4">
-                {/* Search */}
-                <div className="relative">
-                  <Label htmlFor="search" className="sr-only">
-                    Search
-                  </Label>
-                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#d4a574]" />
-                  <Input
-                    id="search"
-                    type="text"
-                    placeholder="Search pantry items..."
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
+            <CardContent>
+              <div className="text-2xl font-bold">{items.length}</div>
+            </CardContent>
+          </Card>
 
-                {/* Category Filter */}
-                <div className="flex flex-wrap gap-2">
-                  {CATEGORIES.map((cat) => (
-                    <Badge
-                      key={cat.value}
-                      variant={
-                        selectedCategory === cat.value ? 'default' : 'outline'
-                      }
-                      className="cursor-pointer"
-                      onClick={() => setSelectedCategory(cat.value)}
-                    >
-                      {cat.label}
-                      {cat.value && categoryStats[cat.value] && (
-                        <span className="ml-1">
-                          ({categoryStats[cat.value]})
-                        </span>
-                      )}
-                    </Badge>
-                  ))}
-                </div>
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium">Categories</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {Object.keys(categoryStats).length}
               </div>
+            </CardContent>
+          </Card>
 
-              {/* Loading State */}
-              {isLoading && (
-                <div className="flex items-center justify-center py-12">
-                  <Loader2 className="h-8 w-8 animate-spin text-[#d4a574]" />
-                </div>
-              )}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium">
+                With Quantities
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {items.filter((item) => item.quantity).length}
+              </div>
+            </CardContent>
+          </Card>
 
-              {/* Empty States */}
-              {!isLoading && items.length === 0 && (
-                <PantryEmptyState
-                  onAddItem={() => {
-                    // Focus on the add item form (already visible on the page)
-                    const input = document.querySelector(
-                      'input[name="ingredient"]'
-                    ) as HTMLInputElement;
-                    input?.focus();
-                  }}
-                />
-              )}
-
-              {!isLoading && items.length > 0 && filteredItems.length === 0 && (
-                <SearchEmptyState searchTerm={search || selectedCategory} />
-              )}
-
-              {/* Pantry List */}
-              {!isLoading && filteredItems.length > 0 && (
-                <PantryList items={filteredItems} onUpdate={fetchPantryItems} />
-              )}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium">
+                Without Quantity
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {items.filter((item) => !item.quantity).length}
+              </div>
+              <p className="mt-1 text-xs text-gray-500">
+                Items marked as available
+              </p>
             </CardContent>
           </Card>
         </div>
-      </div>
+
+        {/* Main Content */}
+        <div className="space-y-6">
+          {/* Add Item Button */}
+          <div className="flex justify-start">
+            <Button
+              onClick={() => setIsAddDialogOpen(true)}
+              className="gap-2 bg-gradient-to-r from-[#2d5016] to-[#3d6b1f]"
+            >
+              <Plus className="h-4 w-4" />
+              Add Item to Pantry
+            </Button>
+          </div>
+
+          {/* Pantry List */}
+          <div>
+            <Card>
+              <CardHeader>
+                <CardTitle>Your Pantry</CardTitle>
+                <CardDescription>
+                  Search and filter your pantry items
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Search and Filter */}
+                <div className="space-y-4">
+                  {/* Search */}
+                  <div className="relative">
+                    <Label htmlFor="search" className="sr-only">
+                      Search
+                    </Label>
+                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#d4a574]" />
+                    <Input
+                      id="search"
+                      type="text"
+                      placeholder="Search pantry items..."
+                      value={search}
+                      onChange={(e) => setSearch(e.target.value)}
+                      className="pl-10"
+                    />
+                  </div>
+
+                  {/* Category Filter */}
+                  <div className="flex flex-wrap gap-2">
+                    {CATEGORIES.map((cat) => (
+                      <Badge
+                        key={cat.value}
+                        variant={
+                          selectedCategory === cat.value ? 'default' : 'outline'
+                        }
+                        className="cursor-pointer"
+                        onClick={() => setSelectedCategory(cat.value)}
+                      >
+                        {cat.label}
+                        {cat.value && categoryStats[cat.value] && (
+                          <span className="ml-1">
+                            ({categoryStats[cat.value]})
+                          </span>
+                        )}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Loading State */}
+                {isLoading && (
+                  <div className="flex items-center justify-center py-12">
+                    <Loader2 className="h-8 w-8 animate-spin text-[#d4a574]" />
+                  </div>
+                )}
+
+                {/* Empty States */}
+                {!isLoading && items.length === 0 && (
+                  <PantryEmptyState
+                    onAddItem={() => setIsAddDialogOpen(true)}
+                  />
+                )}
+
+                {!isLoading &&
+                  items.length > 0 &&
+                  filteredItems.length === 0 && (
+                    <SearchEmptyState searchTerm={search || selectedCategory} />
+                  )}
+
+                {/* Pantry List */}
+                {!isLoading && filteredItems.length > 0 && (
+                  <PantryList
+                    items={filteredItems}
+                    onUpdate={fetchPantryItems}
+                  />
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+
+        {/* Add Item Dialog */}
+        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Add Item to Pantry</DialogTitle>
+              <DialogDescription>
+                Search for an ingredient and add it to your pantry with optional
+                quantity and unit
+              </DialogDescription>
+            </DialogHeader>
+            <AddPantryItemForm
+              onItemAdded={() => {
+                fetchPantryItems();
+                setIsAddDialogOpen(false);
+              }}
+            />
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
