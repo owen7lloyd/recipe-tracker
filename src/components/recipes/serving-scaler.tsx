@@ -72,21 +72,16 @@ export function ServingScaler({
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center gap-3">
-        <div className="flex flex-col">
-          <label className="mb-1 text-xs font-medium text-slate-600 dark:text-slate-400">
-            Servings
-          </label>
-          <Input
-            type="number"
-            min={minServings}
-            max={maxServings}
-            value={currentServings}
-            onChange={handleChange}
-            disabled={disabled}
-            className="w-20 text-center text-lg font-bold"
-            aria-label="Servings"
-          />
-        </div>
+        <Input
+          type="number"
+          min={minServings}
+          max={maxServings}
+          value={currentServings}
+          onChange={handleChange}
+          disabled={disabled}
+          className="w-20 text-center text-lg font-bold"
+          aria-label="Servings"
+        />
 
         {isScaled && (
           <Button

@@ -177,7 +177,7 @@ export function OrganizedGroceryList({
 
   const handleItemUpdate = async (
     itemId: string,
-    updates: { quantity?: number; unit?: string; checked?: boolean }
+    updates: { quantity?: number; unit?: string; store?: string; checked?: boolean }
   ) => {
     if (readOnly) return;
 

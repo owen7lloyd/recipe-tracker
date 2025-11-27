@@ -642,21 +642,21 @@ export function CookRecipeView(recipe: CookRecipeViewProps) {
                     {deductions.map((ing) => (
                       <div
                         key={ing.id}
-                        className="rounded border border-slate-200 p-2 text-xs dark:border-slate-800"
+                        className="rounded border border-slate-200 p-3 dark:border-slate-800"
                       >
-                        <p className="truncate font-medium">
+                        <p className="truncate font-medium text-sm">
                           {ing.ingredientName}
                         </p>
                         {ing.notInPantry ? (
-                          <p className="text-amber-600 dark:text-amber-500">
+                          <p className="text-sm text-amber-600 dark:text-amber-500">
                             Not in pantry - will skip
                           </p>
                         ) : ing.notTracked ? (
-                          <p className="text-slate-500">Quantity not tracked</p>
+                          <p className="text-sm text-slate-500">Quantity not tracked</p>
                         ) : ing.quantityNeeded === null ? (
-                          <p className="text-slate-500">Non-numeric quantity</p>
+                          <p className="text-sm text-slate-500">Non-numeric quantity</p>
                         ) : ing.unitMismatch ? (
-                          <p className="text-amber-600 dark:text-amber-500">
+                          <p className="text-sm text-amber-600 dark:text-amber-500">
                             Unit mismatch ({ing.unit} vs{' '}
                             {pantry.find(
                               (p) => p.ingredient.id === ing.ingredientId
@@ -666,7 +666,7 @@ export function CookRecipeView(recipe: CookRecipeViewProps) {
                         ) : (
                           <div className="mt-1 space-y-2">
                             <div className="flex items-center justify-between">
-                              <span className="text-slate-600 dark:text-slate-400">
+                              <span className="text-sm text-slate-600 dark:text-slate-400">
                                 {ing.currentQty?.toFixed(2)} →{' '}
                                 {ing.remainingQty?.toFixed(2)}{' '}
                                 {pantry.find(
@@ -674,13 +674,13 @@ export function CookRecipeView(recipe: CookRecipeViewProps) {
                                 )?.unit || ing.unit}
                               </span>
                               {ing.willBeRemoved && (
-                                <Badge variant="destructive" className="text-xs">
+                                <Badge variant="destructive" className="text-sm">
                                   Remove
                                 </Badge>
                               )}
                             </div>
                             {ing.densityConverted && (
-                              <div className="flex items-center gap-1 rounded bg-blue-50 p-1.5 text-xs dark:bg-blue-950">
+                              <div className="flex items-center gap-1 rounded bg-blue-50 p-1.5 text-sm dark:bg-blue-950">
                                 <span className="text-blue-700 dark:text-blue-300">
                                   ℹ️ Unit conversion used (density-based)
                                 </span>
