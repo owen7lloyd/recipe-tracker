@@ -744,19 +744,19 @@ export function CookRecipeView(recipe: CookRecipeViewProps) {
                       return (
                         <div
                           key={ing.id}
-                          className="rounded-lg border border-slate-200 p-2 text-xs dark:border-slate-800"
+                          className="rounded-lg border border-slate-200 p-3 dark:border-slate-800"
                         >
                           <div className="flex items-start justify-between gap-2">
                             <div className="min-w-0 flex-1">
-                              <p className="truncate font-medium">
+                              <p className="truncate font-medium text-sm">
                                 {ing.ingredientName || 'Unknown ingredient'}
                               </p>
-                              <div className="text-slate-600 dark:text-slate-400">
+                              <div className="text-sm text-slate-600 dark:text-slate-400">
                                 {finalQty}
                                 {ing.unit ? ` ${ing.unit}` : ''}
                               </div>
                               {ing.notes && (
-                                <p className="mt-1 text-slate-500">
+                                <p className="mt-1 text-sm text-slate-500">
                                   {ing.notes}
                                 </p>
                               )}

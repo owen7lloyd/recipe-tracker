@@ -1,6 +1,8 @@
 'use client';
 
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Minus, Plus, RotateCcw } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
@@ -49,25 +51,52 @@ export function ServingScaler({
   minServings = 1,
   maxServings = 100,
 }: ServingScalerProps) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editValue, setEditValue] = useState(currentServings.toString());
+
   const isScaled = currentServings !== originalServings;
   const scaleFactor = currentServings / originalServings;
 
   const handleDecrease = () => {
     if (currentServings > minServings && !disabled) {
       onScaleChange(currentServings - 1);
+      setEditValue((currentServings - 1).toString());
     }
   };
 
   const handleIncrease = () => {
     if (currentServings < maxServings && !disabled) {
       onScaleChange(currentServings + 1);
+      setEditValue((currentServings + 1).toString());
     }
   };
 
   const handleReset = () => {
     if (!disabled) {
       onScaleChange(originalServings);
+      setEditValue(originalServings.toString());
+      setIsEditing(false);
     }
+  };
+
+  const handleEditChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setEditValue(value);
+
+    // Attempt to parse and apply if valid
+    const numValue = parseInt(value, 10);
+    if (!isNaN(numValue) && numValue >= minServings && numValue <= maxServings) {
+      onScaleChange(numValue);
+    }
+  };
+
+  const handleEditBlur = () => {
+    const numValue = parseInt(editValue, 10);
+    if (isNaN(numValue) || numValue < minServings || numValue > maxServings) {
+      // Reset to current value if invalid
+      setEditValue(currentServings.toString());
+    }
+    setIsEditing(false);
   };
 
   return (
@@ -85,14 +114,31 @@ export function ServingScaler({
             <Minus className="h-4 w-4" />
           </Button>
 
-          <div className="flex min-w-[120px] flex-col items-center justify-center rounded-md border border-slate-200 bg-slate-50 px-4 py-2 dark:border-slate-800 dark:bg-slate-900">
-            <span className="text-2xl font-bold tabular-nums">
-              {currentServings}
-            </span>
-            <span className="text-xs text-slate-600 dark:text-slate-400">
-              {currentServings === 1 ? 'serving' : 'servings'}
-            </span>
-          </div>
+          {isEditing ? (
+            <Input
+              type="number"
+              min={minServings}
+              max={maxServings}
+              value={editValue}
+              onChange={handleEditChange}
+              onBlur={handleEditBlur}
+              autoFocus
+              disabled={disabled}
+              className="h-10 w-20 text-center text-lg font-bold"
+            />
+          ) : (
+            <div
+              className="flex min-w-[120px] flex-col items-center justify-center rounded-md border border-slate-200 bg-slate-50 px-4 py-2 dark:border-slate-800 dark:bg-slate-900 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800"
+              onClick={() => setIsEditing(true)}
+            >
+              <span className="text-2xl font-bold tabular-nums">
+                {currentServings}
+              </span>
+              <span className="text-xs text-slate-600 dark:text-slate-400">
+                {currentServings === 1 ? 'serving' : 'servings'}
+              </span>
+            </div>
+          )}
 
           <Button
             variant="outline"
@@ -123,7 +169,7 @@ export function ServingScaler({
       {isScaled && (
         <div className="flex items-center gap-2">
           <Badge variant="secondary" className="text-xs">
-            {scaleFactor}x {scaleFactor > 1 ? 'larger' : 'smaller'}
+            {scaleFactor.toFixed(2)}x {scaleFactor > 1 ? 'larger' : 'smaller'}
           </Badge>
           <span className="text-xs text-slate-600 dark:text-slate-400">
             Original: {originalServings}{' '}
