@@ -101,7 +101,6 @@ export function CookRecipeView(recipe: CookRecipeViewProps) {
   const [isCooking, setIsCooking] = useState(false);
   const [completedTimerStep, setCompletedTimerStep] = useState<{
     stepNumber: number;
-    label?: string;
   } | null>(null);
   const [showRatingPrompt, setShowRatingPrompt] = useState(false);
 
@@ -177,13 +176,10 @@ export function CookRecipeView(recipe: CookRecipeViewProps) {
       // If timer was hidden, show a toast to alert the user
       if (!timerExpanded) {
         const stepNum = completedTimerStep.stepNumber + 1;
-        const timerLabel = completedTimerStep.label
-          ? `${completedTimerStep.label} (Step ${stepNum})`
-          : `Step ${stepNum}`;
 
         toast({
           title: '⏱️ Timer Complete!',
-          description: `${timerLabel} timer has finished. Check on your food!`,
+          description: `Step ${stepNum} timer has finished. Check on your food!`,
           duration: 10000, // Show for 10 seconds
         });
       }
@@ -638,7 +634,6 @@ export function CookRecipeView(recipe: CookRecipeViewProps) {
                                       key={timerId}
                                       timerId={timerId}
                                       duration={timer.duration}
-                                      label={timer.label}
                                       stepNumber={index}
                                       isRange={timer.isRange}
                                       minDuration={timer.minDuration}
@@ -648,7 +643,6 @@ export function CookRecipeView(recipe: CookRecipeViewProps) {
                                       onComplete={() => {
                                         setCompletedTimerStep({
                                           stepNumber: index,
-                                          label: timer.label,
                                         });
                                       }}
                                     />
@@ -907,9 +901,11 @@ export function CookRecipeView(recipe: CookRecipeViewProps) {
               Timer Complete!
             </DialogTitle>
             <DialogDescription>
-              {completedTimerStep?.label
-                ? `${completedTimerStep.label} - Step ${completedTimerStep.stepNumber + 1}`
-                : `Step ${completedTimerStep?.stepNumber ? completedTimerStep.stepNumber + 1 : '?'} timer finished`}
+              Step{' '}
+              {completedTimerStep?.stepNumber
+                ? completedTimerStep.stepNumber + 1
+                : '?'}{' '}
+              timer finished
             </DialogDescription>
           </DialogHeader>
 
