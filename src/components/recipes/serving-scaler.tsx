@@ -1,9 +1,8 @@
 'use client';
 
-import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Minus, Plus, RotateCcw } from 'lucide-react';
+import { RotateCcw } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
 interface ServingScalerProps {
@@ -24,15 +23,15 @@ interface ServingScalerProps {
 /**
  * ServingScaler Component
  *
- * Interactive stepper control for adjusting recipe serving sizes.
- * Displays current servings with +/- buttons and a reset option when scaled.
+ * Number input control for adjusting recipe serving sizes.
+ * Uses a native number input with spinner controls (scroll wheel support).
  *
  * Features:
- * - Increment/decrement serving size
- * - Reset to original servings
- * - Visual indicator when recipe is scaled
+ * - Direct numeric input with scroll wheel support
+ * - Reset button to restore original servings
+ * - Visual indicator when recipe is scaled (scale factor badge)
  * - Configurable min/max limits
- * - Keyboard accessible
+ * - Real-time updates as user types
  *
  * @example
  * ```tsx
@@ -51,105 +50,42 @@ export function ServingScaler({
   minServings = 1,
   maxServings = 100,
 }: ServingScalerProps) {
-  const [isEditing, setIsEditing] = useState(false);
-  const [editValue, setEditValue] = useState(currentServings.toString());
-
   const isScaled = currentServings !== originalServings;
   const scaleFactor = currentServings / originalServings;
 
-  const handleDecrease = () => {
-    if (currentServings > minServings && !disabled) {
-      onScaleChange(currentServings - 1);
-      setEditValue((currentServings - 1).toString());
-    }
-  };
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    const numValue = parseInt(value, 10);
 
-  const handleIncrease = () => {
-    if (currentServings < maxServings && !disabled) {
-      onScaleChange(currentServings + 1);
-      setEditValue((currentServings + 1).toString());
+    // Only update if valid number within bounds
+    if (!isNaN(numValue) && numValue >= minServings && numValue <= maxServings) {
+      onScaleChange(numValue);
     }
   };
 
   const handleReset = () => {
     if (!disabled) {
       onScaleChange(originalServings);
-      setEditValue(originalServings.toString());
-      setIsEditing(false);
     }
-  };
-
-  const handleEditChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setEditValue(value);
-
-    // Attempt to parse and apply if valid
-    const numValue = parseInt(value, 10);
-    if (!isNaN(numValue) && numValue >= minServings && numValue <= maxServings) {
-      onScaleChange(numValue);
-    }
-  };
-
-  const handleEditBlur = () => {
-    const numValue = parseInt(editValue, 10);
-    if (isNaN(numValue) || numValue < minServings || numValue > maxServings) {
-      // Reset to current value if invalid
-      setEditValue(currentServings.toString());
-    }
-    setIsEditing(false);
   };
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-3">
       <div className="flex items-center gap-3">
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={handleDecrease}
-            disabled={disabled || currentServings <= minServings}
-            aria-label="Decrease servings"
-            className="h-9 w-9"
-          >
-            <Minus className="h-4 w-4" />
-          </Button>
-
-          {isEditing ? (
-            <Input
-              type="number"
-              min={minServings}
-              max={maxServings}
-              value={editValue}
-              onChange={handleEditChange}
-              onBlur={handleEditBlur}
-              autoFocus
-              disabled={disabled}
-              className="h-10 w-20 text-center text-lg font-bold"
-            />
-          ) : (
-            <div
-              className="flex min-w-[120px] flex-col items-center justify-center rounded-md border border-slate-200 bg-slate-50 px-4 py-2 dark:border-slate-800 dark:bg-slate-900 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800"
-              onClick={() => setIsEditing(true)}
-            >
-              <span className="text-2xl font-bold tabular-nums">
-                {currentServings}
-              </span>
-              <span className="text-xs text-slate-600 dark:text-slate-400">
-                {currentServings === 1 ? 'serving' : 'servings'}
-              </span>
-            </div>
-          )}
-
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={handleIncrease}
-            disabled={disabled || currentServings >= maxServings}
-            aria-label="Increase servings"
-            className="h-9 w-9"
-          >
-            <Plus className="h-4 w-4" />
-          </Button>
+        <div className="flex flex-col">
+          <label className="mb-1 text-xs font-medium text-slate-600 dark:text-slate-400">
+            Servings
+          </label>
+          <Input
+            type="number"
+            min={minServings}
+            max={maxServings}
+            value={currentServings}
+            onChange={handleChange}
+            disabled={disabled}
+            className="w-20 text-center text-lg font-bold"
+            aria-label="Servings"
+          />
         </div>
 
         {isScaled && (
@@ -158,10 +94,10 @@ export function ServingScaler({
             size="sm"
             onClick={handleReset}
             disabled={disabled}
-            className="gap-1.5 text-sm"
+            className="gap-1.5 self-end text-sm"
           >
             <RotateCcw className="h-3.5 w-3.5" />
-            Reset to {originalServings}
+            Reset
           </Button>
         )}
       </div>

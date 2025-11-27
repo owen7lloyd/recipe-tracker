@@ -627,7 +627,7 @@ pnpm dlx shadcn@latest add <component-name>
 - `ingredient-picker.tsx` - Multi-select ingredient picker for search
 - `ingredient-search-page.tsx` - Search recipes by ingredients page
 - `cook-recipe-view.tsx` - Step-by-step cooking mode with timers and notes (full-width cooking details panel at top, no scrollbars)
-- `serving-scaler.tsx` - Adjust servings with +/- buttons, manual input field (click to edit), scale factor limited to 2 decimal places
+- `serving-scaler.tsx` - Number input for adjusting servings with scroll wheel support, reset button, and scale factor display
 - `recipe-timer.tsx` - Interactive timer component with notifications
 - `recipe-note.tsx` - Note input/display component for cooking sessions
 
