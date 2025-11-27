@@ -49,7 +49,8 @@ const TIME_UNITS = {
 const TIME_PATTERNS = [
   // Ranges: "15-20 minutes", "1-2 hours", "3 to 5 mins"
   {
-    regex: /(\d+)\s*(?:-|to)\s*(\d+)\s*(minute|min|minutes|mins|second|sec|seconds|secs|hour|hr|hours|hrs)/gi,
+    regex:
+      /(\d+)\s*(?:-|to)\s*(\d+)\s*(minute|min|minutes|mins|second|sec|seconds|secs|hour|hr|hours|hrs)/gi,
     type: 'range' as const,
   },
   // Time with format: "1h 30m", "2h30m"
@@ -64,7 +65,8 @@ const TIME_PATTERNS = [
   },
   // Single time: "25 minutes", "1 hour", "30 secs"
   {
-    regex: /(\d+)\s*(minute|min|minutes|mins|second|sec|seconds|secs|hour|hr|hours|hrs)/gi,
+    regex:
+      /(\d+)\s*(minute|min|minutes|mins|second|sec|seconds|secs|hour|hr|hours|hrs)/gi,
     type: 'single' as const,
   },
 ];
@@ -75,11 +77,13 @@ const TIME_PATTERNS = [
  */
 function extractLabel(text: string, startIndex: number): string | undefined {
   // Look for verb or noun before the time
-  const beforeText = text.substring(Math.max(0, startIndex - 30), startIndex).trim();
+  const beforeText = text
+    .substring(Math.max(0, startIndex - 30), startIndex)
+    .trim();
   const words = beforeText.split(/\s+/);
 
   // Get the last 1-2 meaningful words
-  const meaningfulWords = words.filter(w => w.length > 2);
+  const meaningfulWords = words.filter((w) => w.length > 2);
   if (meaningfulWords.length > 0) {
     return meaningfulWords[meaningfulWords.length - 1];
   }
@@ -103,18 +107,27 @@ export function detectTimersInStep(
   stepNumber: number
 ): StepTimer {
   const timers: DetectedTimer[] = [];
-  const processedRanges = new Set<string>(); // Avoid duplicate detections
+  const usedRanges: Array<{ start: number; end: number }> = []; // Track character ranges to avoid overlaps
+
+  /**
+   * Checks if a character range overlaps with any already-processed range
+   */
+  function isOverlapping(start: number, end: number): boolean {
+    return usedRanges.some(
+      (range) => !(end <= range.start || start >= range.end)
+    );
+  }
 
   for (const pattern of TIME_PATTERNS) {
     const matches = stepText.matchAll(pattern.regex);
 
     for (const match of matches) {
-      const matchKey = `${match.index}-${match[0]}`;
-      if (processedRanges.has(matchKey)) continue;
-      processedRanges.add(matchKey);
-
       const startIndex = match.index || 0;
       const endIndex = startIndex + match[0].length;
+
+      // Skip if this match overlaps with already-processed ranges
+      if (isOverlapping(startIndex, endIndex)) continue;
+
       const originalText = match[0];
       const label = extractLabel(stepText, startIndex);
 
@@ -129,7 +142,11 @@ export function detectTimersInStep(
 
         timers.push({
           duration: avgDuration,
-          unit: unit.includes('hour') ? 'hours' : unit.includes('sec') ? 'seconds' : 'minutes',
+          unit: unit.includes('hour')
+            ? 'hours'
+            : unit.includes('sec')
+              ? 'seconds'
+              : 'minutes',
           originalText,
           startIndex,
           endIndex,
@@ -138,6 +155,7 @@ export function detectTimersInStep(
           maxDuration: maxSeconds,
           label,
         });
+        usedRanges.push({ start: startIndex, end: endIndex });
       } else if (pattern.type === 'compound') {
         // Compound pattern: "1h 30m"
         const hours = parseInt(match[1], 10);
@@ -153,6 +171,7 @@ export function detectTimersInStep(
           isRange: false,
           label,
         });
+        usedRanges.push({ start: startIndex, end: endIndex });
       } else if (pattern.type === 'clock') {
         // Clock pattern: "1:30" (assume minutes:seconds)
         const minutes = parseInt(match[1], 10);
@@ -170,6 +189,7 @@ export function detectTimersInStep(
             isRange: false,
             label,
           });
+          usedRanges.push({ start: startIndex, end: endIndex });
         }
       } else if (pattern.type === 'single') {
         // Single time pattern: "25 minutes"
@@ -179,13 +199,18 @@ export function detectTimersInStep(
 
         timers.push({
           duration,
-          unit: unit.includes('hour') ? 'hours' : unit.includes('sec') ? 'seconds' : 'minutes',
+          unit: unit.includes('hour')
+            ? 'hours'
+            : unit.includes('sec')
+              ? 'seconds'
+              : 'minutes',
           originalText,
           startIndex,
           endIndex,
           isRange: false,
           label,
         });
+        usedRanges.push({ start: startIndex, end: endIndex });
       }
     }
   }
@@ -218,13 +243,9 @@ export function formatDuration(seconds: number): string {
   const secs = seconds % 60;
 
   if (hours > 0) {
-    return minutes > 0
-      ? `${hours}h ${minutes}m`
-      : `${hours}h`;
+    return minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`;
   } else if (minutes > 0) {
-    return secs > 0
-      ? `${minutes}m ${secs}s`
-      : `${minutes}m`;
+    return secs > 0 ? `${minutes}m ${secs}s` : `${minutes}m`;
   } else {
     return `${secs}s`;
   }
@@ -255,13 +276,19 @@ export function parseTimeString(timeString: string): number | null {
   const clockMatch = timeString.match(/^(\d+):(\d+)(?::(\d+))?$/);
   if (clockMatch) {
     const hours = clockMatch[3] ? parseInt(clockMatch[1], 10) : 0;
-    const minutes = clockMatch[3] ? parseInt(clockMatch[2], 10) : parseInt(clockMatch[1], 10);
-    const seconds = clockMatch[3] ? parseInt(clockMatch[3], 10) : parseInt(clockMatch[2], 10);
+    const minutes = clockMatch[3]
+      ? parseInt(clockMatch[2], 10)
+      : parseInt(clockMatch[1], 10);
+    const seconds = clockMatch[3]
+      ? parseInt(clockMatch[3], 10)
+      : parseInt(clockMatch[2], 10);
     return hours * 3600 + minutes * 60 + seconds;
   }
 
   // Try natural language: "5 minutes", "1 hour"
-  const match = timeString.match(/(\d+)\s*(second|minute|hour|sec|min|hr|s|m|h)/i);
+  const match = timeString.match(
+    /(\d+)\s*(second|minute|hour|sec|min|hr|s|m|h)/i
+  );
   if (match) {
     return toSeconds(parseInt(match[1], 10), match[2]);
   }
