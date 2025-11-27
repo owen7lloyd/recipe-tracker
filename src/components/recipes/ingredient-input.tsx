@@ -145,8 +145,8 @@ export function IngredientInput({
 
       {/* Middle column: Ingredient fields in 2x2 grid */}
       <div className="flex-1" ref={containerRef}>
-        <div className="grid grid-cols-[65%_35%] gap-3">
-          {/* Top row: Ingredient (65%) + Note (35%) */}
+        <div className="grid grid-cols-[35%_65%] gap-3">
+          {/* Top row: Ingredient (35%) + Note (65%) */}
           <div className="relative">
             <Input
               type="text"
@@ -215,18 +215,7 @@ export function IngredientInput({
             />
           </div>
 
-          {/* Bottom row: Unit (65%) + Quantity (35%) */}
-          <div>
-            <SmartUnitSelector
-              value={value.unit || ''}
-              onChange={(newUnit) =>
-                onChange({ ...value, unit: newUnit || null })
-              }
-              ingredientCategory={selectedIngredient?.category}
-              disabled={disabled}
-            />
-          </div>
-
+          {/* Bottom row: Quantity (35%) + Unit (65%) */}
           <div>
             <Input
               type="number"
@@ -240,6 +229,17 @@ export function IngredientInput({
               }
               disabled={disabled}
               step="0.01"
+            />
+          </div>
+
+          <div>
+            <SmartUnitSelector
+              value={value.unit || ''}
+              onChange={(newUnit) =>
+                onChange({ ...value, unit: newUnit || null })
+              }
+              ingredientCategory={selectedIngredient?.category}
+              disabled={disabled}
             />
           </div>
         </div>
