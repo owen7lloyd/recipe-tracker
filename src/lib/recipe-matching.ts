@@ -12,7 +12,7 @@ import {
   pantryItems,
   ingredients,
 } from '@/lib/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { SubstitutionService } from '@/lib/substitution-service';
 
 export interface IngredientMatch {
@@ -64,6 +64,13 @@ export interface RecipeMatch {
   matchedCount: number;
 }
 
+export interface RecipeMatchWithServings extends RecipeMatch {
+  achievableServings: number;
+  canMakeFull: boolean;
+  canMakeReduced: boolean;
+  limitingIngredients: string[];
+}
+
 /**
  * Find all cookable recipes for a household
  *
@@ -77,12 +84,18 @@ export async function findCookableRecipes(
     minMatchPercentage?: number;
     includeNearMatches?: boolean;
     sortBy?: 'match' | 'newest' | 'rating' | 'prepTime';
+    includeReducedServings?: boolean;
+    minServings?: number;
+    maxServings?: number;
   }
-): Promise<RecipeMatch[]> {
+): Promise<RecipeMatch[] | RecipeMatchWithServings[]> {
   const {
     minMatchPercentage = 100,
     includeNearMatches = false,
     sortBy = 'match',
+    includeReducedServings = false,
+    minServings,
+    maxServings,
   } = options || {};
 
   // Fetch all household recipes with their ingredients
@@ -138,7 +151,7 @@ export async function findCookableRecipes(
   const substitutionService = new SubstitutionService();
 
   // Check each recipe
-  const matches: RecipeMatch[] = [];
+  const matches: (RecipeMatch | RecipeMatchWithServings)[] = [];
 
   for (const [recipeId, recipeRows] of recipeMap.entries()) {
     const firstRow = recipeRows[0];
@@ -169,7 +182,18 @@ export async function findCookableRecipes(
       substitutionService
     );
 
-    matches.push(match);
+    // If reduced servings is enabled, calculate achievable servings
+    if (includeReducedServings) {
+      const matchWithServings = await addServingsInfo(
+        match,
+        recipeRows,
+        pantry,
+        substitutionService
+      );
+      matches.push(matchWithServings);
+    } else {
+      matches.push(match);
+    }
   }
 
   // Filter based on options
@@ -185,8 +209,36 @@ export async function findCookableRecipes(
     );
   }
 
+  // Apply serving filters if reduced servings is enabled
+  if (includeReducedServings) {
+    filteredMatches = filteredMatches.filter((m) => {
+      const matchWithServings = m as RecipeMatchWithServings;
+      const achievable = matchWithServings.achievableServings;
+
+      if (minServings !== undefined && achievable < minServings) {
+        return false;
+      }
+      if (maxServings !== undefined && achievable > maxServings) {
+        return false;
+      }
+      return true;
+    });
+  }
+
   // Sort based on preference
   filteredMatches.sort((a, b) => {
+    // If reduced servings is enabled, sort by achievable servings first
+    if (includeReducedServings) {
+      const aServings = (a as RecipeMatchWithServings).achievableServings || 0;
+      const bServings = (b as RecipeMatchWithServings).achievableServings || 0;
+
+      // Sort by achievable servings descending (most flexible first)
+      if (aServings !== bServings) {
+        return bServings - aServings;
+      }
+    }
+
+    // Then apply other sorting preferences
     switch (sortBy) {
       case 'match':
         return b.matchPercentage - a.matchPercentage;
@@ -406,4 +458,117 @@ export async function checkSingleRecipe(
   });
 
   return matches.find((m) => m.recipe.id === recipeId) || null;
+}
+
+/**
+ * Add serving information to a recipe match
+ * Calculates achievable servings based on available pantry items
+ */
+async function addServingsInfo(
+  match: RecipeMatch,
+  _recipeRows: Array<{
+    recipeTitle: string;
+    recipeDescription: string | null;
+    recipeImageUrl: string | null;
+    recipeSourceUrl: string | null;
+    recipeCategory: string;
+    recipeTags: string[] | null;
+    recipePrepTimeMinutes: number | null;
+    recipeCookTimeMinutes: number | null;
+    recipeServings: number;
+    recipeRating: number | null;
+    recipeCreatedAt: Date | string;
+    ingredientId: string;
+    ingredientRefId: string;
+    ingredientName: string;
+    quantity: string | null;
+    unit: string | null;
+    optional: boolean | null;
+  }>,
+  pantry: Array<{
+    ingredientId: string;
+    ingredientName: string;
+    quantity: string | null;
+    unit: string | null;
+  }>,
+  _substitutionService: SubstitutionService
+): Promise<RecipeMatchWithServings> {
+  const requiredIngredients = match.ingredientMatches.filter(
+    (m) => m.matched && m.matchType !== 'missing'
+  );
+
+  // Calculate max servings for each ingredient
+  const servingLimitations: number[] = [];
+
+  for (const ingredient of requiredIngredients) {
+    const pantryItem = pantry.find(
+      (p) => p.ingredientId === ingredient.ingredientId
+    );
+
+    if (
+      ingredient.quantityNeeded &&
+      ingredient.quantityNeeded > 0 &&
+      pantryItem
+    ) {
+      const pantryQty = pantryItem.quantity
+        ? parseFloat(pantryItem.quantity)
+        : null;
+
+      if (pantryQty) {
+        // Calculate max servings based on this ingredient
+        const maxServings =
+          (pantryQty / ingredient.quantityNeeded) * match.recipe.servings;
+        servingLimitations.push(maxServings);
+      }
+    } else if (
+      !ingredient.quantityNeeded ||
+      ingredient.quantityNeeded === 0 ||
+      !pantryItem
+    ) {
+      // No quantity specified or item not in pantry, assume unlimited
+      servingLimitations.push(match.recipe.servings);
+    }
+  }
+
+  // Find the limiting ingredient (lowest achievable servings)
+  const achievableServings =
+    servingLimitations.length > 0
+      ? Math.floor(Math.min(...servingLimitations) * 100) / 100
+      : match.recipe.servings;
+
+  const canMakeFull = achievableServings >= match.recipe.servings;
+  const canMakeReduced =
+    achievableServings > 0 && achievableServings < match.recipe.servings;
+
+  // Find which ingredients are limiting
+  const limitingIngredients: string[] = [];
+  if (achievableServings < match.recipe.servings) {
+    for (const ingredient of requiredIngredients) {
+      if (ingredient.quantityNeeded && ingredient.quantityNeeded > 0) {
+        const pantryItem = pantry.find(
+          (p) => p.ingredientId === ingredient.ingredientId
+        );
+        if (pantryItem) {
+          const pantryQty = pantryItem.quantity
+            ? parseFloat(pantryItem.quantity)
+            : null;
+          if (pantryQty) {
+            const maxServings =
+              (pantryQty / ingredient.quantityNeeded) * match.recipe.servings;
+            if (Math.floor(maxServings * 100) / 100 === achievableServings) {
+              limitingIngredients.push(ingredient.ingredientId);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  return {
+    ...match,
+    achievableServings,
+    canMakeFull,
+    canMakeReduced,
+    limitingIngredients,
+  };
 }

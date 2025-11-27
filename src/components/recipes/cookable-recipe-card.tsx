@@ -12,11 +12,21 @@ import { Badge } from '@/components/ui/badge';
 import { Clock, Users, Star, ImageIcon } from 'lucide-react';
 import { AvailabilityBadge, MatchPercentageBadge } from './availability-badge';
 import { SubstitutionNote, MissingIngredientsNote } from './substitution-note';
-import type { RecipeMatch } from '@/lib/recipe-matching';
+import { ServingBadge } from './serving-badge';
+import type {
+  RecipeMatch,
+  RecipeMatchWithServings,
+} from '@/lib/recipe-matching';
 
 interface CookableRecipeCardProps {
-  match: RecipeMatch;
+  match: RecipeMatch | RecipeMatchWithServings;
   showDetails?: boolean;
+}
+
+function isMatchWithServings(
+  match: RecipeMatch | RecipeMatchWithServings
+): match is RecipeMatchWithServings {
+  return 'achievableServings' in match;
 }
 
 export function CookableRecipeCard({
@@ -30,6 +40,7 @@ export function CookableRecipeCard({
     substitutionsUsed,
     missingIngredients,
   } = match;
+  const withServings = isMatchWithServings(match) ? match : null;
   const totalTime =
     (recipe.prepTimeMinutes || 0) + (recipe.cookTimeMinutes || 0) || null;
 
@@ -68,13 +79,23 @@ export function CookableRecipeCard({
 
         {/* Availability Badge */}
         <div className="mb-3 flex flex-wrap items-center gap-2">
-          <AvailabilityBadge
-            cookable={cookable}
-            matchPercentage={matchPercentage}
-            substitutionsCount={substitutionsUsed.length}
-            missingCount={missingIngredients.length}
-            size="sm"
-          />
+          {withServings ? (
+            <ServingBadge
+              achievableServings={withServings.achievableServings}
+              defaultServings={recipe.servings}
+              canMakeFull={withServings.canMakeFull}
+              canMakeReduced={withServings.canMakeReduced}
+              size="sm"
+            />
+          ) : (
+            <AvailabilityBadge
+              cookable={cookable}
+              matchPercentage={matchPercentage}
+              substitutionsCount={substitutionsUsed.length}
+              missingCount={missingIngredients.length}
+              size="sm"
+            />
+          )}
           {matchPercentage < 100 && (
             <MatchPercentageBadge percentage={matchPercentage} size="sm" />
           )}

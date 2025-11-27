@@ -27,6 +27,7 @@ This document provides comprehensive guidance for AI assistants working on the R
 A full-stack Next.js application for household recipe management, pantry tracking, and intelligent grocery list generation.
 
 ### Core Features
+
 - **Recipe Management**: Create, edit, import recipes from websites
 - **Pantry Tracking**: Track ingredient inventory
 - **Smart Matching**: "What Can I Cook?" feature matches recipes to available ingredients
@@ -39,6 +40,7 @@ A full-stack Next.js application for household recipe management, pantry trackin
 - **Recipe Notes**: Add notes during cooking to track modifications and improvements
 
 ### Architecture Principles
+
 - **Multi-tenancy**: All data scoped to households
 - **Server-first**: Server components by default, client components only when needed
 - **Type-safe**: Strict TypeScript, Zod validation
@@ -50,6 +52,7 @@ A full-stack Next.js application for household recipe management, pantry trackin
 ## Tech Stack
 
 ### Frontend
+
 - **Next.js 16** (App Router, React 19)
 - **TypeScript** (strict mode)
 - **Tailwind CSS** (utility-first styling)
@@ -59,6 +62,7 @@ A full-stack Next.js application for household recipe management, pantry trackin
 - **TanStack Query** (data fetching, caching)
 
 ### Backend
+
 - **Next.js API Routes** (serverless)
 - **PostgreSQL** (primary database via Supabase)
 - **Drizzle ORM** (type-safe database queries)
@@ -67,6 +71,7 @@ A full-stack Next.js application for household recipe management, pantry trackin
 - **Vercel Blob** (image storage)
 
 ### Development
+
 - **pnpm** (package manager)
 - **Vitest** (unit tests)
 - **Playwright** (E2E tests)
@@ -84,26 +89,28 @@ The application features a nature-inspired aesthetic with earthy tones, rounded 
 
 ### Color Palette
 
-| Color Name | Hex Value | Usage |
-|-----------|-----------|--------|
-| Primary Green | `#2d5016` | Main brand color, headers, primary buttons |
-| Secondary Green | `#6b8e23` | Badges, secondary elements |
-| Accent Gold | `#d4a574` | Hover states, accents, highlights |
-| Light Background | `#faf8f3` | Page backgrounds, light surfaces |
-| Card Background | `#ffffff` | Card backgrounds, modals |
-| Text Dark | `#2c2415` | Primary text content |
-| Text Light | `#6b6250` | Secondary text, descriptions |
-| Border Color | `#e8dcc8` | Card borders, dividers |
+| Color Name       | Hex Value | Usage                                      |
+| ---------------- | --------- | ------------------------------------------ |
+| Primary Green    | `#2d5016` | Main brand color, headers, primary buttons |
+| Secondary Green  | `#6b8e23` | Badges, secondary elements                 |
+| Accent Gold      | `#d4a574` | Hover states, accents, highlights          |
+| Light Background | `#faf8f3` | Page backgrounds, light surfaces           |
+| Card Background  | `#ffffff` | Card backgrounds, modals                   |
+| Text Dark        | `#2c2415` | Primary text content                       |
+| Text Light       | `#6b6250` | Secondary text, descriptions               |
+| Border Color     | `#e8dcc8` | Card borders, dividers                     |
 
 ### Typography
 
 **Display Font: Merriweather** (serif)
+
 - Used for all headings (h1, h2, h3, h4, h5, h6)
 - Font weights: 400 (regular), 700 (bold)
 - Letter spacing: -0.5px
 - Sizes: h1 uses `clamp(1.8rem, 5vw, 2.8rem)`, h2 uses `clamp(1.3rem, 4vw, 1.8rem)`
 
 **Body Font: Poppins** (sans-serif)
+
 - Used for body text, buttons, UI elements
 - Font weights: 300 (light), 500 (medium), 600 (semibold), 700 (bold)
 - Line height: 1.6 for body text
@@ -258,6 +265,7 @@ All UI components have been updated to use the organic garden aesthetic:
 ### Database Tables
 
 #### **users**
+
 ```typescript
 id: uuid (PK)
 email: text (unique)
@@ -268,6 +276,7 @@ createdAt, updatedAt: timestamp
 ```
 
 #### **households**
+
 ```typescript
 id: uuid (PK)
 name: text
@@ -276,6 +285,7 @@ createdAt, updatedAt: timestamp
 ```
 
 #### **householdInvites**
+
 ```typescript
 id: uuid (PK)
 householdId: uuid (FK -> households.id, CASCADE)
@@ -288,6 +298,7 @@ createdAt: timestamp
 ```
 
 #### **ingredients**
+
 ```typescript
 id: uuid (PK)
 name: text (unique)
@@ -297,6 +308,7 @@ createdAt: timestamp
 ```
 
 #### **ingredientSubstitutions**
+
 ```typescript
 id: uuid (PK)
 ingredientId: uuid (FK -> ingredients.id, CASCADE)
@@ -306,6 +318,7 @@ notes: text (nullable)
 ```
 
 #### **recipes**
+
 ```typescript
 id: uuid (PK)
 householdId: uuid (FK -> households.id, CASCADE)
@@ -325,6 +338,7 @@ createdAt, updatedAt: timestamp
 ```
 
 #### **recipeIngredients**
+
 ```typescript
 id: uuid (PK)
 recipeId: uuid (FK -> recipes.id, CASCADE)
@@ -337,6 +351,7 @@ substitutionGroup: text (nullable)
 ```
 
 #### **pantryItems**
+
 ```typescript
 id: uuid (PK)
 householdId: uuid (FK -> households.id, CASCADE)
@@ -349,6 +364,7 @@ updatedAt: timestamp
 ```
 
 #### **recipeHistory**
+
 ```typescript
 id: uuid (PK)
 recipeId: uuid (FK -> recipes.id, CASCADE)
@@ -359,6 +375,7 @@ cookedAt: timestamp (default now)
 ```
 
 #### **recipeNotes**
+
 ```typescript
 id: uuid (PK)
 userId: uuid (FK -> users.id, CASCADE)
@@ -371,6 +388,7 @@ sessionId: uuid (FK -> recipeHistory.id, SET NULL) - optional link to cooking se
 ```
 
 #### **groceryLists**
+
 ```typescript
 id: uuid (PK)
 householdId: uuid (FK -> households.id, CASCADE)
@@ -382,6 +400,7 @@ createdAt, updatedAt: timestamp
 ```
 
 #### **groceryListItems**
+
 ```typescript
 id: uuid (PK)
 groceryListId: uuid (FK -> groceryLists.id, CASCADE)
@@ -397,6 +416,7 @@ recipeIds: uuid[] (nullable) - tracks source recipes
 ```
 
 #### **householdCategoryOrder**
+
 ```typescript
 householdId: uuid (PK, FK -> households.id, CASCADE)
 categoryOrder: text[] - ordered list of categories
@@ -418,6 +438,7 @@ updatedAt: timestamp
 ### NextAuth v5 Configuration
 
 **Files:**
+
 - `/src/lib/auth/config.ts` - Main config (Node.js runtime)
 - `/src/lib/auth/config.edge.ts` - Edge runtime config
 - `/src/lib/auth/index.ts` - Exports and custom `getSession()`
@@ -569,6 +590,7 @@ return createErrorResponse(
 ### Key API Endpoints
 
 #### Recipes
+
 - `GET /api/recipes` - List with filters (search, category, tags, ingredients)
 - `POST /api/recipes` - Create
 - `GET/PUT/DELETE /api/recipes/[id]` - Single recipe operations
@@ -583,12 +605,14 @@ return createErrorResponse(
 - `DELETE /api/notes/[id]` - Delete note
 
 #### Pantry
+
 - `GET /api/pantry` - List all items
 - `POST /api/pantry/items` - Add/update item
 - `PUT/DELETE /api/pantry/items/[id]` - Update/remove item
 - `POST /api/pantry/bulk-update` - Batch operations
 
 #### Grocery Lists
+
 - `GET/POST /api/grocery-lists` - List/create
 - `POST /api/grocery-lists/generate` - Auto-generate from recipes
 - `GET/PUT/DELETE /api/grocery-lists/[id]` - Single list operations
@@ -598,6 +622,7 @@ return createErrorResponse(
 - `GET /api/grocery-lists/shared/[token]` - Public view (no auth)
 
 #### Households
+
 - `GET/PUT /api/households/[id]` - Get/update household
 - `POST /api/households/[id]/invite` - Generate invite code
 - `GET /api/households/[id]/invites` - List active invites
@@ -619,6 +644,7 @@ pnpm dlx shadcn@latest add <component-name>
 ### Feature Components
 
 #### Recipes (`/src/components/recipes/`)
+
 - `recipe-form.tsx` - Create/edit form with validation
 - `recipe-list.tsx` - Paginated list with filters
 - `recipe-card.tsx` - Card view for list display
@@ -632,11 +658,13 @@ pnpm dlx shadcn@latest add <component-name>
 - `recipe-note.tsx` - Note input/display component for cooking sessions
 
 #### Pantry (`/src/components/pantry/`)
+
 - `pantry-list.tsx` - List with edit/delete
 - `add-pantry-item-form.tsx` - Add/update pantry item
 - `ingredient-autocomplete.tsx` - Search and select
 
 #### Grocery Lists (`/src/components/grocery-lists/`)
+
 - `GroceryListWithRealtime.tsx` - Wrapper with Supabase real-time
 - `OrganizedGroceryList.tsx` - Grouped by category
 - `category-section.tsx` - Collapsible category sections
@@ -649,11 +677,13 @@ pnpm dlx shadcn@latest add <component-name>
 #### Client vs Server Components
 
 **Use Server Components (default) when:**
+
 - No interactivity needed
 - Fetching data
 - Accessing backend directly
 
 **Use Client Components (`'use client'`) when:**
+
 - Event handlers (onClick, onChange)
 - React hooks (useState, useEffect)
 - Browser APIs
@@ -720,8 +750,61 @@ Matches recipes against pantry inventory:
 4. Return sorted by cookability
 
 **Options:**
+
 - `includePartialMatches: boolean` - Include recipes missing some ingredients
 - `minMatchPercentage: number` - Minimum % match for partial matches
+- `includeReducedServings?: boolean` - Include recipes achievable at reduced servings
+- `minServings?: number` - Minimum achievable servings filter
+- `maxServings?: number` - Maximum achievable servings filter
+
+**Returns:** `RecipeMatch[] | RecipeMatchWithServings[]` depending on options
+
+When `includeReducedServings` is true, returns `RecipeMatchWithServings[]` with:
+
+- `achievableServings: number` - Maximum servings possible with available pantry
+- `canMakeFull: boolean` - Recipe can be made at full servings
+- `canMakeReduced: boolean` - Recipe can be made at reduced servings only
+- `limitingIngredients: string[]` - Ingredient IDs that limit the recipe
+
+### Recipe Matching with Reduced Servings
+
+The "What Can I Cook?" feature has been extended to show recipes achievable at reduced servings. This allows users to discover more cooking options when they have limited ingredients.
+
+**Key Features:**
+
+1. **Serving Calculation**: Determines maximum achievable servings by calculating which ingredient provides the lowest serving capability
+2. **Flexible Filtering**: Users can filter recipes by minimum and maximum achievable servings
+3. **Limiting Ingredient Identification**: Highlights which ingredients limit the recipe
+4. **Smart Sorting**: Results sorted by achievable servings (most flexible recipes first)
+
+**Calculation Method:**
+
+```typescript
+// For each ingredient:
+maxServings = (availableQuantity / requiredQuantity) * recipeServings;
+
+// Overall achievable servings:
+achievableServings = floor(min(maxServings) * 100) / 100; // 2 decimal places
+```
+
+**UI Components:**
+
+- `ServingFilter` - Slider-based filter for min/max achievable servings toggle
+- `ServingBadge` - Displays serving capability (Full, X servings, or Not available)
+- Updated `CookableRecipeCard` - Shows serving information when available
+
+**API Integration:**
+The `/api/recipes/available` endpoint supports:
+
+```
+GET /api/recipes/available?include_reduced_servings=true&min_servings=2&max_servings=8
+```
+
+**Page Integration:**
+
+- `/src/app/dashboard/recipes/available/page.tsx` - "What Can I Cook?" page with serving filters
+- Includes a serving range slider and toggle for reduced servings
+- Shows both full and reduced serving recipes when enabled
 
 ### Recipe Search by Ingredients (`/src/lib/recipe/helpers.ts`)
 
@@ -740,6 +823,7 @@ Search recipes by selecting multiple ingredients with advanced filtering:
 7. Apply pagination
 
 **Options:**
+
 - `matchMode: 'any' | 'all'` - Match any or all ingredients (default: 'any')
 - `excludeIngredients: string[]` - Ingredient IDs to exclude
 - `limit: number` - Results per page (default: 20, max: 100)
@@ -747,6 +831,7 @@ Search recipes by selecting multiple ingredients with advanced filtering:
 - `sortBy: 'relevance' | 'rating' | 'cookTime' | 'prepTime'` - Sort order (default: 'relevance')
 
 **Returns:**
+
 - Array of recipes with `matchCount`, `totalIngredients`, and `matchPercentage` fields
 
 ### Recipe Scaling (`/src/lib/recipe-scaling.ts`)
@@ -792,6 +877,7 @@ Output: {
 ```
 
 Features:
+
 - Unicode fractions (½, ¼, ⅓, ¾)
 - Mixed numbers (1 1/2, 2 3/4)
 - Unit normalization (tbsp → tablespoon)
@@ -809,6 +895,7 @@ Import recipes from websites:
 6. Return structured recipe data
 
 **Files:**
+
 - `schema-org.ts` - JSON-LD Recipe schema parsing
 - `html-parser.ts` - HTML fallback extraction
 - `ingredient-matcher.ts` - Match scraped text to DB ingredients
@@ -820,37 +907,43 @@ Import recipes from websites:
 Automatically detects time durations in recipe steps:
 
 ```typescript
-Input:  ["Bake for 25 minutes", "Simmer for 1-2 hours"]
+Input: ['Bake for 25 minutes', 'Simmer for 1-2 hours'];
 Output: [
   {
     stepNumber: 0,
-    timers: [{
-      duration: 1500, // seconds
-      unit: "minutes",
-      originalText: "25 minutes",
-      isRange: false
-    }]
+    timers: [
+      {
+        duration: 1500, // seconds
+        unit: 'minutes',
+        originalText: '25 minutes',
+        isRange: false,
+      },
+    ],
   },
   {
     stepNumber: 1,
-    timers: [{
-      duration: 5400, // average of 1-2 hours
-      unit: "hours",
-      isRange: true,
-      minDuration: 3600,
-      maxDuration: 7200
-    }]
-  }
-]
+    timers: [
+      {
+        duration: 5400, // average of 1-2 hours
+        unit: 'hours',
+        isRange: true,
+        minDuration: 3600,
+        maxDuration: 7200,
+      },
+    ],
+  },
+];
 ```
 
 **Supported Patterns:**
+
 - Single times: "25 minutes", "1 hour", "30 secs"
 - Ranges: "15-20 minutes", "1-2 hours", "3 to 5 mins"
 - Compound: "1h 30m", "2h30m"
 - Clock format: "1:30", "0:45"
 
 **Helper Functions:**
+
 - `formatTimerDisplay(seconds)` - Format as MM:SS or HH:MM:SS
 - `formatDuration(seconds)` - Human-readable (e.g., "1h 30m")
 - `parseTimeString(timeString)` - Parse user input back to seconds
@@ -860,12 +953,14 @@ Output: [
 Recipe notes allow users to capture observations, modifications, and improvements while cooking.
 
 **API Endpoints:**
+
 - `POST /api/recipes/:recipeId/notes` - Create note
 - `GET /api/recipes/:recipeId/notes` - Get all notes for recipe
 - `PATCH /api/notes/:noteId` - Update note
 - `DELETE /api/notes/:noteId` - Delete note
 
 **Features:**
+
 - Step-specific notes (linked to recipe step index)
 - General recipe notes (no step association)
 - Session tracking (linked to cooking session via `sessionId`)
@@ -874,6 +969,7 @@ Recipe notes allow users to capture observations, modifications, and improvement
 - Display in cook mode and recipe detail page
 
 **Components:**
+
 - `RecipeNoteInput` - Form for adding/editing notes
 - Displays historical notes with timestamps
 - Filters notes by step or session
@@ -887,6 +983,7 @@ Recipe notes allow users to capture observations, modifications, and improvement
 **Config:** `/vitest.config.ts`
 
 **Run Tests:**
+
 ```bash
 pnpm test              # Run once
 pnpm test:watch        # Watch mode
@@ -895,10 +992,12 @@ pnpm test:ui           # Vitest UI
 ```
 
 **Test File Convention:**
+
 - Place next to source: `my-file.test.ts`
 - Or in `__tests__` directory
 
 **Example:**
+
 ```typescript
 import { describe, it, expect, vi } from 'vitest';
 import { myFunction } from './my-file';
@@ -912,6 +1011,7 @@ describe('myFunction', () => {
 ```
 
 **Mocking:**
+
 ```typescript
 // Mock Next.js navigation
 vi.mock('next/navigation', () => ({
@@ -928,6 +1028,7 @@ vi.mock('next/navigation', () => ({
 **Config:** `/playwright.config.ts`
 
 **Run Tests:**
+
 ```bash
 pnpm test:e2e          # Headless
 pnpm test:e2e:ui       # UI mode
@@ -935,10 +1036,12 @@ pnpm test:e2e:debug    # Debug mode
 ```
 
 **Test File Convention:**
+
 - Located in `/e2e` directory
 - Named `*.spec.ts`
 
 **Example:**
+
 ```typescript
 import { test, expect } from '@playwright/test';
 
@@ -961,6 +1064,7 @@ test('user can create recipe', async ({ page }) => {
 **File:** `/.github/workflows/test.yml`
 
 Runs on every push and PR:
+
 1. Type checking (`tsc --noEmit`)
 2. Linting (`pnpm lint`)
 3. Unit tests with coverage
@@ -1003,6 +1107,7 @@ pnpm test:e2e         # Run E2E tests
 ### Git Workflow
 
 1. **Create feature branch:**
+
    ```bash
    git checkout -b feature/your-feature-name
    ```
@@ -1013,6 +1118,7 @@ pnpm test:e2e         # Run E2E tests
    - Type checks run
 
 3. **Commit** (use conventional commits):
+
    ```bash
    git commit -m "feat: add recipe scaling feature"
    git commit -m "fix: resolve pantry item duplication"
@@ -1055,6 +1161,7 @@ pnpm dlx shadcn@latest add
 **Deployment:** Automatic on push to `main`
 
 **Environment Variables Required:**
+
 ```bash
 DATABASE_URL               # Supabase PostgreSQL connection string
 NEXTAUTH_SECRET           # Generate: openssl rand -base64 32
@@ -1141,16 +1248,19 @@ import { cn } from '@/lib/utils';
 ### Code Quality Tools
 
 **ESLint:**
+
 ```bash
 pnpm lint
 ```
 
 **Prettier:**
+
 ```bash
 pnpm prettier --write .
 ```
 
 **Type Checking:**
+
 ```bash
 pnpm type-check
 ```
@@ -1199,10 +1309,7 @@ const [recipe] = await db
 const recipeWithIngredients = await db
   .select()
   .from(recipeIngredients)
-  .innerJoin(
-    ingredients,
-    eq(recipeIngredients.ingredientId, ingredients.id)
-  )
+  .innerJoin(ingredients, eq(recipeIngredients.ingredientId, ingredients.id))
   .where(eq(recipeIngredients.recipeId, recipeId));
 
 // Insert with returning
@@ -1224,9 +1331,7 @@ await db
   .where(eq(recipes.id, recipeId));
 
 // Delete
-await db
-  .delete(recipes)
-  .where(eq(recipes.id, recipeId));
+await db.delete(recipes).where(eq(recipes.id, recipeId));
 ```
 
 ### Client Component with Form

@@ -46,12 +46,23 @@ export async function GET(request: Request) {
       | 'newest'
       | 'rating'
       | 'prepTime';
+    const includeReducedServings =
+      searchParams.get('include_reduced_servings') === 'true';
+    const minServings = searchParams.get('min_servings')
+      ? parseFloat(searchParams.get('min_servings')!)
+      : undefined;
+    const maxServings = searchParams.get('max_servings')
+      ? parseFloat(searchParams.get('max_servings')!)
+      : undefined;
 
     // Find cookable recipes
     const matches = await findCookableRecipes(householdId, {
       minMatchPercentage: minMatch,
       includeNearMatches,
       sortBy,
+      includeReducedServings,
+      minServings,
+      maxServings,
     });
 
     // Separate cookable from near-matches
