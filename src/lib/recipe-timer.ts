@@ -13,7 +13,6 @@ export interface DetectedTimer {
   isRange: boolean; // True if it's a range (e.g., "15-20 minutes")
   minDuration?: number; // For ranges
   maxDuration?: number; // For ranges
-  label?: string; // Optional label extracted from context
 }
 
 export interface StepTimer {
@@ -72,26 +71,6 @@ const TIME_PATTERNS = [
 ];
 
 /**
- * Extracts a label/context from the text before a time mention
- * e.g., "Boil for 5 minutes" -> "Boil"
- */
-function extractLabel(text: string, startIndex: number): string | undefined {
-  // Look for verb or noun before the time
-  const beforeText = text
-    .substring(Math.max(0, startIndex - 30), startIndex)
-    .trim();
-  const words = beforeText.split(/\s+/);
-
-  // Get the last 1-2 meaningful words
-  const meaningfulWords = words.filter((w) => w.length > 2);
-  if (meaningfulWords.length > 0) {
-    return meaningfulWords[meaningfulWords.length - 1];
-  }
-
-  return undefined;
-}
-
-/**
  * Converts a time amount and unit to seconds
  */
 function toSeconds(amount: number, unit: string): number {
@@ -129,7 +108,6 @@ export function detectTimersInStep(
       if (isOverlapping(startIndex, endIndex)) continue;
 
       const originalText = match[0];
-      const label = extractLabel(stepText, startIndex);
 
       if (pattern.type === 'range') {
         // Range pattern: "15-20 minutes"
@@ -153,7 +131,6 @@ export function detectTimersInStep(
           isRange: true,
           minDuration: minSeconds,
           maxDuration: maxSeconds,
-          label,
         });
         usedRanges.push({ start: startIndex, end: endIndex });
       } else if (pattern.type === 'compound') {
@@ -169,7 +146,6 @@ export function detectTimersInStep(
           startIndex,
           endIndex,
           isRange: false,
-          label,
         });
         usedRanges.push({ start: startIndex, end: endIndex });
       } else if (pattern.type === 'clock') {
@@ -187,7 +163,6 @@ export function detectTimersInStep(
             startIndex,
             endIndex,
             isRange: false,
-            label,
           });
           usedRanges.push({ start: startIndex, end: endIndex });
         }
@@ -208,7 +183,6 @@ export function detectTimersInStep(
           startIndex,
           endIndex,
           isRange: false,
-          label,
         });
         usedRanges.push({ start: startIndex, end: endIndex });
       }
