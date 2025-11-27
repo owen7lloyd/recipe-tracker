@@ -139,7 +139,7 @@ export function IngredientInput({
       }`}
     >
       <div
-        className="col-span-12 flex items-center gap-2 md:col-span-4"
+        className="col-span-12 flex items-center gap-2 md:col-span-5"
         ref={containerRef}
       >
         <GripVertical className="h-5 w-5 text-slate-400" />
@@ -216,7 +216,7 @@ export function IngredientInput({
         />
       </div>
 
-      <div className="col-span-8 md:col-span-4">
+      <div className="col-span-8 md:col-span-3">
         <SmartUnitSelector
           value={value.unit || ''}
           onChange={(newUnit) => onChange({ ...value, unit: newUnit || null })}
@@ -225,7 +225,7 @@ export function IngredientInput({
         />
       </div>
 
-      <div className="col-span-12 md:col-span-6">
+      <div className="col-span-4 md:col-span-2">
         <Input
           type="text"
           placeholder="Notes (optional)"
