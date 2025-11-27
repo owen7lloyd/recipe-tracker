@@ -119,8 +119,8 @@ export function AddPantryItemForm({ onItemAdded }: AddPantryItemFormProps) {
           )}
 
           {/* Quantity and Unit */}
-          <div className="grid grid-cols-5 gap-4">
-            <div className="col-span-2 space-y-2">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
               <Label htmlFor="quantity">Quantity (optional)</Label>
               <Input
                 id="quantity"
@@ -133,7 +133,7 @@ export function AddPantryItemForm({ onItemAdded }: AddPantryItemFormProps) {
               />
             </div>
 
-            <div className="col-span-3 space-y-2">
+            <div className="space-y-2">
               <Label htmlFor="unit">Unit (optional)</Label>
               <SmartUnitSelector
                 id="unit"

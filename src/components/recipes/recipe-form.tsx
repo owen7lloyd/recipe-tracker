@@ -29,7 +29,11 @@ interface RecipeFormProps {
   onSuccess?: (recipeId: string) => void;
 }
 
-export function RecipeForm({ initialData, recipeId, onSuccess }: RecipeFormProps) {
+export function RecipeForm({
+  initialData,
+  recipeId,
+  onSuccess,
+}: RecipeFormProps) {
   const router = useRouter();
   const { toast } = useToast();
   const [error, setError] = useState<string | null>(null);
@@ -66,6 +70,7 @@ export function RecipeForm({ initialData, recipeId, onSuccess }: RecipeFormProps
     fields: ingredientFields,
     append: appendIngredient,
     remove: removeIngredient,
+    move: moveIngredient,
   } = useFieldArray({
     control,
     name: 'ingredients',
@@ -75,10 +80,18 @@ export function RecipeForm({ initialData, recipeId, onSuccess }: RecipeFormProps
     fields: instructionFields,
     append: appendInstruction,
     remove: removeInstruction,
+    move: moveInstruction,
   } = useFieldArray({
     control,
     name: 'instructions',
   });
+
+  const [draggedIngredientIndex, setDraggedIngredientIndex] = useState<
+    number | null
+  >(null);
+  const [draggedInstructionIndex, setDraggedInstructionIndex] = useState<
+    number | null
+  >(null);
 
   const imageUrl = watch('imageUrl');
   const tags = watch('tags');
@@ -100,7 +113,10 @@ export function RecipeForm({ initialData, recipeId, onSuccess }: RecipeFormProps
         const ingredientsSection = document.querySelector(
           '[class*="Ingredients"]'
         );
-        ingredientsSection?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        ingredientsSection?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center',
+        });
         return;
       }
 
@@ -150,6 +166,50 @@ export function RecipeForm({ initialData, recipeId, onSuccess }: RecipeFormProps
     );
   };
 
+  const handleIngredientDragStart = (index: number) => {
+    setDraggedIngredientIndex(index);
+  };
+
+  const handleIngredientDragOver = (
+    e: React.DragEvent<HTMLDivElement>,
+    overIndex: number
+  ) => {
+    e.preventDefault();
+    if (
+      draggedIngredientIndex !== null &&
+      draggedIngredientIndex !== overIndex
+    ) {
+      moveIngredient(draggedIngredientIndex, overIndex);
+      setDraggedIngredientIndex(overIndex);
+    }
+  };
+
+  const handleIngredientDragEnd = () => {
+    setDraggedIngredientIndex(null);
+  };
+
+  const handleInstructionDragStart = (index: number) => {
+    setDraggedInstructionIndex(index);
+  };
+
+  const handleInstructionDragOver = (
+    e: React.DragEvent<HTMLDivElement>,
+    overIndex: number
+  ) => {
+    e.preventDefault();
+    if (
+      draggedInstructionIndex !== null &&
+      draggedInstructionIndex !== overIndex
+    ) {
+      moveInstruction(draggedInstructionIndex, overIndex);
+      setDraggedInstructionIndex(overIndex);
+    }
+  };
+
+  const handleInstructionDragEnd = () => {
+    setDraggedInstructionIndex(null);
+  };
+
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
       {error && (
@@ -161,9 +221,7 @@ export function RecipeForm({ initialData, recipeId, onSuccess }: RecipeFormProps
       <Card>
         <CardHeader>
           <CardTitle>Basic Information</CardTitle>
-          <CardDescription>
-            Essential details about your recipe
-          </CardDescription>
+          <CardDescription>Essential details about your recipe</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
@@ -367,9 +425,7 @@ export function RecipeForm({ initialData, recipeId, onSuccess }: RecipeFormProps
                 disabled={isSubmitting}
               />
             </div>
-            <p className="text-xs text-slate-500">
-              Press Enter to add a tag
-            </p>
+            <p className="text-xs text-slate-500">Press Enter to add a tag</p>
           </div>
         </CardContent>
       </Card>
@@ -383,13 +439,23 @@ export function RecipeForm({ initialData, recipeId, onSuccess }: RecipeFormProps
         </CardHeader>
         <CardContent className="space-y-3">
           {ingredientFields.map((field, index) => (
-            <IngredientInput
+            <div
               key={field.id}
-              value={watch(`ingredients.${index}`)}
-              onChange={(value) => setValue(`ingredients.${index}`, value)}
-              onRemove={() => removeIngredient(index)}
-              disabled={isSubmitting}
-            />
+              draggable
+              onDragStart={() => handleIngredientDragStart(index)}
+              onDragOver={(e) => handleIngredientDragOver(e, index)}
+              onDragEnd={handleIngredientDragEnd}
+              className={`transition-opacity ${
+                draggedIngredientIndex === index ? 'opacity-50' : ''
+              }`}
+            >
+              <IngredientInput
+                value={watch(`ingredients.${index}`)}
+                onChange={(value) => setValue(`ingredients.${index}`, value)}
+                onRemove={() => removeIngredient(index)}
+                disabled={isSubmitting}
+              />
+            </div>
           ))}
           {errors.ingredients && (
             <p className="text-sm text-red-600 dark:text-red-400">
@@ -426,7 +492,16 @@ export function RecipeForm({ initialData, recipeId, onSuccess }: RecipeFormProps
         </CardHeader>
         <CardContent className="space-y-3">
           {instructionFields.map((field, index) => (
-            <div key={field.id} className="flex gap-2">
+            <div
+              key={field.id}
+              draggable
+              onDragStart={() => handleInstructionDragStart(index)}
+              onDragOver={(e) => handleInstructionDragOver(e, index)}
+              onDragEnd={handleInstructionDragEnd}
+              className={`flex gap-2 transition-opacity ${
+                draggedInstructionIndex === index ? 'opacity-50' : ''
+              }`}
+            >
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100 font-semibold dark:bg-slate-800">
                 {index + 1}
               </div>

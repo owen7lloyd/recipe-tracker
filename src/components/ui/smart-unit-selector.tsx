@@ -1,11 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import {
-  COOKING_UNITS,
-  getSuggestedUnits,
-  getOrganizedUnits,
-} from '@/lib/constants/units';
+import { Maximize2, Minimize2 } from 'lucide-react';
+import { getSuggestedUnits, getOrganizedUnits } from '@/lib/constants/units';
 
 interface SmartUnitSelectorProps {
   value: string;
@@ -58,14 +55,19 @@ export function SmartUnitSelector({
     (u) => !suggestedUnitValues.has(u.value)
   );
 
+  // Determine if button should be disabled (locked state)
+  const isButtonDisabled = !!(shouldShowAll && value && !isValueInSuggested);
+
   return (
-    <div className={`flex gap-2 ${className}`}>
+    <div
+      className={`flex overflow-hidden rounded-md border border-slate-200 dark:border-slate-800 ${className}`}
+    >
       <select
         id={id}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         disabled={disabled}
-        className="flex h-10 flex-1 rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-800 dark:bg-slate-950 dark:ring-offset-slate-950 dark:placeholder:text-slate-400 dark:focus-visible:ring-slate-300"
+        className="h-10 flex-1 border-0 bg-white px-3 py-2 text-sm ring-offset-0 file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-slate-950 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-slate-950 dark:placeholder:text-slate-400 dark:focus-visible:ring-slate-300"
       >
         <option value="">Unit</option>
 
@@ -153,14 +155,35 @@ export function SmartUnitSelector({
         )}
       </select>
 
-      {/* Toggle button with text label */}
+      {/* Toggle button with icon */}
       {!disabled && (
         <button
           type="button"
-          onClick={() => setShowAll(!showAll)}
-          className="flex h-10 shrink-0 items-center justify-center rounded-md border border-slate-200 bg-white px-3 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+          onClick={() => {
+            // Only allow toggling if not locked
+            if (!isButtonDisabled) {
+              setShowAll(!showAll);
+            }
+          }}
+          disabled={isButtonDisabled}
+          title={
+            isButtonDisabled
+              ? 'Locked to all units (selected unit not in suggested list)'
+              : shouldShowAll
+                ? 'Show suggested units only'
+                : 'Show all units'
+          }
+          className={`flex h-10 w-10 shrink-0 items-center justify-center border-l transition-colors ${
+            isButtonDisabled
+              ? 'cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-600'
+              : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200'
+          }`}
         >
-          {shouldShowAll ? 'Suggested' : 'All Units'}
+          {shouldShowAll ? (
+            <Minimize2 className="h-4 w-4" />
+          ) : (
+            <Maximize2 className="h-4 w-4" />
+          )}
         </button>
       )}
     </div>
