@@ -592,12 +592,24 @@ return createErrorResponse(
 #### Authentication
 
 - `POST /api/auth/register` - User registration
+  - Password must meet: ≥8 chars, uppercase, lowercase, number
 - `POST /api/auth/login` - User login (via NextAuth)
-- `PATCH /api/auth/change-password` - Change user password
+- `PATCH /api/auth/change-password` - Change user password (authenticated)
   - Requires authentication
-  - Validates current password
-  - New password must meet security requirements: ≥8 chars, uppercase, lowercase, number
+  - Validates current password before allowing change
+  - New password must meet: ≥8 chars, uppercase, lowercase, number
   - Uses bcrypt with 10 rounds for password hashing
+- `POST /api/auth/forgot-password` - Request password reset
+  - Accepts email address
+  - Generates UUID reset token (valid 1 hour)
+  - Stores token in database
+  - Returns same response for all emails (security best practice)
+  - Ready for email integration
+- `POST /api/auth/reset-password` - Complete password reset
+  - Requires reset token from forgot-password endpoint
+  - Validates token expiration
+  - New password must meet: ≥8 chars, uppercase, lowercase, number
+  - Clears reset token after successful reset
 
 #### Recipes
 
@@ -668,7 +680,12 @@ pnpm dlx shadcn@latest add <component-name>
 #### Auth (`/src/components/auth/`)
 
 - `login-form.tsx` - User login form
+  - Email and password fields
+  - "Forgot password?" link to `/auth/forgot-password`
+  - Sign up link for new users
 - `register-form.tsx` - User registration form
+  - Email, name, password with confirmation
+  - Password strength validation (8+ chars, uppercase, lowercase, number)
 - `change-password-form.tsx` - Change password form with:
   - Show/hide password toggles (Eye/EyeOff icons)
   - Real-time password strength validation
@@ -677,6 +694,21 @@ pnpm dlx shadcn@latest add <component-name>
   - Redirects to login after successful change
   - Client-side validation with Zod
   - Integrates with `/api/auth/change-password` endpoint
+  - Supports optional `onSuccess` callback for modal integration
+- `change-password-modal.tsx` - Dialog-based change password modal
+  - Wrapper around ChangePasswordForm using shadcn Dialog component
+  - Button-triggered modal on settings page
+  - Cleaner UX than always-visible form
+- `forgot-password-form.tsx` - Password reset request form
+  - Email input field
+  - Submits to `/api/auth/forgot-password`
+  - Shows confirmation message
+- `reset-password-form.tsx` - Password reset form with token
+  - New password with strength validation
+  - Confirm password field
+  - Show/hide toggles for both password fields
+  - Visual requirement checklist
+  - Integrates with `/api/auth/reset-password`
 
 #### Recipes (`/src/components/recipes/`)
 
@@ -1545,21 +1577,28 @@ export function GroceryListWithRealtime({ listId }: { listId: string }) {
 
 **Password Validation Patterns:**
 
+All protected password operations use consistent validation:
+
 ```typescript
-// Login password validation
+// Standard password strength validation (8+ chars, uppercase, lowercase, number)
+const passwordSchema = z.string()
+  .min(8, 'Password must be at least 8 characters')
+  .regex(/[A-Z]/, 'Password must contain uppercase letter')
+  .regex(/[a-z]/, 'Password must contain lowercase letter')
+  .regex(/[0-9]/, 'Password must contain number');
+
+// Login password validation (minimal - existing password)
 const loginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(1, 'Password is required'),
 });
 
-// Registration password validation (more strict)
+// Registration password validation (same as change/reset)
 const registerSchema = z
   .object({
-    password: z
-      .string()
-      .min(8, 'Password must be at least 8 characters')
-      .regex(/[0-9]/, 'Must contain at least one number')
-      .regex(/[^A-Za-z0-9]/, 'Must contain at least one special character'),
+    name: z.string().min(2).max(100),
+    email: z.string().email(),
+    password: passwordSchema,
     confirmPassword: z.string(),
   })
   .refine((data) => data.password === data.confirmPassword, {
@@ -1567,16 +1606,23 @@ const registerSchema = z
     path: ['confirmPassword'],
   });
 
-// Change password validation (balanced security)
+// Change password validation (verified against current password)
 const changePasswordSchema = z
   .object({
     currentPassword: z.string().min(1, 'Current password is required'),
-    newPassword: z
-      .string()
-      .min(8, 'Password must be at least 8 characters')
-      .regex(/[A-Z]/, 'Password must contain uppercase letter')
-      .regex(/[a-z]/, 'Password must contain lowercase letter')
-      .regex(/[0-9]/, 'Password must contain number'),
+    newPassword: passwordSchema,
+    confirmPassword: z.string(),
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    message: "Passwords don't match",
+    path: ['confirmPassword'],
+  });
+
+// Password reset validation (verified with token)
+const resetPasswordSchema = z
+  .object({
+    token: z.string().min(1, 'Reset token is required'),
+    newPassword: passwordSchema,
     confirmPassword: z.string(),
   })
   .refine((data) => data.newPassword === data.confirmPassword, {
@@ -1584,6 +1630,17 @@ const changePasswordSchema = z
     path: ['confirmPassword'],
   });
 ```
+
+**Password Reset Flow:**
+
+1. User visits login page, clicks "Forgot password?"
+2. User enters email on `/auth/forgot-password`
+3. `POST /api/auth/forgot-password` generates reset token (UUID, 1 hour expiry)
+4. **In production**: Send email with reset link containing token
+5. User clicks link in email: `/auth/reset-password?token=...`
+6. User enters new password on reset page
+7. `POST /api/auth/reset-password` validates token, hashes password, clears token
+8. User redirected to login, can log in with new password
 
 ### 11. Testing Best Practices
 
@@ -1652,6 +1709,10 @@ pnpm type-check       # TypeScript check
 **Last Updated:** 2025-11-29
 
 **Recent Updates:**
-- 2025-11-29: Added change password feature (API endpoint, form component, validation schemas)
+- 2025-11-29: Implemented complete authentication improvements:
+  - Password reset feature (forgot-password + reset-password)
+  - Change password modal dialog (improved UX)
+  - Consistent password validation across all operations
+  - Database schema updates for reset tokens
 
 This documentation is maintained for AI assistants working on this codebase. When making significant changes, please update this file to keep it current.
