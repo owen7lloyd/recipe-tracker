@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { RotateCcw } from 'lucide-react';
@@ -28,10 +29,11 @@ interface ServingScalerProps {
  *
  * Features:
  * - Direct numeric input with scroll wheel support
+ * - Local state for smooth typing (no premature commits)
+ * - Commits change on blur or Enter key press
  * - Reset button to restore original servings
  * - Visual indicator when recipe is scaled (scale factor badge)
  * - Configurable min/max limits
- * - Real-time updates as user types
  *
  * @example
  * ```tsx
@@ -50,22 +52,52 @@ export function ServingScaler({
   minServings = 1,
   maxServings = 100,
 }: ServingScalerProps) {
+  const [inputValue, setInputValue] = useState(currentServings.toString());
+
   const isScaled = currentServings !== originalServings;
   const scaleFactor = currentServings / originalServings;
 
+  // Sync local input value when currentServings changes (from parent)
+  useEffect(() => {
+    setInputValue(currentServings.toString());
+  }, [currentServings]);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    const numValue = parseInt(value, 10);
+    setInputValue(value);
 
-    // Only update if valid number within bounds
+    // Parse and validate for immediate feedback
+    const numValue = parseInt(value, 10);
+    if (!isNaN(numValue) && numValue >= minServings && numValue <= maxServings) {
+      // Don't call onScaleChange here - wait for blur or enter
+    }
+  };
+
+  const commitChange = () => {
+    const numValue = parseInt(inputValue, 10);
     if (!isNaN(numValue) && numValue >= minServings && numValue <= maxServings) {
       onScaleChange(numValue);
+    } else {
+      // Reset to current value if invalid
+      setInputValue(currentServings.toString());
+    }
+  };
+
+  const handleBlur = () => {
+    commitChange();
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      commitChange();
+      e.currentTarget.blur();
     }
   };
 
   const handleReset = () => {
     if (!disabled) {
       onScaleChange(originalServings);
+      setInputValue(originalServings.toString());
     }
   };
 
@@ -76,8 +108,10 @@ export function ServingScaler({
           type="number"
           min={minServings}
           max={maxServings}
-          value={currentServings}
+          value={inputValue}
           onChange={handleChange}
+          onBlur={handleBlur}
+          onKeyDown={handleKeyDown}
           disabled={disabled}
           className="w-20 text-center text-lg font-bold"
           aria-label="Servings"
