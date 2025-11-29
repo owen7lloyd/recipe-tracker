@@ -16,6 +16,7 @@ import {
   Loader2,
   ChefHat,
   StickyNote,
+  Package,
 } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import {
@@ -28,7 +29,12 @@ import {
 } from '@/components/ui/dialog';
 import { ServingScaler } from './serving-scaler';
 import { RecipeNoteInput, type RecipeNote } from './recipe-note';
+import {
+  IngredientWithStatus,
+  PantryStatusSummary,
+} from './ingredient-with-status';
 import type { ScaledRecipe } from '@/lib/recipe-scaling';
+import type { RecipeWithPantryStatus } from '@/lib/pantry-status';
 import { formatDistanceToNow } from 'date-fns';
 
 interface Ingredient {
@@ -73,6 +79,10 @@ export function RecipeDetail(recipe: RecipeDetailProps) {
   const [notes, setNotes] = useState<RecipeNote[]>([]);
   const [isLoadingNotes, setIsLoadingNotes] = useState(true);
   const [showNotes, setShowNotes] = useState(false);
+  const [pantryStatus, setPantryStatus] =
+    useState<RecipeWithPantryStatus | null>(null);
+  const [isLoadingPantryStatus, setIsLoadingPantryStatus] = useState(true);
+  const [showPantryStatus, setShowPantryStatus] = useState(false);
 
   const totalTime =
     (recipe.prepTimeMinutes || 0) + (recipe.cookTimeMinutes || 0) || null;
@@ -133,6 +143,25 @@ export function RecipeDetail(recipe: RecipeDetailProps) {
     };
 
     fetchNotes();
+  }, [recipe.id]);
+
+  // Fetch pantry status
+  useEffect(() => {
+    const fetchPantryStatus = async () => {
+      try {
+        setIsLoadingPantryStatus(true);
+        const response = await fetch(`/api/recipes/${recipe.id}/pantry-status`);
+        if (!response.ok) throw new Error('Failed to fetch pantry status');
+        const data = await response.json();
+        setPantryStatus(data.recipe);
+      } catch (error) {
+        console.error('Error fetching pantry status:', error);
+      } finally {
+        setIsLoadingPantryStatus(false);
+      }
+    };
+
+    fetchPantryStatus();
   }, [recipe.id]);
 
   const handleScaleChange = (newServings: number) => {
@@ -330,16 +359,48 @@ export function RecipeDetail(recipe: RecipeDetailProps) {
         </Card>
       )}
 
+      {/* Pantry Status Summary */}
+      {pantryStatus && !isLoadingPantryStatus && (
+        <PantryStatusSummary
+          availableCount={pantryStatus.availableCount}
+          partialCount={pantryStatus.partialCount}
+          missingCount={pantryStatus.missingCount}
+          totalIngredients={pantryStatus.ingredients.length}
+          canCook={pantryStatus.missingCount === 0}
+        />
+      )}
+
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Ingredients */}
         <Card>
           <CardHeader>
-            <CardTitle>Ingredients</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle>Ingredients</CardTitle>
+              {pantryStatus && !isLoadingPantryStatus && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowPantryStatus(!showPantryStatus)}
+                >
+                  <Package className="mr-2 h-4 w-4" />
+                  {showPantryStatus ? 'Hide' : 'Show'} Pantry Status
+                </Button>
+              )}
+            </div>
           </CardHeader>
           <CardContent>
             {isScaling ? (
               <div className="flex items-center justify-center py-8">
                 <Loader2 className="h-6 w-6 animate-spin text-slate-400" />
+              </div>
+            ) : showPantryStatus && pantryStatus ? (
+              <div className="space-y-3">
+                {pantryStatus.ingredients.map((ingredient) => (
+                  <IngredientWithStatus
+                    key={ingredient.id}
+                    ingredient={ingredient}
+                  />
+                ))}
               </div>
             ) : (
               <ul className="space-y-3">
@@ -434,8 +495,8 @@ export function RecipeDetail(recipe: RecipeDetailProps) {
                   </div>
                 ) : notes.length === 0 ? (
                   <p className="text-center text-sm text-slate-500">
-                    No notes yet. Add notes while cooking to remember adjustments
-                    and improvements.
+                    No notes yet. Add notes while cooking to remember
+                    adjustments and improvements.
                   </p>
                 ) : (
                   notes.map((note) => (
