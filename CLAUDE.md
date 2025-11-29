@@ -754,8 +754,6 @@ Matches recipes against pantry inventory:
 - `includePartialMatches: boolean` - Include recipes missing some ingredients
 - `minMatchPercentage: number` - Minimum % match for partial matches
 - `includeReducedServings?: boolean` - Include recipes achievable at reduced servings
-- `minServings?: number` - Minimum achievable servings filter
-- `maxServings?: number` - Maximum achievable servings filter
 
 **Returns:** `RecipeMatch[] | RecipeMatchWithServings[]` depending on options
 
@@ -773,38 +771,45 @@ The "What Can I Cook?" feature has been extended to show recipes achievable at r
 **Key Features:**
 
 1. **Serving Calculation**: Determines maximum achievable servings by calculating which ingredient provides the lowest serving capability
-2. **Flexible Filtering**: Users can filter recipes by minimum and maximum achievable servings
+2. **Partial Ingredient Support**: Works with any available quantity, not just exact matches (e.g., 0.98 tsp when 1 tsp needed)
 3. **Limiting Ingredient Identification**: Highlights which ingredients limit the recipe
 4. **Smart Sorting**: Results sorted by achievable servings (most flexible recipes first)
+5. **Persistent Toggle**: "Include reduced servings" setting persists across page navigations via localStorage
 
 **Calculation Method:**
 
 ```typescript
-// For each ingredient:
+// For each ingredient with quantity:
 maxServings = (availableQuantity / requiredQuantity) * recipeServings;
 
 // Overall achievable servings:
 achievableServings = floor(min(maxServings) * 100) / 100; // 2 decimal places
+
+// Handles:
+// - Partial quantities: 0.98 tsp when 1 tsp needed = 0.98x servings
+// - Missing items: pushes 0 servings, limiting the recipe
+// - Quantities unspecified: treated as unlimited (e.g., "salt to taste")
 ```
 
 **UI Components:**
 
-- `ServingFilter` - Slider-based filter for min/max achievable servings toggle
 - `ServingBadge` - Displays serving capability (Full, X servings, or Not available)
 - Updated `CookableRecipeCard` - Shows serving information when available
+- Toggle switch in filters panel for including/excluding reduced servings
 
 **API Integration:**
 The `/api/recipes/available` endpoint supports:
 
 ```
-GET /api/recipes/available?include_reduced_servings=true&min_servings=2&max_servings=8
+GET /api/recipes/available?include_reduced_servings=true
 ```
 
 **Page Integration:**
 
-- `/src/app/dashboard/recipes/available/page.tsx` - "What Can I Cook?" page with serving filters
-- Includes a serving range slider and toggle for reduced servings
-- Shows both full and reduced serving recipes when enabled
+- `/src/app/dashboard/recipes/available/page.tsx` - "What Can I Cook?" page with reduced servings toggle
+- Shows all recipes with their achievable servings when enabled
+- Toggle setting persists across page navigations
+- Results sorted by achievable servings (most flexible first)
 
 ### Recipe Search by Ingredients (`/src/lib/recipe/helpers.ts`)
 
