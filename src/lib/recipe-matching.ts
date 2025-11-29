@@ -201,7 +201,19 @@ export async function findCookableRecipes(
   // Filter based on options
   let filteredMatches = matches;
 
-  if (!includeNearMatches) {
+  if (includeReducedServings) {
+    // When reduced servings is enabled, show:
+    // - Fully cookable recipes (cookable=true)
+    // - Recipes achievable at reduced servings (achievableServings > 0)
+    filteredMatches = matches.filter((m) => {
+      if (m.cookable) return true; // Always show fully cookable
+      if ('achievableServings' in m) {
+        const mWithServings = m as RecipeMatchWithServings;
+        return mWithServings.achievableServings > 0; // Show if can make reduced
+      }
+      return false;
+    });
+  } else if (!includeNearMatches) {
     // Only show fully cookable recipes
     filteredMatches = matches.filter((m) => m.cookable);
   } else {

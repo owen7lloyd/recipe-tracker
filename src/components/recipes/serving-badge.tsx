@@ -39,7 +39,7 @@ export function ServingBadge({
           size === 'sm' ? 'px-2 py-1 text-xs' : ''
         }`}
       >
-        {achievableServings} servings
+        {Math.floor(achievableServings)} servings
       </Badge>
     );
   }
