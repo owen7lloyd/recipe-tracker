@@ -94,6 +94,12 @@ export async function findCookableRecipes(
     includeReducedServings = false,
   } = options || {};
 
+  if (process.env.NODE_ENV === 'development') {
+    console.log(
+      `[DEBUG] findCookableRecipes called: includeReducedServings=${includeReducedServings}, includeNearMatches=${includeNearMatches}`
+    );
+  }
+
   // Fetch all household recipes with their ingredients
   const householdRecipes = await db
     .select({
@@ -236,6 +242,24 @@ export async function findCookableRecipes(
         return b.matchPercentage - a.matchPercentage;
     }
   });
+
+  if (process.env.NODE_ENV === 'development') {
+    console.log(
+      `[DEBUG] findCookableRecipes returning ${filteredMatches.length} recipes`
+    );
+    filteredMatches.forEach((m) => {
+      if (includeReducedServings && 'achievableServings' in m) {
+        const mWithServings = m as RecipeMatchWithServings;
+        console.log(
+          `[DEBUG]   - ${m.recipe.title}: ${mWithServings.achievableServings} servings (canMakeFull=${mWithServings.canMakeFull}, canMakeReduced=${mWithServings.canMakeReduced})`
+        );
+      } else {
+        console.log(
+          `[DEBUG]   - ${m.recipe.title}: cookable=${m.cookable}, match=${m.matchPercentage}%`
+        );
+      }
+    });
+  }
 
   return filteredMatches;
 }
@@ -473,14 +497,35 @@ async function addServingsInfo(
   }>,
   _substitutionService: SubstitutionService
 ): Promise<RecipeMatchWithServings> {
-  // Include ALL required ingredients, not just matched ones
+  // Include ALL required ingredients with quantities for serving calculation
   // This allows us to calculate reduced servings even when some quantities are insufficient
   const requiredIngredients = match.ingredientMatches.filter(
-    (m) => !m.optional && m.quantityNeeded !== null && m.quantityNeeded > 0
+    (m) => m.required && m.quantityNeeded !== null && m.quantityNeeded > 0
   );
+
+  if (process.env.NODE_ENV === 'development') {
+    console.log(
+      `[DEBUG] Recipe: ${match.recipe.title} (${match.recipe.servings} servings)`
+    );
+    console.log(
+      `[DEBUG] Required ingredients with quantities: ${requiredIngredients.length}`
+    );
+    requiredIngredients.forEach((ing) => {
+      console.log(
+        `[DEBUG]   - ${ing.ingredientName}: ${ing.quantityNeeded} ${ing.unitNeeded}`
+      );
+    });
+  }
 
   // Calculate max servings for each ingredient
   const servingLimitations: number[] = [];
+  const limitationDetails: Array<{
+    ingredientId: string;
+    name: string;
+    available: number | null;
+    needed: number;
+    maxServings: number;
+  }> = [];
 
   for (const ingredient of requiredIngredients) {
     const pantryItem = pantry.find(
@@ -495,9 +540,35 @@ async function addServingsInfo(
         const maxServings =
           (pantryQty / ingredient.quantityNeeded) * match.recipe.servings;
         servingLimitations.push(maxServings);
+        limitationDetails.push({
+          ingredientId: ingredient.ingredientId,
+          name: ingredient.ingredientName,
+          available: pantryQty,
+          needed: ingredient.quantityNeeded,
+          maxServings,
+        });
+
+        if (process.env.NODE_ENV === 'development') {
+          console.log(
+            `[DEBUG] Pantry has ${pantryQty}, need ${ingredient.quantityNeeded} -> ${maxServings} servings`
+          );
+        }
       } else {
         // Ingredient not in pantry at all, can't make any servings
         servingLimitations.push(0);
+        limitationDetails.push({
+          ingredientId: ingredient.ingredientId,
+          name: ingredient.ingredientName,
+          available: null,
+          needed: ingredient.quantityNeeded,
+          maxServings: 0,
+        });
+
+        if (process.env.NODE_ENV === 'development') {
+          console.log(
+            `[DEBUG] ${ingredient.ingredientName} NOT in pantry -> 0 servings`
+          );
+        }
       }
     } else {
       // No quantity specified, assume unlimited availability
@@ -510,6 +581,13 @@ async function addServingsInfo(
     servingLimitations.length > 0
       ? Math.floor(Math.min(...servingLimitations) * 100) / 100
       : match.recipe.servings;
+
+  if (process.env.NODE_ENV === 'development') {
+    console.log(
+      `[DEBUG] Achievable servings: ${achievableServings} (min of [${servingLimitations.join(', ')}])`
+    );
+    console.log(`[DEBUG] Limitation details:`, limitationDetails);
+  }
 
   const canMakeFull = achievableServings >= match.recipe.servings;
   const canMakeReduced =
