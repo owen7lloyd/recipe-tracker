@@ -814,74 +814,106 @@ export function CookRecipeView(recipe: CookRecipeViewProps) {
                 <h3 className="mb-3 text-sm font-semibold text-slate-900 dark:text-slate-100">
                   Pantry Impact
                 </h3>
-                {(hasInsufficient || hasNotInPantry) && (
-                  <div className="mb-3 rounded-lg border border-amber-200 bg-amber-50 p-2 dark:border-amber-900 dark:bg-amber-950">
-                    <div className="flex gap-2">
-                      <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0 text-amber-600 dark:text-amber-500" />
-                      <div className="text-xs text-amber-900 dark:text-amber-100">
-                        {hasInsufficient && (
-                          <p>Some items have insufficient quantities.</p>
-                        )}
-                        {hasNotInPantry && (
-                          <p>Some items not in pantry will be skipped.</p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                )}
 
                 <div className="max-h-[400px] space-y-2 overflow-y-auto">
-                  {deductions.map((ing) => (
-                    <div
-                      key={ing.id}
-                      className="rounded border border-slate-200 p-2 text-xs dark:border-slate-800"
-                    >
-                      <p className="truncate font-medium">
-                        {ing.ingredientName}
-                      </p>
-                      {ing.notInPantry ? (
-                        <p className="text-amber-600 dark:text-amber-500">
-                          Not in pantry - will skip
-                        </p>
-                      ) : ing.notTracked ? (
-                        <p className="text-slate-500">Quantity not tracked</p>
-                      ) : ing.quantityNeeded === null ? (
-                        <p className="text-slate-500">Non-numeric quantity</p>
-                      ) : ing.unitMismatch ? (
-                        <p className="text-amber-600 dark:text-amber-500">
-                          Unit mismatch ({ing.unit} vs{' '}
-                          {pantry.find(
-                            (p) => p.ingredient.id === ing.ingredientId
-                          )?.unit || '?'}
-                          ) - will skip
-                        </p>
-                      ) : (
-                        <div className="mt-1 space-y-2">
-                          <div className="flex items-center justify-between">
-                            <span className="text-slate-600 dark:text-slate-400">
-                              {ing.currentQty?.toFixed(2)} →{' '}
-                              {ing.remainingQty?.toFixed(2)}{' '}
-                              {pantry.find(
-                                (p) => p.ingredient.id === ing.ingredientId
-                              )?.unit || ing.unit}
-                            </span>
-                            {ing.willBeRemoved && (
-                              <Badge variant="destructive" className="text-xs">
-                                Remove
-                              </Badge>
+                  {deductions.map((ing) => {
+                    const showInsufficientWarning =
+                      !ing.notInPantry &&
+                      !ing.notTracked &&
+                      !ing.unitMismatch &&
+                      ing.quantityNeeded !== null &&
+                      ing.insufficient;
+
+                    return (
+                      <div
+                        key={ing.id}
+                        className={`rounded-lg border p-2.5 text-xs ${
+                          showInsufficientWarning
+                            ? 'border-amber-300 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30'
+                            : 'border-slate-200 dark:border-slate-800'
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-1.5">
+                              {showInsufficientWarning && (
+                                <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-amber-600 dark:text-amber-500" />
+                              )}
+                              <p className="truncate font-medium">
+                                {ing.ingredientName}
+                              </p>
+                            </div>
+
+                            {ing.notInPantry ? (
+                              <p className="mt-1 text-amber-600 dark:text-amber-500">
+                                Not in pantry - will skip
+                              </p>
+                            ) : ing.notTracked ? (
+                              <p className="mt-1 text-slate-500">
+                                Quantity not tracked
+                              </p>
+                            ) : ing.quantityNeeded === null ? (
+                              <p className="mt-1 text-slate-500">
+                                Non-numeric quantity
+                              </p>
+                            ) : ing.unitMismatch ? (
+                              <p className="mt-1 text-amber-600 dark:text-amber-500">
+                                Unit mismatch ({ing.unit} vs{' '}
+                                {pantry.find(
+                                  (p) => p.ingredient.id === ing.ingredientId
+                                )?.unit || '?'}
+                                ) - will skip
+                              </p>
+                            ) : (
+                              <div className="mt-1.5 space-y-2">
+                                <div className="flex items-center justify-between gap-2">
+                                  <span className="text-slate-600 dark:text-slate-400">
+                                    {ing.currentQty?.toFixed(2)} →{' '}
+                                    {ing.remainingQty?.toFixed(2)}{' '}
+                                    {pantry.find(
+                                      (p) =>
+                                        p.ingredient.id === ing.ingredientId
+                                    )?.unit || ing.unit}
+                                  </span>
+                                </div>
+
+                                {showInsufficientWarning && (
+                                  <div className="flex items-center gap-1.5 rounded-md bg-amber-100 p-1.5 dark:bg-amber-900/50">
+                                    <span className="text-xs font-medium text-amber-800 dark:text-amber-200">
+                                      ⚠️ Insufficient - need{' '}
+                                      {(
+                                        ing.quantityNeeded! - ing.currentQty!
+                                      ).toFixed(2)}{' '}
+                                      more
+                                    </span>
+                                  </div>
+                                )}
+
+                                {ing.densityConverted && (
+                                  <div className="flex items-center gap-1 rounded-md bg-blue-50 p-1.5 text-xs dark:bg-blue-950">
+                                    <span className="text-blue-700 dark:text-blue-300">
+                                      ℹ️ Unit conversion used (density-based)
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
                             )}
                           </div>
-                          {ing.densityConverted && (
-                            <div className="flex items-center gap-1 rounded bg-blue-50 p-1.5 text-xs dark:bg-blue-950">
-                              <span className="text-blue-700 dark:text-blue-300">
-                                ℹ️ Unit conversion used (density-based)
-                              </span>
-                            </div>
-                          )}
+
+                          {/* Status badge on the right */}
+                          {!ing.notInPantry &&
+                            !ing.notTracked &&
+                            !ing.unitMismatch &&
+                            ing.quantityNeeded !== null &&
+                            ing.willBeRemoved && (
+                              <Badge className="shrink-0 border-purple-300 bg-purple-100 text-purple-800 dark:border-purple-700 dark:bg-purple-900/30 dark:text-purple-200">
+                                <span className="text-xs">Last Stock</span>
+                              </Badge>
+                            )}
                         </div>
-                      )}
-                    </div>
-                  ))}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             </CardContent>
