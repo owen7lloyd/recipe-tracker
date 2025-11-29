@@ -85,8 +85,6 @@ export async function findCookableRecipes(
     includeNearMatches?: boolean;
     sortBy?: 'match' | 'newest' | 'rating' | 'prepTime';
     includeReducedServings?: boolean;
-    minServings?: number;
-    maxServings?: number;
   }
 ): Promise<RecipeMatch[] | RecipeMatchWithServings[]> {
   const {
@@ -94,8 +92,6 @@ export async function findCookableRecipes(
     includeNearMatches = false,
     sortBy = 'match',
     includeReducedServings = false,
-    minServings,
-    maxServings,
   } = options || {};
 
   // Fetch all household recipes with their ingredients
@@ -207,22 +203,6 @@ export async function findCookableRecipes(
     filteredMatches = matches.filter(
       (m) => m.matchPercentage >= minMatchPercentage
     );
-  }
-
-  // Apply serving filters if reduced servings is enabled
-  if (includeReducedServings) {
-    filteredMatches = filteredMatches.filter((m) => {
-      const matchWithServings = m as RecipeMatchWithServings;
-      const achievable = matchWithServings.achievableServings;
-
-      if (minServings !== undefined && achievable < minServings) {
-        return false;
-      }
-      if (maxServings !== undefined && achievable > maxServings) {
-        return false;
-      }
-      return true;
-    });
   }
 
   // Sort based on preference
@@ -493,8 +473,10 @@ async function addServingsInfo(
   }>,
   _substitutionService: SubstitutionService
 ): Promise<RecipeMatchWithServings> {
+  // Include ALL required ingredients, not just matched ones
+  // This allows us to calculate reduced servings even when some quantities are insufficient
   const requiredIngredients = match.ingredientMatches.filter(
-    (m) => m.matched && m.matchType !== 'missing'
+    (m) => !m.optional && m.quantityNeeded !== null && m.quantityNeeded > 0
   );
 
   // Calculate max servings for each ingredient
@@ -505,27 +487,20 @@ async function addServingsInfo(
       (p) => p.ingredientId === ingredient.ingredientId
     );
 
-    if (
-      ingredient.quantityNeeded &&
-      ingredient.quantityNeeded > 0 &&
-      pantryItem
-    ) {
-      const pantryQty = pantryItem.quantity
-        ? parseFloat(pantryItem.quantity)
-        : null;
-
-      if (pantryQty) {
+    if (ingredient.quantityNeeded && ingredient.quantityNeeded > 0) {
+      if (pantryItem && pantryItem.quantity) {
+        const pantryQty = parseFloat(pantryItem.quantity);
         // Calculate max servings based on this ingredient
+        // This works for both matched and partially matched ingredients
         const maxServings =
           (pantryQty / ingredient.quantityNeeded) * match.recipe.servings;
         servingLimitations.push(maxServings);
+      } else {
+        // Ingredient not in pantry at all, can't make any servings
+        servingLimitations.push(0);
       }
-    } else if (
-      !ingredient.quantityNeeded ||
-      ingredient.quantityNeeded === 0 ||
-      !pantryItem
-    ) {
-      // No quantity specified or item not in pantry, assume unlimited
+    } else {
+      // No quantity specified, assume unlimited availability
       servingLimitations.push(match.recipe.servings);
     }
   }
@@ -548,16 +523,18 @@ async function addServingsInfo(
         const pantryItem = pantry.find(
           (p) => p.ingredientId === ingredient.ingredientId
         );
-        if (pantryItem) {
-          const pantryQty = pantryItem.quantity
-            ? parseFloat(pantryItem.quantity)
-            : null;
-          if (pantryQty) {
-            const maxServings =
-              (pantryQty / ingredient.quantityNeeded) * match.recipe.servings;
-            if (Math.floor(maxServings * 100) / 100 === achievableServings) {
-              limitingIngredients.push(ingredient.ingredientId);
-            }
+        if (pantryItem && pantryItem.quantity) {
+          const pantryQty = parseFloat(pantryItem.quantity);
+          const maxServings =
+            (pantryQty / ingredient.quantityNeeded) * match.recipe.servings;
+          // Check if this is one of the limiting ingredients
+          if (Math.floor(maxServings * 100) / 100 === achievableServings) {
+            limitingIngredients.push(ingredient.ingredientId);
+          }
+        } else if (!pantryItem) {
+          // If ingredient is missing entirely and we can't make any servings, it's limiting
+          if (achievableServings === 0) {
+            limitingIngredients.push(ingredient.ingredientId);
           }
         }
       }

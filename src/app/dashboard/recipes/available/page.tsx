@@ -8,10 +8,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { CookableRecipeCard } from '@/components/recipes/cookable-recipe-card';
-import { ServingFilter } from '@/components/recipes/serving-filter';
 import { ChefHat, Loader2, RefreshCw, SlidersHorizontal } from 'lucide-react';
 import type { RecipeMatch } from '@/lib/recipe-matching';
 import { Select } from '@/components/ui/select';
@@ -28,20 +27,27 @@ export default function AvailableRecipesPage() {
   >('match');
   const [showFilters, setShowFilters] = useState(false);
   const [includeReducedServings, setIncludeReducedServings] = useState(false);
-  const [minServings, setMinServings] = useState(0);
-  const [maxServings, setMaxServings] = useState(12);
   const router = useRouter();
-  const searchParams = useSearchParams();
+
+  // Load persisted settings from localStorage
+  useEffect(() => {
+    const stored = localStorage.getItem('includeReducedServings');
+    if (stored === 'true') {
+      setIncludeReducedServings(true);
+    }
+  }, []);
+
+  // Persist setting to localStorage when it changes
+  useEffect(() => {
+    localStorage.setItem(
+      'includeReducedServings',
+      includeReducedServings.toString()
+    );
+  }, [includeReducedServings]);
 
   useEffect(() => {
     fetchAvailableRecipes();
-  }, [
-    sortBy,
-    showNearMatches,
-    includeReducedServings,
-    minServings,
-    maxServings,
-  ]);
+  }, [sortBy, showNearMatches, includeReducedServings]);
 
   const fetchAvailableRecipes = async () => {
     setLoading(true);
@@ -51,11 +57,6 @@ export default function AvailableRecipesPage() {
         near_matches: showNearMatches.toString(),
         include_reduced_servings: includeReducedServings.toString(),
       });
-
-      if (includeReducedServings) {
-        params.append('min_servings', minServings.toString());
-        params.append('max_servings', maxServings.toString());
-      }
 
       const response = await fetch(`/api/recipes/available?${params}`);
       if (!response.ok) {
@@ -129,52 +130,59 @@ export default function AvailableRecipesPage() {
 
           {/* Filters */}
           {showFilters && (
-            <div className="mt-6 space-y-4">
-              <div className="rounded-2xl border-2 border-[#e8dcc8] bg-white p-4">
-                <h3 className="font-merriweather mb-4 font-semibold text-[#2d5016]">
-                  Filters & Sorting
-                </h3>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="sort-by">Sort By</Label>
-                    <Select
-                      id="sort-by"
-                      value={sortBy}
-                      onChange={(e) =>
-                        setSortBy(e.target.value as typeof sortBy)
-                      }
-                    >
-                      <option value="match">Best Match</option>
-                      <option value="newest">Newest First</option>
-                      <option value="rating">Highest Rated</option>
-                      <option value="prepTime">Quickest Prep</option>
-                    </Select>
-                  </div>
+            <div className="mt-6 rounded-2xl border-2 border-[#e8dcc8] bg-white p-4">
+              <h3 className="font-merriweather mb-4 font-semibold text-[#2d5016]">
+                Filters & Sorting
+              </h3>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="sort-by">Sort By</Label>
+                  <Select
+                    id="sort-by"
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
+                  >
+                    <option value="match">Best Match</option>
+                    <option value="newest">Newest First</option>
+                    <option value="rating">Highest Rated</option>
+                    <option value="prepTime">Quickest Prep</option>
+                  </Select>
+                </div>
 
-                  <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="near-matches"
+                    checked={showNearMatches}
+                    onCheckedChange={setShowNearMatches}
+                  />
+                  <Label htmlFor="near-matches" className="cursor-pointer">
+                    Show near-matches (missing some ingredients)
+                  </Label>
+                </div>
+
+                <div className="border-t-2 border-[#e8dcc8] pt-4">
+                  <div className="flex items-center space-x-3">
                     <Switch
-                      id="near-matches"
-                      checked={showNearMatches}
-                      onCheckedChange={setShowNearMatches}
+                      id="reduced-servings"
+                      checked={includeReducedServings}
+                      onCheckedChange={setIncludeReducedServings}
                     />
-                    <Label htmlFor="near-matches" className="cursor-pointer">
-                      Show near-matches (missing some ingredients)
+                    <Label
+                      htmlFor="reduced-servings"
+                      className="cursor-pointer"
+                    >
+                      <div>
+                        <p className="text-sm font-medium text-[#2d5016]">
+                          Include reduced servings
+                        </p>
+                        <p className="text-xs text-[#6b6250]">
+                          Show recipes you can make with fewer servings
+                        </p>
+                      </div>
                     </Label>
                   </div>
                 </div>
               </div>
-
-              {/* Serving Filter */}
-              <ServingFilter
-                onFilterChange={(min, max) => {
-                  setMinServings(min);
-                  setMaxServings(max);
-                }}
-                onToggleReducedServings={setIncludeReducedServings}
-                showReducedServings={includeReducedServings}
-                minValue={minServings}
-                maxValue={maxServings}
-              />
             </div>
           )}
         </div>
