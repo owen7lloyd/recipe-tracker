@@ -30,7 +30,7 @@ A full-stack Next.js application for household recipe management, pantry trackin
 
 - **Recipe Management**: Create, edit, import recipes from websites
 - **Pantry Tracking**: Track ingredient inventory
-- **Pantry Impact Indicator**: Visual indicators showing ingredient availability status for recipes
+- **Pantry Impact Indicator**: Visual indicators in cooking view showing ingredient insufficiency
 - **Smart Matching**: "What Can I Cook?" feature matches recipes to available ingredients
 - **Ingredient Search**: Search recipes by selecting multiple ingredients with "any/all" modes and ingredient exclusion
 - **Grocery Lists**: Auto-generate shopping lists from recipes, subtract pantry items
@@ -236,7 +236,6 @@ All UI components have been updated to use the organic garden aesthetic:
     recipe-matching.ts          # "What Can I Cook?" logic
     recipe-scaling.ts           # Scale servings
     recipe-timer.ts             # Timer detection & formatting
-    pantry-status.ts            # Pantry availability calculation
     grocery-list-generator.ts   # Generate lists from recipes
     substitution-service.ts     # Ingredient substitutions
     utils.ts                    # Utility functions (cn, etc.)
@@ -598,7 +597,6 @@ return createErrorResponse(
 - `GET/PUT/DELETE /api/recipes/[id]` - Single recipe operations
 - `GET /api/recipes/search` - Search by ingredients (any/all modes, exclusion, sorting)
 - `GET /api/recipes/available` - "What Can I Cook?" feature
-- `GET /api/recipes/[id]/pantry-status` - Get recipe with pantry availability status
 - `POST /api/recipes/import` - Import from URL
 - `POST /api/recipes/[id]/cook` - Mark as cooked
 - `POST /api/recipes/[id]/scale` - Scale servings
@@ -662,13 +660,12 @@ pnpm dlx shadcn@latest add <component-name>
 
 - `recipe-form.tsx` - Create/edit form with validation
 - `recipe-list.tsx` - Paginated list with filters
-- `recipe-card.tsx` - Card view for list display with optional pantry status badge
-- `recipe-detail.tsx` - Full recipe view with notes history and pantry status
+- `recipe-card.tsx` - Card view for list display
+- `recipe-detail.tsx` - Full recipe view with notes history
 - `ingredient-input.tsx` - Autocomplete ingredient selector
 - `ingredient-picker.tsx` - Multi-select ingredient picker for search
 - `ingredient-search-page.tsx` - Search recipes by ingredients page
-- `ingredient-with-status.tsx` - Display ingredient with pantry availability indicators
-- `cook-recipe-view.tsx` - Step-by-step cooking mode with timers and notes
+- `cook-recipe-view.tsx` - Step-by-step cooking mode with timers, notes, and pantry impact indicators
 - `serving-scaler.tsx` - Adjust servings with live updates
 - `recipe-timer.tsx` - Interactive timer component with notifications
 - `recipe-note.tsx` - Note input/display component for cooking sessions
@@ -810,40 +807,6 @@ newQuantity = originalQuantity * scaleFactor;
 ```
 
 Handles nullable quantities gracefully.
-
-### Pantry Status Calculation (`/src/lib/pantry-status.ts`)
-
-**Function:** `getRecipeWithPantryStatus(recipeId, householdId)`
-
-Calculates ingredient availability status for a recipe:
-
-1. Fetch recipe with all ingredients
-2. Fetch pantry items for the household
-3. For each ingredient:
-   - Compare needed quantity with available quantity in pantry
-   - Determine status: `available`, `partial`, or `missing`
-   - Calculate shortage amount (0 if available >= needed)
-4. Calculate summary statistics:
-   - Total shortage across all ingredients
-   - Count of missing, partial, and available ingredients
-
-**Returns:** `RecipeWithPantryStatus` object with:
-
-- All recipe fields
-- `ingredients` array with pantry status for each ingredient
-- `totalShortage`, `missingCount`, `partialCount`, `availableCount`
-
-**Function:** `getRecipesPantryAvailability(recipeIds, householdId)`
-
-Batch calculation of pantry availability for multiple recipes:
-
-**Returns:** Map of recipe IDs to availability summary:
-
-- `availableCount` - Number of ingredients available
-- `partialCount` - Number of ingredients with partial availability
-- `missingCount` - Number of missing ingredients
-- `totalIngredients` - Total ingredient count
-- `canCook` - Boolean indicating if recipe can be cooked (no missing ingredients)
 
 ### Grocery List Generation (`/src/lib/grocery-list-generator.ts`)
 
@@ -1568,7 +1531,6 @@ Custom getSession:     /src/lib/auth/index.ts
 API Helpers:           /src/lib/api/utils.ts
 Recipe Helpers:        /src/lib/recipe/helpers.ts (includes search)
 Recipe Matching:       /src/lib/recipe-matching.ts
-Pantry Status:         /src/lib/pantry-status.ts
 Grocery Generator:     /src/lib/grocery-list-generator.ts
 Ingredient Parser:     /src/lib/recipe-scraper/ingredient-parser.ts
 Validations:           /src/lib/validations/

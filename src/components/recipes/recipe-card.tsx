@@ -3,14 +3,7 @@
 import Link from 'next/link';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import {
-  Clock,
-  Users,
-  Star,
-  CheckCircle,
-  AlertCircle,
-  XCircle,
-} from 'lucide-react';
+import { Clock, Users, Star } from 'lucide-react';
 import { OptimizedImage } from '@/components/ui/optimized-image';
 
 interface RecipeCardProps {
@@ -26,12 +19,6 @@ interface RecipeCardProps {
   rating?: number | null;
   avgRating?: string | null;
   ratingCount?: number | null;
-  // Pantry availability (optional)
-  pantryStatus?: {
-    canCook: boolean;
-    missingCount: number;
-    partialCount: number;
-  };
 }
 
 export function RecipeCard({
@@ -47,38 +34,8 @@ export function RecipeCard({
   rating,
   avgRating,
   ratingCount,
-  pantryStatus,
 }: RecipeCardProps) {
   const totalTime = (prepTimeMinutes || 0) + (cookTimeMinutes || 0) || null;
-
-  const getAvailabilityBadge = () => {
-    if (!pantryStatus) return null;
-
-    if (pantryStatus.canCook) {
-      return (
-        <Badge className="rounded-full border-green-300 bg-green-100 text-green-800">
-          <CheckCircle className="mr-1 h-3 w-3" />
-          Can Cook
-        </Badge>
-      );
-    }
-
-    if (pantryStatus.missingCount > 0 && pantryStatus.partialCount === 0) {
-      return (
-        <Badge className="rounded-full border-red-300 bg-red-100 text-red-800">
-          <XCircle className="mr-1 h-3 w-3" />
-          {pantryStatus.missingCount} missing
-        </Badge>
-      );
-    }
-
-    return (
-      <Badge className="rounded-full border-yellow-300 bg-yellow-100 text-yellow-800">
-        <AlertCircle className="mr-1 h-3 w-3" />
-        Partially available
-      </Badge>
-    );
-  };
 
   return (
     <Link
@@ -157,7 +114,6 @@ export function RecipeCard({
                 {tag}
               </Badge>
             ))}
-            {getAvailabilityBadge()}
           </div>
 
           {/* Time and Servings Info */}
