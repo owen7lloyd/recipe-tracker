@@ -102,11 +102,7 @@ export function ChangePasswordForm({ onSuccess }: ChangePasswordFormProps) {
   };
 
   return (
-    <div className="max-w-md mx-auto p-6 border rounded-2xl bg-white border-[#e8dcc8]">
-      <h2 className="font-merriweather text-2xl font-bold mb-6 text-[#2c2415]">
-        Change Password
-      </h2>
-
+    <div className="space-y-4">
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         {/* Current Password */}
         <div>

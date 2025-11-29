@@ -25,7 +25,7 @@ export async function proxy(request: NextRequest) {
   }
 
   // Public routes that don't require authentication
-  const publicRoutes = ['/', '/login', '/register'];
+  const publicRoutes = ['/', '/login', '/register', '/auth/forgot-password', '/auth/reset-password'];
   const authRoutes = ['/login', '/register'];
 
   // Allow shared grocery lists (read-only public access)
@@ -33,6 +33,11 @@ export async function proxy(request: NextRequest) {
     pathname.startsWith('/shared/') ||
     pathname.startsWith('/api/grocery-lists/shared/')
   ) {
+    return NextResponse.next();
+  }
+
+  // Allow public auth routes (forgot password, reset password)
+  if (pathname.startsWith('/auth/')) {
     return NextResponse.next();
   }
 
