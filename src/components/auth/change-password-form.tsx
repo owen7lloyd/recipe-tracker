@@ -32,7 +32,11 @@ function PasswordRequirement({
   );
 }
 
-export function ChangePasswordForm() {
+interface ChangePasswordFormProps {
+  onSuccess?: () => void;
+}
+
+export function ChangePasswordForm({ onSuccess }: ChangePasswordFormProps) {
   const [showCurrent, setShowCurrent] = useState(false);
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -80,8 +84,11 @@ export function ChangePasswordForm() {
       });
 
       reset();
-      // Redirect to login after a short delay
+      // Call onSuccess callback if provided (for modal), then redirect to login
       setTimeout(() => {
+        if (onSuccess) {
+          onSuccess();
+        }
         window.location.href = '/login';
       }, 1500);
     } catch (error) {

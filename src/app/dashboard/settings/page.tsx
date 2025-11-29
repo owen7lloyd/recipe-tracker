@@ -5,7 +5,7 @@ import { users } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { getHouseholdWithMembers } from '@/lib/household/helpers';
 import { HouseholdSettingsForm } from '@/components/household/household-settings-form';
-import { ChangePasswordForm } from '@/components/auth/change-password-form';
+import { ChangePasswordModal } from '@/components/auth/change-password-modal';
 
 export default async function SettingsPage() {
   const session = await getSession();
@@ -57,7 +57,12 @@ export default async function SettingsPage() {
             <h2 className="mb-6 text-2xl font-merriweather font-bold text-[#2c2415]">
               Account Security
             </h2>
-            <ChangePasswordForm />
+            <div className="p-6 border rounded-2xl bg-white border-[#e8dcc8]">
+              <p className="text-[#6b6250] mb-4">
+                Manage your account password and security settings
+              </p>
+              <ChangePasswordModal />
+            </div>
           </section>
         </div>
       </div>

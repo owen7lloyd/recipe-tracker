@@ -119,6 +119,14 @@ export function LoginForm() {
                 {errors.password.message}
               </p>
             )}
+            <div className="text-right">
+              <Link
+                href="/auth/forgot-password"
+                className="text-sm font-medium text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-300"
+              >
+                Forgot password?
+              </Link>
+            </div>
           </div>
         </CardContent>
 

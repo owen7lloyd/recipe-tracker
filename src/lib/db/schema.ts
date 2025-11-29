@@ -39,6 +39,8 @@ export const users = pgTable('users', {
   email: text('email').notNull().unique(),
   name: text('name').notNull(),
   passwordHash: text('password_hash').notNull(),
+  passwordResetToken: text('password_reset_token'),
+  passwordResetTokenExpiresAt: timestamp('password_reset_token_expires_at'),
   householdId: uuid('household_id'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
