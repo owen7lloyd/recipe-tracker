@@ -589,6 +589,16 @@ return createErrorResponse(
 
 ### Key API Endpoints
 
+#### Authentication
+
+- `POST /api/auth/register` - User registration
+- `POST /api/auth/login` - User login (via NextAuth)
+- `PATCH /api/auth/change-password` - Change user password
+  - Requires authentication
+  - Validates current password
+  - New password must meet security requirements: ≥8 chars, uppercase, lowercase, number
+  - Uses bcrypt with 10 rounds for password hashing
+
 #### Recipes
 
 - `GET /api/recipes` - List with filters (search, category, tags, ingredients)
@@ -654,6 +664,19 @@ pnpm dlx shadcn@latest add <component-name>
 - Props: `value`, `onChange`, `ingredientCategory`, `disabled`, `id`, `className`
 
 ### Feature Components
+
+#### Auth (`/src/components/auth/`)
+
+- `login-form.tsx` - User login form
+- `register-form.tsx` - User registration form
+- `change-password-form.tsx` - Change password form with:
+  - Show/hide password toggles (Eye/EyeOff icons)
+  - Real-time password strength validation
+  - Visual requirement checklist (✓/✗ indicators)
+  - Validates current password before allowing change
+  - Redirects to login after successful change
+  - Client-side validation with Zod
+  - Integrates with `/api/auth/change-password` endpoint
 
 #### Recipes (`/src/components/recipes/`)
 
@@ -1507,7 +1530,62 @@ export function GroceryListWithRealtime({ listId }: { listId: string }) {
 - Not found → 404
 - Unexpected errors → 500 (log but don't expose details)
 
-### 10. Testing Best Practices
+### 10. Password Security
+
+**Change Password Feature:**
+
+- New password requirements: ≥8 characters, uppercase letter, lowercase letter, number
+- Passwords hashed with bcrypt at 10 rounds for security
+- Current password must be verified before allowing change
+- Client-side validation with Zod schema (`changePasswordSchema`)
+- Server-side validation on `PATCH /api/auth/change-password` endpoint
+- User is redirected to login after successful password change
+- Use `ChangePasswordForm` component in settings page
+- See `/src/lib/validations/auth.ts` for password validation schemas
+
+**Password Validation Patterns:**
+
+```typescript
+// Login password validation
+const loginSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(1, 'Password is required'),
+});
+
+// Registration password validation (more strict)
+const registerSchema = z
+  .object({
+    password: z
+      .string()
+      .min(8, 'Password must be at least 8 characters')
+      .regex(/[0-9]/, 'Must contain at least one number')
+      .regex(/[^A-Za-z0-9]/, 'Must contain at least one special character'),
+    confirmPassword: z.string(),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords don't match",
+    path: ['confirmPassword'],
+  });
+
+// Change password validation (balanced security)
+const changePasswordSchema = z
+  .object({
+    currentPassword: z.string().min(1, 'Current password is required'),
+    newPassword: z
+      .string()
+      .min(8, 'Password must be at least 8 characters')
+      .regex(/[A-Z]/, 'Password must contain uppercase letter')
+      .regex(/[a-z]/, 'Password must contain lowercase letter')
+      .regex(/[0-9]/, 'Password must contain number'),
+    confirmPassword: z.string(),
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    message: "Passwords don't match",
+    path: ['confirmPassword'],
+  });
+```
+
+### 11. Testing Best Practices
 
 - Mock external dependencies (database, auth)
 - Test business logic in isolation
@@ -1571,6 +1649,9 @@ pnpm type-check       # TypeScript check
 
 ---
 
-**Last Updated:** 2025-11-24
+**Last Updated:** 2025-11-29
+
+**Recent Updates:**
+- 2025-11-29: Added change password feature (API endpoint, form component, validation schemas)
 
 This documentation is maintained for AI assistants working on this codebase. When making significant changes, please update this file to keep it current.
