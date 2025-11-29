@@ -501,8 +501,204 @@ export function CookRecipeView(recipe: CookRecipeViewProps) {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
+        {/* Cooking Details Panel - Top */}
+        <div className="lg:col-span-3">
+          <Card>
+            <CardHeader>
+              <CardTitle>Cooking Details</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Servings subsection */}
+              <div>
+                <h3 className="mb-2 text-sm font-semibold text-slate-900 dark:text-slate-100">
+                  Servings
+                </h3>
+                <ServingScaler
+                  originalServings={recipe.servings}
+                  currentServings={servings}
+                  onScaleChange={setServings}
+                  disabled={isScaling}
+                />
+              </div>
+
+              {/* Ingredients and Pantry Impact in a two-column layout */}
+              <div className="grid gap-6 lg:grid-cols-2">
+                {/* Ingredients subsection */}
+                <div className="border-t border-slate-200 pt-4 dark:border-slate-700 lg:border-t-0 lg:pt-0">
+                  <h3 className="mb-3 text-sm font-semibold text-slate-900 dark:text-slate-100">
+                    Ingredients
+                  </h3>
+                  {isLoadingPantry || isScaling ? (
+                    <div className="flex items-center justify-center py-8">
+                      <Loader2 className="h-6 w-6 animate-spin text-slate-400" />
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {activeRecipe.ingredients.map((ing) => {
+                        const displayQty =
+                          'displayQuantity' in ing &&
+                          (ing as ScaledIngredient).displayQuantity
+                            ? (ing as ScaledIngredient).displayQuantity
+                            : ing.quantity;
+
+                        const adjustment = ingredientAdjustments.get(
+                          ing.ingredientId
+                        );
+                        const finalQty: string =
+                          adjustment !== undefined
+                            ? adjustment.toFixed(2).replace(/\.?0+$/, '')
+                            : String(displayQty || '');
+
+                        return (
+                          <div
+                            key={ing.id}
+                            className="rounded-lg border border-slate-200 p-3 dark:border-slate-800"
+                          >
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="min-w-0 flex-1">
+                                <p className="truncate font-medium text-sm">
+                                  {ing.ingredientName || 'Unknown ingredient'}
+                                </p>
+                                <div className="text-sm text-slate-600 dark:text-slate-400">
+                                  {finalQty}
+                                  {ing.unit ? ` ${ing.unit}` : ''}
+                                </div>
+                                {ing.notes && (
+                                  <p className="mt-1 text-sm text-slate-500">
+                                    {ing.notes}
+                                  </p>
+                                )}
+                              </div>
+
+                              {/* Quantity adjustment controls */}
+                              {displayQty && !ing.optional && (
+                                <div className="flex items-center gap-1">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="h-6 w-6 p-0"
+                                    onClick={() => {
+                                      const current =
+                                        adjustment !== undefined
+                                          ? adjustment
+                                          : parseFloat(displayQty || '0');
+                                      adjustIngredientQuantity(
+                                        ing.ingredientId,
+                                        Math.max(0, current - 0.5)
+                                      );
+                                    }}
+                                  >
+                                    -
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="h-6 w-6 p-0"
+                                    onClick={() => {
+                                      const current =
+                                        adjustment !== undefined
+                                          ? adjustment
+                                          : parseFloat(displayQty || '0');
+                                      adjustIngredientQuantity(
+                                        ing.ingredientId,
+                                        current + 0.5
+                                      );
+                                    }}
+                                  >
+                                    +
+                                  </Button>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {/* Pantry Impact subsection */}
+                <div className="border-t border-slate-200 pt-4 dark:border-slate-700 lg:border-t-0 lg:pt-0">
+                  <h3 className="mb-3 text-sm font-semibold text-slate-900 dark:text-slate-100">
+                    Pantry Impact
+                  </h3>
+                  {(hasInsufficient || hasNotInPantry) && (
+                    <div className="mb-3 rounded-lg border border-amber-200 bg-amber-50 p-2 dark:border-amber-900 dark:bg-amber-950">
+                      <div className="flex gap-2">
+                        <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0 text-amber-600 dark:text-amber-500" />
+                        <div className="text-xs text-amber-900 dark:text-amber-100">
+                          {hasInsufficient && (
+                            <p>Some items have insufficient quantities.</p>
+                          )}
+                          {hasNotInPantry && (
+                            <p>Some items not in pantry will be skipped.</p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="space-y-2">
+                    {deductions.map((ing) => (
+                      <div
+                        key={ing.id}
+                        className="rounded border border-slate-200 p-3 dark:border-slate-800"
+                      >
+                        <p className="truncate font-medium text-sm">
+                          {ing.ingredientName}
+                        </p>
+                        {ing.notInPantry ? (
+                          <p className="text-sm text-amber-600 dark:text-amber-500">
+                            Not in pantry - will skip
+                          </p>
+                        ) : ing.notTracked ? (
+                          <p className="text-sm text-slate-500">Quantity not tracked</p>
+                        ) : ing.quantityNeeded === null ? (
+                          <p className="text-sm text-slate-500">Non-numeric quantity</p>
+                        ) : ing.unitMismatch ? (
+                          <p className="text-sm text-amber-600 dark:text-amber-500">
+                            Unit mismatch ({ing.unit} vs{' '}
+                            {pantry.find(
+                              (p) => p.ingredient.id === ing.ingredientId
+                            )?.unit || '?'}
+                            ) - will skip
+                          </p>
+                        ) : (
+                          <div className="mt-1 space-y-2">
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm text-slate-600 dark:text-slate-400">
+                                {ing.currentQty?.toFixed(2)} →{' '}
+                                {ing.remainingQty?.toFixed(2)}{' '}
+                                {pantry.find(
+                                  (p) => p.ingredient.id === ing.ingredientId
+                                )?.unit || ing.unit}
+                              </span>
+                              {ing.willBeRemoved && (
+                                <Badge variant="destructive" className="text-sm">
+                                  Remove
+                                </Badge>
+                              )}
+                            </div>
+                            {ing.densityConverted && (
+                              <div className="flex items-center gap-1 rounded bg-blue-50 p-1.5 text-sm dark:bg-blue-950">
+                                <span className="text-blue-700 dark:text-blue-300">
+                                  ℹ️ Unit conversion used (density-based)
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
         {/* Main cooking area - Instructions */}
-        <div className="space-y-6 lg:col-span-2">
+        <div className="space-y-6 lg:col-span-3">
           <Card>
             <CardHeader>
               <CardTitle>Instructions</CardTitle>
@@ -691,199 +887,6 @@ export function CookRecipeView(recipe: CookRecipeViewProps) {
                   );
                 })}
               </ol>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Unified Sidebar - Servings, Ingredients, and Pantry */}
-        <div className="lg:col-span-1">
-          <Card className="sticky top-4">
-            <CardHeader>
-              <CardTitle>Cooking Details</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Servings subsection */}
-              <div>
-                <h3 className="mb-2 text-sm font-semibold text-slate-900 dark:text-slate-100">
-                  Servings
-                </h3>
-                <ServingScaler
-                  originalServings={recipe.servings}
-                  currentServings={servings}
-                  onScaleChange={setServings}
-                  disabled={isScaling}
-                />
-              </div>
-
-              {/* Ingredients subsection */}
-              <div className="border-t border-slate-200 pt-4 dark:border-slate-700">
-                <h3 className="mb-3 text-sm font-semibold text-slate-900 dark:text-slate-100">
-                  Ingredients
-                </h3>
-                {isLoadingPantry || isScaling ? (
-                  <div className="flex items-center justify-center py-8">
-                    <Loader2 className="h-6 w-6 animate-spin text-slate-400" />
-                  </div>
-                ) : (
-                  <div className="max-h-[300px] space-y-2 overflow-y-auto">
-                    {activeRecipe.ingredients.map((ing) => {
-                      const displayQty =
-                        'displayQuantity' in ing &&
-                        (ing as ScaledIngredient).displayQuantity
-                          ? (ing as ScaledIngredient).displayQuantity
-                          : ing.quantity;
-
-                      const adjustment = ingredientAdjustments.get(
-                        ing.ingredientId
-                      );
-                      const finalQty: string =
-                        adjustment !== undefined
-                          ? adjustment.toFixed(2).replace(/\.?0+$/, '')
-                          : String(displayQty || '');
-
-                      return (
-                        <div
-                          key={ing.id}
-                          className="rounded-lg border border-slate-200 p-2 text-xs dark:border-slate-800"
-                        >
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="min-w-0 flex-1">
-                              <p className="truncate font-medium">
-                                {ing.ingredientName || 'Unknown ingredient'}
-                              </p>
-                              <div className="text-slate-600 dark:text-slate-400">
-                                {finalQty}
-                                {ing.unit ? ` ${ing.unit}` : ''}
-                              </div>
-                              {ing.notes && (
-                                <p className="mt-1 text-slate-500">
-                                  {ing.notes}
-                                </p>
-                              )}
-                            </div>
-
-                            {/* Quantity adjustment controls */}
-                            {displayQty && !ing.optional && (
-                              <div className="flex items-center gap-1">
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  className="h-6 w-6 p-0"
-                                  onClick={() => {
-                                    const current =
-                                      adjustment !== undefined
-                                        ? adjustment
-                                        : parseFloat(displayQty || '0');
-                                    adjustIngredientQuantity(
-                                      ing.ingredientId,
-                                      Math.max(0, current - 0.5)
-                                    );
-                                  }}
-                                >
-                                  -
-                                </Button>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  className="h-6 w-6 p-0"
-                                  onClick={() => {
-                                    const current =
-                                      adjustment !== undefined
-                                        ? adjustment
-                                        : parseFloat(displayQty || '0');
-                                    adjustIngredientQuantity(
-                                      ing.ingredientId,
-                                      current + 0.5
-                                    );
-                                  }}
-                                >
-                                  +
-                                </Button>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-
-              {/* Pantry Impact subsection */}
-              <div className="border-t border-slate-200 pt-4 dark:border-slate-700">
-                <h3 className="mb-3 text-sm font-semibold text-slate-900 dark:text-slate-100">
-                  Pantry Impact
-                </h3>
-                {(hasInsufficient || hasNotInPantry) && (
-                  <div className="mb-3 rounded-lg border border-amber-200 bg-amber-50 p-2 dark:border-amber-900 dark:bg-amber-950">
-                    <div className="flex gap-2">
-                      <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0 text-amber-600 dark:text-amber-500" />
-                      <div className="text-xs text-amber-900 dark:text-amber-100">
-                        {hasInsufficient && (
-                          <p>Some items have insufficient quantities.</p>
-                        )}
-                        {hasNotInPantry && (
-                          <p>Some items not in pantry will be skipped.</p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                <div className="max-h-[400px] space-y-2 overflow-y-auto">
-                  {deductions.map((ing) => (
-                    <div
-                      key={ing.id}
-                      className="rounded border border-slate-200 p-2 text-xs dark:border-slate-800"
-                    >
-                      <p className="truncate font-medium">
-                        {ing.ingredientName}
-                      </p>
-                      {ing.notInPantry ? (
-                        <p className="text-amber-600 dark:text-amber-500">
-                          Not in pantry - will skip
-                        </p>
-                      ) : ing.notTracked ? (
-                        <p className="text-slate-500">Quantity not tracked</p>
-                      ) : ing.quantityNeeded === null ? (
-                        <p className="text-slate-500">Non-numeric quantity</p>
-                      ) : ing.unitMismatch ? (
-                        <p className="text-amber-600 dark:text-amber-500">
-                          Unit mismatch ({ing.unit} vs{' '}
-                          {pantry.find(
-                            (p) => p.ingredient.id === ing.ingredientId
-                          )?.unit || '?'}
-                          ) - will skip
-                        </p>
-                      ) : (
-                        <div className="mt-1 space-y-2">
-                          <div className="flex items-center justify-between">
-                            <span className="text-slate-600 dark:text-slate-400">
-                              {ing.currentQty?.toFixed(2)} →{' '}
-                              {ing.remainingQty?.toFixed(2)}{' '}
-                              {pantry.find(
-                                (p) => p.ingredient.id === ing.ingredientId
-                              )?.unit || ing.unit}
-                            </span>
-                            {ing.willBeRemoved && (
-                              <Badge variant="destructive" className="text-xs">
-                                Remove
-                              </Badge>
-                            )}
-                          </div>
-                          {ing.densityConverted && (
-                            <div className="flex items-center gap-1 rounded bg-blue-50 p-1.5 text-xs dark:bg-blue-950">
-                              <span className="text-blue-700 dark:text-blue-300">
-                                ℹ️ Unit conversion used (density-based)
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
             </CardContent>
           </Card>
         </div>

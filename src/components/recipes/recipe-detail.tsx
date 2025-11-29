@@ -26,7 +26,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { ServingScaler } from './serving-scaler';
 import { RecipeNoteInput, type RecipeNote } from './recipe-note';
 import type { ScaledRecipe } from '@/lib/recipe-scaling';
 import { formatDistanceToNow } from 'date-fns';
@@ -240,18 +239,6 @@ export function RecipeDetail(recipe: RecipeDetailProps) {
           />
         </div>
       )}
-
-      {/* Serving Scaler */}
-      <Card>
-        <CardContent className="p-4">
-          <ServingScaler
-            originalServings={recipe.servings}
-            currentServings={currentServings}
-            onScaleChange={handleScaleChange}
-            disabled={isScaling}
-          />
-        </CardContent>
-      </Card>
 
       {/* Quick Info */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

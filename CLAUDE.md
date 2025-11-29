@@ -660,12 +660,12 @@ pnpm dlx shadcn@latest add <component-name>
 - `recipe-form.tsx` - Create/edit form with validation
 - `recipe-list.tsx` - Paginated list with filters
 - `recipe-card.tsx` - Card view for list display
-- `recipe-detail.tsx` - Full recipe view with notes history
+- `recipe-detail.tsx` - Full recipe view with notes history (servings shown in Quick Info section)
 - `ingredient-input.tsx` - Autocomplete ingredient selector
 - `ingredient-picker.tsx` - Multi-select ingredient picker for search
 - `ingredient-search-page.tsx` - Search recipes by ingredients page
-- `cook-recipe-view.tsx` - Step-by-step cooking mode with timers and notes
-- `serving-scaler.tsx` - Adjust servings with live updates
+- `cook-recipe-view.tsx` - Step-by-step cooking mode with timers and notes (full-width cooking details panel at top, no scrollbars)
+- `serving-scaler.tsx` - Number input for adjusting servings with scroll wheel support, reset button, and scale factor display
 - `recipe-timer.tsx` - Interactive timer component with notifications
 - `recipe-note.tsx` - Note input/display component for cooking sessions
 
@@ -678,7 +678,7 @@ pnpm dlx shadcn@latest add <component-name>
 #### Grocery Lists (`/src/components/grocery-lists/`)
 
 - `GroceryListWithRealtime.tsx` - Wrapper with Supabase real-time
-- `OrganizedGroceryList.tsx` - Grouped by category
+- `OrganizedGroceryList.tsx` - Grouped by store then category (store headers only shown when multiple stores exist)
 - `category-section.tsx` - Collapsible category sections
 - `grocery-list-item.tsx` - Checkable item
 - `recipe-selector.tsx` - Multi-select for generation
@@ -1571,6 +1571,6 @@ pnpm type-check       # TypeScript check
 
 ---
 
-**Last Updated:** 2025-11-24
+**Last Updated:** 2025-11-27
 
 This documentation is maintained for AI assistants working on this codebase. When making significant changes, please update this file to keep it current.

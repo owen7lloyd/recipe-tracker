@@ -177,7 +177,7 @@ export function OrganizedGroceryList({
 
   const handleItemUpdate = async (
     itemId: string,
-    updates: { quantity?: number; unit?: string; checked?: boolean }
+    updates: { quantity?: number; unit?: string; store?: string; checked?: boolean }
   ) => {
     if (readOnly) return;
 
@@ -289,6 +289,9 @@ export function OrganizedGroceryList({
   const checkedCount = list.items.filter((item) => item.checked).length;
   const totalCount = list.items.length;
 
+  // Determine if we should show store headers (only if multiple stores)
+  const shouldShowStoreHeaders = sortedStores.length > 1 || (sortedStores.length === 1 && sortedStores[0] !== 'Unassigned');
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -332,15 +335,17 @@ export function OrganizedGroceryList({
 
             return (
               <div key={store} className="space-y-3">
-                {/* Store Header */}
-                <div className="flex items-center gap-3 border-b-2 border-slate-200 pb-2 dark:border-slate-700">
-                  <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">
-                    {store === 'Unassigned' ? '📋 Unassigned' : `🏪 ${store}`}
-                  </h2>
-                  <span className="text-sm text-slate-500">
-                    {storeItemCount} {storeItemCount === 1 ? 'item' : 'items'}
-                  </span>
-                </div>
+                {/* Store Header - Only show if multiple stores */}
+                {shouldShowStoreHeaders && (
+                  <div className="flex items-center gap-3 border-b-2 border-slate-200 pb-2 dark:border-slate-700">
+                    <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">
+                      {store === 'Unassigned' ? '📋 Unassigned' : `🏪 ${store}`}
+                    </h2>
+                    <span className="text-sm text-slate-500">
+                      {storeItemCount} {storeItemCount === 1 ? 'item' : 'items'}
+                    </span>
+                  </div>
+                )}
 
                 {/* Categories within this store */}
                 <div className="space-y-3">
