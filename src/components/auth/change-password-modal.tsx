@@ -27,7 +27,7 @@ export function ChangePasswordModal() {
         Change Password
       </Button>
 
-      <DialogContent className="sm:max-w-[500px] bg-white border-[#e8dcc8]">
+      <DialogContent className="max-w-2xl bg-white border-[#e8dcc8]">
         <DialogHeader>
           <DialogTitle className="font-merriweather text-2xl font-bold text-[#2c2415]">
             Change Your Password
