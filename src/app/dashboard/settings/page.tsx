@@ -5,6 +5,7 @@ import { users } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { getHouseholdWithMembers } from '@/lib/household/helpers';
 import { HouseholdSettingsForm } from '@/components/household/household-settings-form';
+import { ChangePasswordForm } from '@/components/auth/change-password-form';
 
 export default async function SettingsPage() {
   const session = await getSession();
@@ -35,14 +36,30 @@ export default async function SettingsPage() {
       <div className="mx-auto max-w-7xl">
         <header className="mb-8">
           <h1 className="font-merriweather text-3xl font-bold text-[#2d5016]">
-            Household Settings
+            Settings
           </h1>
           <p className="mt-2 text-[#6b6250]">
-            Manage your household and members
+            Manage your account, household, and security
           </p>
         </header>
 
-        <HouseholdSettingsForm household={household} />
+        <div className="space-y-12">
+          {/* Household Settings Section */}
+          <section>
+            <h2 className="mb-6 text-2xl font-merriweather font-bold text-[#2c2415]">
+              Household Settings
+            </h2>
+            <HouseholdSettingsForm household={household} />
+          </section>
+
+          {/* Account Security Section */}
+          <section>
+            <h2 className="mb-6 text-2xl font-merriweather font-bold text-[#2c2415]">
+              Account Security
+            </h2>
+            <ChangePasswordForm />
+          </section>
+        </div>
       </div>
     </div>
   );
